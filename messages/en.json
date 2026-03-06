@@ -1,0 +1,12 @@
+{
+  "auth": {
+    "login": "Login",
+    "email": "Email Address",
+    "password": "Password",
+    "welcome": "Welcome to the Vendor Portal"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel"
+  }
+}
