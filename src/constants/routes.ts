@@ -8,18 +8,24 @@ export const ROUTES = {
   DASHBOARD: {
     ROOT: "/dashboard",
     PROFILE: "/dashboard/profile",
-    
+    CUSTOMERS: "/dashboard/customers",
+    CUSTOMERS_ADD: "/dashboard/customers/add",
+    CUSTOMER_EDIT: (customerId: string) =>
+      `/dashboard/customers/${customerId}/edit`,
+    CUSTOMER_ADD_VEHICLE: (customerId: string) =>
+      `/dashboard/customers/${customerId}/add-vehicle`,
+    TIRE_SETS: "/dashboard/tire-sets",
+    EMAIL_INBOX: "/dashboard/email-inbox",
+    REPORTS: "/dashboard/reports",
     PRODUCTS: {
       LIST: "/dashboard/products",
       ADD: "/dashboard/products/add",
       DETAILS: (id: string | number) => `/dashboard/products/${id}`,
     },
-
     ORDERS: {
       LIST: "/dashboard/orders",
       DETAILS: (id: string | number) => `/dashboard/orders/${id}`,
     },
-
     INVENTORY: "/dashboard/inventory",
     STOCK: "/dashboard/stock",
   },

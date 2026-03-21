@@ -1,13 +1,5 @@
-import { getTranslations } from "next-intl/server";
+import { SettingsContent } from "@/shared/components/settings-content";
 
-export default async function ProfilePage() {
-  const t = await getTranslations("dashboard");
-  return (
-    <div className="space-y-4 break-words">
-      <h1 className="text-headline-sm font-bold text-foreground">
-        {t("profileTitle")}
-      </h1>
-      <p className="text-body-md text-muted-foreground">{t("profileIntro")}</p>
-    </div>
-  );
+export default function ProfilePage() {
+  return <SettingsContent />;
 }

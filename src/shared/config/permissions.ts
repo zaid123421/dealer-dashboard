@@ -10,23 +10,31 @@ import type { Role } from './roles';
 const ROLE_ROUTE_PREFIXES: Record<Role, string[]> = {
   admin: [
     ROUTES.DASHBOARD.ROOT,
+    ROUTES.DASHBOARD.CUSTOMERS,
+    ROUTES.DASHBOARD.TIRE_SETS,
+    ROUTES.DASHBOARD.ORDERS.LIST,
+    '/dashboard/orders/',
+    ROUTES.DASHBOARD.EMAIL_INBOX,
+    ROUTES.DASHBOARD.REPORTS,
     ROUTES.DASHBOARD.PROFILE,
     ROUTES.DASHBOARD.PRODUCTS.LIST,
     ROUTES.DASHBOARD.PRODUCTS.ADD,
     '/dashboard/products/',
-    ROUTES.DASHBOARD.ORDERS.LIST,
-    '/dashboard/orders/',
     ROUTES.DASHBOARD.INVENTORY,
     ROUTES.DASHBOARD.STOCK,
   ],
   supplier: [
     ROUTES.DASHBOARD.ROOT,
+    ROUTES.DASHBOARD.CUSTOMERS,
+    ROUTES.DASHBOARD.TIRE_SETS,
+    ROUTES.DASHBOARD.ORDERS.LIST,
+    '/dashboard/orders/',
+    ROUTES.DASHBOARD.EMAIL_INBOX,
+    ROUTES.DASHBOARD.REPORTS,
     ROUTES.DASHBOARD.PROFILE,
     ROUTES.DASHBOARD.PRODUCTS.LIST,
     ROUTES.DASHBOARD.PRODUCTS.ADD,
     '/dashboard/products/',
-    ROUTES.DASHBOARD.ORDERS.LIST,
-    '/dashboard/orders/',
     ROUTES.DASHBOARD.INVENTORY,
   ],
   user: [
@@ -52,11 +60,13 @@ export function canAccess(role: Role | null | undefined, pathname: string): bool
  * يمكن استخدامها لإظهار/إخفاء روابط القائمة.
  */
 export const NAV_ENTRIES = [
-  { path: ROUTES.DASHBOARD.ROOT, label: 'لوحة التحكم', key: 'dashboard' },
-  { path: ROUTES.DASHBOARD.PRODUCTS.LIST, label: 'المنتجات', key: 'products' },
-  { path: ROUTES.DASHBOARD.ORDERS.LIST, label: 'الطلبات', key: 'orders' },
-  { path: ROUTES.DASHBOARD.INVENTORY, label: 'المخزون', key: 'inventory' },
-  { path: ROUTES.DASHBOARD.PROFILE, label: 'الملف الشخصي', key: 'profile' },
+  { path: ROUTES.DASHBOARD.ROOT, label: 'Overview', key: 'overview' },
+  { path: ROUTES.DASHBOARD.CUSTOMERS, label: 'Customers', key: 'customers' },
+  { path: ROUTES.DASHBOARD.TIRE_SETS, label: 'Tire Sets', key: 'tireSets' },
+  { path: ROUTES.DASHBOARD.ORDERS.LIST, label: 'Orders', key: 'orders' },
+  { path: ROUTES.DASHBOARD.EMAIL_INBOX, label: 'Email Inbox', key: 'emailInbox' },
+  { path: ROUTES.DASHBOARD.REPORTS, label: 'Reports', key: 'reports' },
+  { path: ROUTES.DASHBOARD.PROFILE, label: 'Settings', key: 'settings' },
 ] as const;
 
 export function getAllowedNavEntries(role: Role | null | undefined): { path: string; label: string; key: string }[] {
