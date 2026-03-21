@@ -1,0 +1,111 @@
+/* ═══════════════════════════════════════════════════════════════════
+  TreadX Design System — CSS Variables
+  Generated from Design System v2.1
+  Usage: import this file in your main CSS entry point
+═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Colors ──────────────────────────────────────────────────── */
+  --color-primary-main-dark: #F59F0A; /* Primary brand color — Dark mode */
+  --color-primary-main-light: #C47F08; /* Primary brand color — Light mode */
+  --color-primary-container: #FDECC2; /* Primary container background */
+  --color-primary-on-container: #2B1A00; /* Text on primary container */
+  --color-primary-inverse: #FFE082; /* Inverse primary for dark surfaces */
+  --color-secondary-main: #2B303B; /* Secondary surface color */
+  --color-secondary-container: #414856; /* Secondary container */
+  --color-secondary-on-surface: #F4F3F1; /* Text on secondary surface */
+  --color-tertiary-main-dark: #0EA5E9; /* Tertiary — Logistics Blue Dark */
+  --color-tertiary-main-light: #0284C7; /* Tertiary — Logistics Blue Light */
+  --color-tertiary-container: #E0F2FE; /* Tertiary container */
+  --color-tertiary-on-container: #0C4A6E; /* Text on tertiary container */
+  --color-warning-main-dark: #F97316; /* Warning — Deep Saffron Dark */
+  --color-warning-main-light: #EA580C; /* Warning — Deep Saffron Light */
+  --color-warning-container: #FFEDD5; /* Warning container background */
+  --color-warning-on-container: #7C2D12; /* Text on warning container */
+  --color-error-main: #DC2828; /* Error / Destructive */
+  --color-error-container: #FCEAEA; /* Error container background */
+  --color-error-on-container: #440000; /* Text on error container */
+  --color-success-main-dark: #22C55E; /* Success — Dark mode */
+  --color-success-main-light: #16A34A; /* Success — Light mode */
+  --color-success-container: #DCFCE7; /* Success container background */
+  --color-success-on-container: #14532D; /* Text on success container */
+  --color-info-main: #3B82F6; /* Info / Informational */
+  --color-info-container: #DBEAFE; /* Info container background */
+  --color-info-on-container: #1E3A8A; /* Text on info container */
+  --color-surface-dim: #121212; /* Darkest surface */
+  --color-surface-default: #1A1A1A; /* Default surface — Dark */
+  --color-surface-bright: #252525; /* Bright surface — Dark */
+  --color-surface-container-lowest: #0F0F0F; /* Container lowest */
+  --color-surface-container-low: #1C1C1C; /* Container low */
+  --color-surface-container: #242424; /* Container default */
+  --color-surface-container-high: #2D2D2D; /* Container high */
+  --color-surface-light: #F8F7F5; /* Default surface — Light mode */
+  --color-surface-light-container: #FFFFFF; /* Card surface — Light mode */
+  --color-chart-1: #F59F0A; /* Chart color 1 — Active Tires */
+  --color-chart-2: #0EA5E9; /* Chart color 2 — Shipments */
+  --color-chart-3: #22C55E; /* Chart color 3 — Completed */
+  --color-chart-4: #F97316; /* Chart color 4 — Processing */
+  --color-chart-5: #DC2828; /* Chart color 5 — Issues */
+  --color-chart-6: #64748B; /* Chart color 6 — Unclassified */
+
+  /* ── Spacing ─────────────────────────────────────────────────── */
+  --spacing-1: 4px; /* Icon gap, micro padding */
+  --spacing-2: 8px; /* Tight inline elements */
+  --spacing-3: 12px; /* Badge padding, small gap */
+  --spacing-4: 16px; /* Default gap, card inner padding */
+  --spacing-5: 20px; /* Section inner gap */
+  --spacing-6: 24px; /* Card padding, form spacing */
+  --spacing-8: 32px; /* Section padding, large gap */
+  --spacing-10: 40px; /* Component separation */
+  --spacing-12: 48px; /* Section header margin */
+  --spacing-16: 64px; /* Section separation */
+  --spacing-20: 80px; /* Page section gap */
+  --spacing-24: 96px; /* Hero padding */
+
+  /* ── Border Radius ───────────────────────────────────────────── */
+  --radius-none: 0px; /* No rounding — tables, code blocks */
+  --radius-sm: 4px; /* Small — badges, tags */
+  --radius-md: 8px; /* Medium — inputs, buttons */
+  --radius-lg: 12px; /* Large — cards, panels */
+  --radius-xl: 16px; /* X-Large — modals, sheets */
+  --radius-2xl: 20px; /* 2X-Large — hero cards */
+  --radius-full: 9999px; /* Full pill — chips, toggles */
+
+  /* ── Typography ──────────────────────────────────────────────── */
+  --font-family-sans: Inter, system-ui, sans-serif; /* Primary Latin font */
+  --font-family-arabic: Noto Sans Arabic, sans-serif; /* Arabic language font */
+  --font-family-mono: IBM Plex Mono, monospace; /* Code, IDs, batch numbers */
+  --font-size-display-lg: 57px; /* Display Large — hero headlines */
+  --font-size-display-md: 45px; /* Display Medium */
+  --font-size-headline-lg: 36px; /* Headline Large — page titles */
+  --font-size-headline-md: 28px; /* Headline Medium — section titles */
+  --font-size-headline-sm: 24px; /* Headline Small — card titles */
+  --font-size-title-lg: 22px; /* Title Large */
+  --font-size-title-md: 16px; /* Title Medium — list items */
+  --font-size-body-lg: 16px; /* Body Large — main content */
+  --font-size-body-md: 14px; /* Body Medium — secondary content */
+  --font-size-label-lg: 14px; /* Label Large — buttons */
+  --font-size-label-md: 12px; /* Label Medium — captions, tags */
+  --font-size-label-sm: 11px; /* Label Small — metadata */
+  --font-weight-regular: 400; /* Regular body text */
+  --font-weight-medium: 500; /* Medium emphasis */
+  --font-weight-semibold: 600; /* Semibold labels */
+  --font-weight-bold: 700; /* Bold headlines */
+  --font-weight-black: 800; /* Black display text */
+
+  /* ── Motion ──────────────────────────────────────────────────── */
+  --duration-instant: 50ms; /* Hover states, focus rings */
+  --duration-fast: 100ms; /* Micro-interactions, badges */
+  --duration-normal: 200ms; /* Default transitions, inputs */
+  --duration-moderate: 300ms; /* Panel slides, dropdowns */
+  --duration-slow: 400ms; /* Page transitions, modals */
+  --duration-deliberate: 500ms; /* Complex animations, charts */
+  --duration-lazy: 700ms; /* Skeleton loaders, onboarding */
+  --duration-crawl: 1000ms; /* Progress bars, status updates */
+  --easing-standard: cubic-bezier(0.2, 0, 0, 1); /* General transitions — MD3 Standard */
+  --easing-decelerate: cubic-bezier(0, 0, 0, 1); /* Elements entering screen — MD3 Decelerate */
+  --easing-accelerate: cubic-bezier(0.3, 0, 1, 1); /* Elements leaving screen — MD3 Accelerate */
+  --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* Springy interactions — Buttons, Toggles */
+  --easing-linear: linear; /* Progress bars, loaders */
+  --easing-sharp: cubic-bezier(0.4, 0, 0.6, 1); /* Sharp transitions — Tabs, Chips */
+}

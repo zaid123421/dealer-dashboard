@@ -1,47 +1,36 @@
 import axios from 'axios';
+import TokenService from '@/infrastructure/auth/token-service';
+import { ROUTES } from '@/constants/routes';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL_FOR_SERVER_REQUESTS || 'http://localhost:5000/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// --- 1. Request Interceptor (إضافة التوكن لكل طلب) ---
 api.interceptors.request.use(
   (config) => {
-    // نجلب التوكن من LocalStorage (أو Cookies حسب نظامك)
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    
+    const token = TokenService.getRefreshToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error),
 );
 
-// --- 2. Response Interceptor (التعامل مع الردود والأخطاء) ---
 api.interceptors.response.use(
-  (response) => {
-    // إذا كان الرد ناجحاً، نرجعه كما هو
-    return response;
-  },
+  (response) => response,
   (error) => {
-    // التعامل مع أخطاء معينة مثل 401 (غير مصرح له / انتهت الجلسة)
     if (error.response && error.response.status === 401) {
-      console.error("انتهت صلاحية الجلسة، يرجى تسجيل الدخول مجدداً");
-      
+      TokenService.removeRefreshToken();
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('token'); // مسح التوكن القديم
-        window.location.href = '/login';   // تحويله لصفحة الدخول
+        window.location.href = ROUTES.AUTH.LOGIN;
       }
     }
-    
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

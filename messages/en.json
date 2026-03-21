@@ -3,10 +3,102 @@
     "login": "Login",
     "email": "Email Address",
     "password": "Password",
-    "welcome": "Welcome to the Vendor Portal"
+    "welcomeBack": "Welcome Back",
+    "signInSubtitle": "Sign in to your vendor account",
+    "emailAddress": "Email Address",
+    "passwordLabel": "Password",
+    "forgotPassword": {
+      "title": "Forgot Password?",
+      "subtitle": "Enter your registered email address to receive a verification code.",
+      "backToSignIn": "Back to Sign In",
+      "sendCode": "Send Code",
+      "emailPlaceholder": "Enter your email address",
+      "codeSent": "Verification code sent to your email.",
+      "resetTitle": "Reset Password",
+      "resetSubtitle": "Enter the code sent to {email} and your new password.",
+      "codeLabel": "Verification Code",
+      "codePlaceholder": "Enter verification code",
+      "codeRequired": "Verification code is required",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "resetButton": "Reset Password",
+      "resetSuccess": "Password reset successfully!",
+      "rememberPassword": "Remember your password?",
+      "enterVerificationCode": "Enter Verification Code",
+      "weSentCodeTo": "We sent a 6-digit code to",
+      "checkInbox": "Check your inbox and enter the code below.",
+      "verifyCode": "Verify Code",
+      "didntReceive": "Didn't receive the code?",
+      "resend": "Resend",
+      "codeExpiresIn": "Code expires in {time}",
+      "back": "Back"
+    },
+    "signIn": "Sign In",
+    "noAccount": "Don't have an account?",
+    "createAccount": "Create Account",
+    "registerSuccess": "Account created successfully! You can now sign in.",
+    "passwordResetSuccess": "Password reset successfully! You can now sign in.",
+    "haveAccount": "Already have an account?",
+    "noAccess": "Need access?",
+    "supportContact": "Contact TreadX support",
+    "securedBy": "Secured by TreadX Enterprise",
+    "vendorDashboard": "Vendor Dashboard",
+    "seasonalPlatform": "Seasonal Tire Management Platform",
+    "enterpriseEdition": "Enterprise Edition v2.1",
+    "logoAlt": "TreadX logo",
+    "brandPanelAlt": "Feather decorative background"
+  },
+  "register": {
+    "title": "Create New Account",
+    "description": "Enter your details to create a new account",
+    "fullName": "Full Name",
+    "confirmPassword": "Confirm Password",
+    "submit": "Create Account",
+    "submitting": "Creating..."
+  },
+  "validation": {
+    "nameRequired": "Name is required",
+    "emailRequired": "Email is required",
+    "invalidEmail": "Invalid email address",
+    "passwordRequired": "Password is required",
+    "passwordMin": "Password must be at least 8 characters",
+    "passwordMismatch": "Passwords do not match"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "intro": "Welcome to your dashboard",
+    "productsTitle": "Products",
+    "productsIntro": "Manage your products",
+    "ordersTitle": "Orders",
+    "ordersIntro": "Manage incoming and outgoing orders",
+    "inventoryTitle": "Inventory",
+    "inventoryIntro": "Track and manage inventory",
+    "profileTitle": "Profile",
+    "profileIntro": "Manage your account information"
+  },
+  "nav": {
+    "appName": "TreadX",
+    "dashboard": "Dashboard",
+    "products": "Products",
+    "orders": "Orders",
+    "inventory": "Inventory",
+    "profile": "Profile",
+    "role": "Role:",
+    "logout": "Logout"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "errors": {
+    "forbidden": "Forbidden",
+    "forbiddenMessage": "You do not have permission to access this page.",
+    "backToDashboard": "Back to Dashboard"
   },
   "common": {
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "formError": "An error occurred, please try again."
   }
 }

@@ -3,10 +3,102 @@
     "login": "تسجيل الدخول",
     "email": "البريد الإلكتروني",
     "password": "كلمة المرور",
-    "welcome": "مرحباً بك في بوابة الموردين"
+    "welcomeBack": "مرحباً بعودتك",
+    "signInSubtitle": "سجّل الدخول إلى حساب المورد",
+    "emailAddress": "البريد الإلكتروني",
+    "passwordLabel": "كلمة المرور",
+    "forgotPassword": {
+      "title": "هل نسيت كلمة المرور؟",
+      "subtitle": "أدخل بريدك الإلكتروني المسجّل لاستلام رمز التحقق.",
+      "backToSignIn": "العودة لتسجيل الدخول",
+      "sendCode": "إرسال الرمز",
+      "emailPlaceholder": "أدخل بريدك الإلكتروني",
+      "codeSent": "تم إرسال رمز التحقق إلى بريدك الإلكتروني.",
+      "resetTitle": "إعادة تعيين كلمة المرور",
+      "resetSubtitle": "أدخل الرمز المرسل إلى {email} وكلمة المرور الجديدة.",
+      "codeLabel": "رمز التحقق",
+      "codePlaceholder": "أدخل رمز التحقق",
+      "codeRequired": "رمز التحقق مطلوب",
+      "newPassword": "كلمة المرور الجديدة",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "resetButton": "إعادة تعيين كلمة المرور",
+      "resetSuccess": "تم إعادة تعيين كلمة المرور بنجاح!",
+      "rememberPassword": "تذكرت كلمة المرور؟",
+      "enterVerificationCode": "أدخل رمز التحقق",
+      "weSentCodeTo": "أرسلنا رمزًا من 6 أرقام إلى",
+      "checkInbox": "تحقق من بريدك الوارد وأدخل الرمز أدناه.",
+      "verifyCode": "التحقق من الرمز",
+      "didntReceive": "لم تستلم الرمز؟",
+      "resend": "إعادة الإرسال",
+      "codeExpiresIn": "ينتهي الرمز خلال {time}",
+      "back": "رجوع"
+    },
+    "signIn": "تسجيل الدخول",
+    "noAccount": "ليس لديك حساب؟",
+    "createAccount": "إنشاء حساب",
+    "registerSuccess": "تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.",
+    "passwordResetSuccess": "تم إعادة تعيين كلمة المرور بنجاح! يمكنك تسجيل الدخول الآن.",
+    "haveAccount": "لديك حساب بالفعل؟",
+    "noAccess": "تحتاج صلاحية دخول؟",
+    "supportContact": "تواصل مع دعم TreadX",
+    "securedBy": "محمي بواسطة TreadX Enterprise",
+    "vendorDashboard": "لوحة تحكم الموردين",
+    "seasonalPlatform": "منصة إدارة الإطارات الموسمية",
+    "enterpriseEdition": "نسخة المؤسسات v2.1",
+    "logoAlt": "شعار TreadX",
+    "brandPanelAlt": "خلفية زخرفية بريشة"
+  },
+  "register": {
+    "title": "إنشاء حساب جديد",
+    "description": "أدخل بياناتك لإنشاء حساب جديد",
+    "fullName": "الاسم الكامل",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "submit": "إنشاء الحساب",
+    "submitting": "جاري الإنشاء..."
+  },
+  "validation": {
+    "nameRequired": "الاسم مطلوب",
+    "emailRequired": "البريد الإلكتروني مطلوب",
+    "invalidEmail": "البريد الإلكتروني غير صالح",
+    "passwordRequired": "كلمة المرور مطلوبة",
+    "passwordMin": "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
+    "passwordMismatch": "كلمتا المرور غير متطابقتين"
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "intro": "مرحباً بك في لوحة التحكم الخاصة بك",
+    "productsTitle": "المنتجات",
+    "productsIntro": "إدارة المنتجات الخاصة بك",
+    "ordersTitle": "الطلبات",
+    "ordersIntro": "إدارة الطلبات الواردة والصادرة",
+    "inventoryTitle": "المخزون",
+    "inventoryIntro": "إدارة ومتابعة المخزون",
+    "profileTitle": "الملف الشخصي",
+    "profileIntro": "إدارة معلومات حسابك الشخصي"
+  },
+  "nav": {
+    "appName": "TreadX",
+    "dashboard": "لوحة التحكم",
+    "products": "المنتجات",
+    "orders": "الطلبات",
+    "inventory": "المخزون",
+    "profile": "الملف الشخصي",
+    "role": "الدور:",
+    "logout": "تسجيل الخروج"
+  },
+  "theme": {
+    "light": "فاتح",
+    "dark": "داكن",
+    "system": "تلقائي"
+  },
+  "errors": {
+    "forbidden": "غير مصرح",
+    "forbiddenMessage": "ليس لديك صلاحية للوصول إلى هذه الصفحة.",
+    "backToDashboard": "العودة للوحة التحكم"
   },
   "common": {
     "save": "حفظ",
-    "cancel": "إلغاء"
+    "cancel": "إلغاء",
+    "formError": "حدث خطأ، يرجى المحاولة مرة أخرى."
   }
 }
