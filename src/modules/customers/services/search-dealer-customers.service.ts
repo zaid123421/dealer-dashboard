@@ -1,0 +1,55 @@
+import axios from "axios";
+import api from "@/lib/api";
+import {
+  dealerCustomerPageSchema,
+  type DealerCustomerPage,
+  type SearchDealerCustomersParams,
+} from "@/modules/customers/schemas/dealer-customer-page.schema";
+
+function unwrapPayload(data: unknown): Record<string, unknown> {
+  if (!data || typeof data !== "object") return {};
+  const root = data as Record<string, unknown>;
+  const inner = root.data;
+  if (inner && typeof inner === "object" && !Array.isArray(inner)) {
+    return inner as Record<string, unknown>;
+  }
+  return root;
+}
+
+function messageFromResponseData(data: unknown): string | undefined {
+  if (!data || typeof data !== "object") return undefined;
+  const rec = data as Record<string, unknown>;
+  if (typeof rec.message === "string" && rec.message.trim()) return rec.message;
+  return undefined;
+}
+
+export async function searchDealerCustomersService(
+  dealerId: number,
+  params: SearchDealerCustomersParams,
+): Promise<DealerCustomerPage> {
+  try {
+    const { data } = await api.get<unknown>(
+      `/v1/dealerCustomers/dealer/${dealerId}/search`,
+      {
+        params: {
+          searchTerm: params.searchTerm,
+          page: params.page,
+          size: params.size,
+          sortBy: params.sortBy,
+          direction: params.direction,
+          includeArchived: params.includeArchived,
+          ...(params.startsWith !== false ? { startsWith: true } : {}),
+        },
+      },
+    );
+    const raw = unwrapPayload(data);
+    return dealerCustomerPageSchema.parse(raw);
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      const msg =
+        messageFromResponseData(err.response?.data) ?? err.message ?? "Request failed";
+      throw new Error(msg);
+    }
+    throw err;
+  }
+}

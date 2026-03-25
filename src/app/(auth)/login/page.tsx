@@ -37,7 +37,7 @@ export default function LoginPage() {
     if (!isRegisteredSuccess && !isActivatedSuccess) return;
     if (isRegisteredSuccess) setShowRegisteredMessage(true);
     if (isActivatedSuccess) setShowActivatedMessage(true);
-    router.replace("/auth", { scroll: false });
+    router.replace(ROUTES.AUTH.LOGIN, { scroll: false });
   }, [isRegisteredSuccess, isActivatedSuccess, router]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {

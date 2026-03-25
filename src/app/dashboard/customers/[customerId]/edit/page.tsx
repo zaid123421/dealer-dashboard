@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
+import { useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
-import { User, Mail, ChevronRight } from "lucide-react";
+import { User, Mail, ChevronRight, MapPin } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,122 +21,109 @@ import {
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils";
+import {
+  createDealerCustomerFormFieldsSchema,
+  mapDealerCustomerFormToRequest,
+  type CreateDealerCustomerFormValues,
+} from "@/modules/customers/schemas/create-dealer-customer.schema";
+import { dealerCustomerToFormValues } from "@/modules/customers/lib/customer-form-mapper";
+import { useDealerCustomer } from "@/modules/customers/hooks/use-dealer-customer";
+import { useUpdateDealerCustomer } from "@/modules/customers/hooks/use-update-dealer-customer";
 
 const COUNTRY_CODES = [
   { value: "+966", label: "+966" },
   { value: "+971", label: "+971" },
   { value: "+965", label: "+965" },
+  { value: "+963", label: "+963" },
   { value: "+1", label: "+1" },
   { value: "+44", label: "+44" },
 ] as const;
 
-const MOCK_CUSTOMERS: Record<
-  string,
-  { name: string; email: string; phone: string; notes?: string }
-> = {
-  "1": {
-    name: "Ahmed Rashid",
-    email: "ahmed.r@example.com",
-    phone: "+966 50 123 4567",
-    notes: "",
-  },
-  "2": {
-    name: "Sarah Al-Mutairi",
-    email: "sarah.m@example.com",
-    phone: "+966 55 987 6543",
-    notes: "",
-  },
-  "3": {
-    name: "Mohammed Khalid",
-    email: "m.khalid@example.com",
-    phone: "+966 54 456 7890",
-    notes: "",
-  },
-  "4": {
-    name: "Fatima Hassan",
-    email: "fatima.h@example.com",
-    phone: "+966 53 321 0987",
-    notes: "",
-  },
-  "5": {
-    name: "Omar Al-Sayed",
-    email: "omar.s@example.com",
-    phone: "+966 56 654 3210",
-    notes: "",
+const emptyFormValues: CreateDealerCustomerFormValues = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  countryCode: "+966",
+  phoneLocal: "",
+  address: {
+    cityId: "",
+    countryId: "",
+    stateId: "",
+    streetName: "",
+    streetNumber: "",
+    postalCode: "",
+    unitNumber: "",
+    specialInstructions: "",
   },
 };
-
-function parseCustomerData(customer: { name: string; email: string; phone: string }) {
-  const nameParts = customer.name.trim().split(/\s+/);
-  const firstName = nameParts[0] ?? "";
-  const lastName = nameParts.slice(1).join(" ") ?? "";
-  const phoneMatch = customer.phone.match(/^(\+\d+)\s*(.*)$/);
-  const countryCode = phoneMatch?.[1] ?? "+966";
-  const phoneNumber = phoneMatch?.[2]?.trim() ?? customer.phone;
-  return { firstName, lastName, countryCode, phoneNumber };
-}
 
 export default function EditCustomerPage() {
   const t = useTranslations("customers");
   const tCommon = useTranslations("common");
   const router = useRouter();
   const params = useParams();
-  const customerId = params.customerId as string;
-  const customer = MOCK_CUSTOMERS[customerId];
+  const customerIdParam = params.customerId as string | undefined;
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [countryCode, setCountryCode] = useState("+966");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [email, setEmail] = useState("");
-  const [notes, setNotes] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: customer, isPending, isError, error } = useDealerCustomer(customerIdParam);
+  const updateCustomer = useUpdateDealerCustomer();
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CreateDealerCustomerFormValues>({
+    resolver: zodResolver(createDealerCustomerFormFieldsSchema),
+    defaultValues: emptyFormValues,
+  });
 
   useEffect(() => {
     if (customer) {
-      const parsed = parseCustomerData(customer);
-      setFirstName(parsed.firstName);
-      setLastName(parsed.lastName);
-      setCountryCode(parsed.countryCode);
-      setPhoneNumber(parsed.phoneNumber);
-      setEmail(customer.email);
-      setNotes(customer.notes ?? "");
+      reset(dealerCustomerToFormValues(customer));
     }
-    setIsLoading(false);
-  }, [customer]);
+  }, [customer, reset]);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setIsSubmitting(true);
-    // TODO: API integration
-    setTimeout(() => {
-      setIsSubmitting(false);
-      router.push(ROUTES.DASHBOARD.CUSTOMERS);
-    }, 500);
+  function onSubmit(data: CreateDealerCustomerFormValues) {
+    console.log("[edit customer] form (raw RHF)", data);
+    const idNum = customerIdParam != null ? Number(customerIdParam) : NaN;
+    if (!Number.isFinite(idNum) || customer == null) return;
+    const payload = mapDealerCustomerFormToRequest(data);
+    console.log("[edit customer] body for PUT /v1/dealerCustomers/:id", payload);
+    updateCustomer.mutate(
+      { customerId: idNum, payload },
+      {
+        onSuccess: () => {
+          toast.success(t("customerUpdatedSuccess"));
+          router.push(ROUTES.DASHBOARD.CUSTOMERS);
+        },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : t("updateCustomerError"));
+        },
+      },
+    );
   }
 
-  if (isLoading) {
+  const addrErr = errors.address;
+
+  if (isPending) {
     return (
       <div className="flex min-h-[200px] items-center justify-center">
-        <div className="text-body-md text-muted-foreground">
-          {t("loading")}
-        </div>
+        <div className="text-body-md text-muted-foreground">{t("loading")}</div>
       </div>
     );
   }
 
-  if (!customer) {
+  if (isError || !customer) {
     return (
       <div className="flex flex-col gap-4">
         <p className="text-body-md text-muted-foreground">
-          {t("customerNotFound")}
+          {error instanceof Error ? error.message : t("customerNotFound")}
         </p>
         <Button asChild variant="outline">
           <Link href={ROUTES.DASHBOARD.CUSTOMERS}>{tCommon("cancel")}</Link>
@@ -142,15 +132,11 @@ export default function EditCustomerPage() {
     );
   }
 
-  const displayName = customer.name;
+  const breadcrumbName = [customer.firstName, customer.lastName].filter(Boolean).join(" ").trim();
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Breadcrumbs */}
-      <nav
-        aria-label="Breadcrumb"
-        className="flex min-w-0 items-center gap-2 overflow-hidden text-sm"
-      >
+      <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 overflow-hidden text-sm">
         <Link
           href={ROUTES.DASHBOARD.CUSTOMERS}
           className="min-w-0 truncate text-muted-foreground transition-colors hover:text-foreground"
@@ -158,27 +144,17 @@ export default function EditCustomerPage() {
           {t("title")}
         </Link>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-        <span className="min-w-0 truncate text-muted-foreground">
-          {displayName}
-        </span>
+        <span className="min-w-0 truncate text-muted-foreground">{breadcrumbName || customer.email}</span>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-        <span className="shrink-0 font-medium text-foreground">
-          {t("breadcrumbEdit")}
-        </span>
+        <span className="shrink-0 font-medium text-foreground">{t("breadcrumbEdit")}</span>
       </nav>
 
-      {/* Header */}
       <div>
-        <h1 className="text-headline-sm font-bold text-foreground">
-          {t("editCustomer")}
-        </h1>
-        <p className="mt-2 text-body-md text-muted-foreground">
-          {t("editCustomerSubtitle")}
-        </p>
+        <h1 className="text-headline-sm font-bold text-foreground">{t("editCustomer")}</h1>
+        <p className="mt-2 text-body-md text-muted-foreground">{t("editCustomerSubtitle")}</p>
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-foreground">
@@ -192,113 +168,220 @@ export default function EditCustomerPage() {
                 <Label htmlFor="firstName">{t("firstName")}</Label>
                 <Input
                   id="firstName"
-                  name="firstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
                   placeholder={t("firstNamePlaceholder")}
-                  required
+                  aria-invalid={!!errors.firstName}
+                  {...register("firstName")}
                 />
+                {errors.firstName ? (
+                  <p className="text-sm text-destructive">{errors.firstName.message}</p>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">{t("lastName")}</Label>
                 <Input
                   id="lastName"
-                  name="lastName"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
                   placeholder={t("lastNamePlaceholder")}
-                  required
+                  aria-invalid={!!errors.lastName}
+                  {...register("lastName")}
                 />
+                {errors.lastName ? (
+                  <p className="text-sm text-destructive">{errors.lastName.message}</p>
+                ) : null}
               </div>
             </div>
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="min-w-0 space-y-2">
-                <Label htmlFor="phone">{t("phoneNumber")}</Label>
+                <Label htmlFor="phoneLocal">{t("phoneNumber")}</Label>
                 <div className="flex min-w-0 overflow-hidden rounded-md border border-input bg-card shadow-xs">
-                  <Select value={countryCode} onValueChange={setCountryCode}>
-                    <SelectTrigger className="h-10 w-[90px] shrink-0 border-0 border-e border-input rounded-none bg-surface-container/80 focus:ring-0 [&>span]:text-primary-dark">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRY_CODES.map(({ value, label }) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder={t("phonePlaceholder")}
-                    className={cn(
-                      "h-10 min-w-0 flex-1 border-0 bg-transparent px-3 py-2 text-body-md outline-none",
-                      "placeholder:text-primary-dark/70",
-                      "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-dark/30"
+                  <Controller
+                    name="countryCode"
+                    control={control}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger className="h-10 w-[90px] shrink-0 rounded-none border-0 border-e border-input bg-surface-container/80 focus:ring-0 [&>span]:text-primary-dark">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COUNTRY_CODES.map(({ value, label }) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     )}
                   />
+                  <Input
+                    id="phoneLocal"
+                    type="tel"
+                    placeholder={t("phonePlaceholder")}
+                    className={cn(
+                      "h-10 min-w-0 flex-1 rounded-none border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
+                      "placeholder:text-primary-dark/70",
+                    )}
+                    aria-invalid={!!errors.phoneLocal}
+                    {...register("phoneLocal")}
+                  />
                 </div>
+                {errors.phoneLocal ? (
+                  <p className="text-sm text-destructive">{errors.phoneLocal.message}</p>
+                ) : null}
+                {errors.countryCode ? (
+                  <p className="text-sm text-destructive">{errors.countryCode.message}</p>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">{t("emailAddress")}</Label>
                 <div className="relative">
-                  <Mail className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Mail className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="email"
-                    name="email"
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
                     placeholder={t("emailPlaceholder")}
                     className="ps-9"
-                    required
+                    aria-invalid={!!errors.email}
+                    {...register("email")}
                   />
                 </div>
+                {errors.email ? (
+                  <p className="text-sm text-destructive">{errors.email.message}</p>
+                ) : null}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <MapPin className="size-5 text-primary-dark" />
+              {t("addressInformation")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="address.countryId">{t("countryId")}</Label>
+                <Input
+                  id="address.countryId"
+                  inputMode="numeric"
+                  placeholder={t("idPlaceholder")}
+                  aria-invalid={!!addrErr?.countryId}
+                  {...register("address.countryId")}
+                />
+                {addrErr?.countryId ? (
+                  <p className="text-sm text-destructive">{addrErr.countryId.message}</p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address.stateId">{t("stateId")}</Label>
+                <Input
+                  id="address.stateId"
+                  inputMode="numeric"
+                  placeholder={t("idPlaceholder")}
+                  aria-invalid={!!addrErr?.stateId}
+                  {...register("address.stateId")}
+                />
+                {addrErr?.stateId ? (
+                  <p className="text-sm text-destructive">{addrErr.stateId.message}</p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address.cityId">{t("cityId")}</Label>
+                <Input
+                  id="address.cityId"
+                  inputMode="numeric"
+                  placeholder={t("idPlaceholder")}
+                  aria-invalid={!!addrErr?.cityId}
+                  {...register("address.cityId")}
+                />
+                {addrErr?.cityId ? (
+                  <p className="text-sm text-destructive">{addrErr.cityId.message}</p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="address.streetName">{t("streetName")}</Label>
+                <Input
+                  id="address.streetName"
+                  placeholder={t("streetNamePlaceholder")}
+                  aria-invalid={!!addrErr?.streetName}
+                  {...register("address.streetName")}
+                />
+                {addrErr?.streetName ? (
+                  <p className="text-sm text-destructive">{addrErr.streetName.message}</p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address.streetNumber">{t("streetNumber")}</Label>
+                <Input
+                  id="address.streetNumber"
+                  placeholder={t("streetNumberPlaceholder")}
+                  aria-invalid={!!addrErr?.streetNumber}
+                  {...register("address.streetNumber")}
+                />
+                {addrErr?.streetNumber ? (
+                  <p className="text-sm text-destructive">{addrErr.streetNumber.message}</p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="address.postalCode">{t("postalCode")}</Label>
+                <Input
+                  id="address.postalCode"
+                  placeholder={t("postalCodePlaceholder")}
+                  aria-invalid={!!addrErr?.postalCode}
+                  {...register("address.postalCode")}
+                />
+                {addrErr?.postalCode ? (
+                  <p className="text-sm text-destructive">{addrErr.postalCode.message}</p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address.unitNumber">{t("unitNumber")}</Label>
+                <Input
+                  id="address.unitNumber"
+                  placeholder={t("unitNumberPlaceholder")}
+                  {...register("address.unitNumber")}
+                />
               </div>
             </div>
 
             <div className="mt-4 space-y-2">
-              <Label htmlFor="notes">{t("additionalNotes")}</Label>
+              <Label htmlFor="address.specialInstructions">{t("specialInstructions")}</Label>
               <textarea
-                id="notes"
-                name="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={4}
-                placeholder={t("notesPlaceholder")}
+                id="address.specialInstructions"
+                rows={3}
+                placeholder={t("specialInstructionsPlaceholder")}
                 className={cn(
                   "w-full rounded-md border border-input bg-card px-3 py-2 text-body-md shadow-xs outline-none",
                   "placeholder:text-muted-foreground",
                   "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-                  "min-h-[100px] resize-y"
+                  "min-h-[80px] resize-y",
                 )}
+                {...register("address.specialInstructions")}
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col-reverse justify-end gap-2 border-t pt-6 sm:flex-row">
-            <Button
-              type="button"
-              variant="outline"
-              asChild
-              className="w-full sm:w-auto"
-            >
-              <Link href={ROUTES.DASHBOARD.CUSTOMERS}>
-                {tCommon("cancel")}
-              </Link>
-            </Button>
-            <Button
-              type="submit"
-              className="w-full bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 sm:w-auto"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "..." : t("saveCustomer")}
-            </Button>
-          </CardFooter>
         </Card>
+
+        <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+          <Button type="button" variant="outline" asChild className="w-full sm:w-auto">
+            <Link href={ROUTES.DASHBOARD.CUSTOMERS}>{tCommon("cancel")}</Link>
+          </Button>
+          <Button
+            type="submit"
+            className="w-full bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 sm:w-auto"
+            disabled={updateCustomer.isPending}
+          >
+            {updateCustomer.isPending ? "…" : t("saveCustomer")}
+          </Button>
+        </div>
       </form>
     </div>
   );

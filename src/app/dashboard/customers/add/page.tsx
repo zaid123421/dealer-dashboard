@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
-import { User, Mail, ChevronRight } from "lucide-react";
+import { User, Mail, ChevronRight, MapPin } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,41 +20,78 @@ import {
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils";
+import {
+  createDealerCustomerFormFieldsSchema,
+  mapDealerCustomerFormToRequest,
+  type CreateDealerCustomerFormValues,
+} from "@/modules/customers/schemas/create-dealer-customer.schema";
+import { useCreateDealerCustomer } from "@/modules/customers/hooks/use-create-dealer-customer";
 
 const COUNTRY_CODES = [
   { value: "+966", label: "+966" },
   { value: "+971", label: "+971" },
   { value: "+965", label: "+965" },
+  { value: "+963", label: "+963" },
   { value: "+1", label: "+1" },
   { value: "+44", label: "+44" },
 ] as const;
+
+const defaultFormValues: CreateDealerCustomerFormValues = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  countryCode: "+966",
+  phoneLocal: "",
+  address: {
+    cityId: "",
+    countryId: "",
+    stateId: "",
+    streetName: "",
+    streetNumber: "",
+    postalCode: "",
+    unitNumber: "",
+    specialInstructions: "",
+  },
+};
 
 export default function AddCustomerPage() {
   const t = useTranslations("customers");
   const tCommon = useTranslations("common");
   const router = useRouter();
-  const [countryCode, setCountryCode] = useState("+966");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const createCustomer = useCreateDealerCustomer();
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setIsSubmitting(true);
-    // TODO: API integration
-    setTimeout(() => {
-      setIsSubmitting(false);
-      router.push(ROUTES.DASHBOARD.CUSTOMERS);
-    }, 500);
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<CreateDealerCustomerFormValues>({
+    resolver: zodResolver(createDealerCustomerFormFieldsSchema),
+    defaultValues: defaultFormValues,
+  });
+
+  function onSubmit(data: CreateDealerCustomerFormValues) {
+    createCustomer.mutate(mapDealerCustomerFormToRequest(data), {
+      onSuccess: () => {
+        toast.success(t("customerCreatedSuccess"));
+        router.push(ROUTES.DASHBOARD.CUSTOMERS);
+      },
+      onError: (err) => {
+        const msg = err instanceof Error ? err.message : t("createCustomerError");
+        toast.error(msg || t("createCustomerError"));
+      },
+    });
   }
+
+  const addrErr = errors.address;
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Breadcrumbs */}
       <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 overflow-hidden text-sm">
         <Link
           href={ROUTES.DASHBOARD.CUSTOMERS}
@@ -61,23 +100,15 @@ export default function AddCustomerPage() {
           {t("title")}
         </Link>
         <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
-        <span className="shrink-0 font-medium text-foreground">
-          {t("breadcrumbAdd")}
-        </span>
+        <span className="shrink-0 font-medium text-foreground">{t("breadcrumbAdd")}</span>
       </nav>
 
-      {/* Header */}
       <div>
-        <h1 className="text-headline-sm font-bold text-foreground">
-          {t("addNewCustomer")}
-        </h1>
-        <p className="mt-2 text-body-md text-muted-foreground">
-          {t("addCustomerSubtitle")}
-        </p>
+        <h1 className="text-headline-sm font-bold text-foreground">{t("addNewCustomer")}</h1>
+        <p className="mt-2 text-body-md text-muted-foreground">{t("addCustomerSubtitle")}</p>
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-foreground">
@@ -91,103 +122,220 @@ export default function AddCustomerPage() {
                 <Label htmlFor="firstName">{t("firstName")}</Label>
                 <Input
                   id="firstName"
-                  name="firstName"
                   placeholder={t("firstNamePlaceholder")}
-                  required
+                  aria-invalid={!!errors.firstName}
+                  {...register("firstName")}
                 />
+                {errors.firstName ? (
+                  <p className="text-sm text-destructive">{errors.firstName.message}</p>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">{t("lastName")}</Label>
                 <Input
                   id="lastName"
-                  name="lastName"
                   placeholder={t("lastNamePlaceholder")}
-                  required
+                  aria-invalid={!!errors.lastName}
+                  {...register("lastName")}
                 />
+                {errors.lastName ? (
+                  <p className="text-sm text-destructive">{errors.lastName.message}</p>
+                ) : null}
               </div>
             </div>
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="min-w-0 space-y-2">
-                <Label htmlFor="phone">{t("phoneNumber")}</Label>
+                <Label htmlFor="phoneLocal">{t("phoneNumber")}</Label>
                 <div className="flex min-w-0 overflow-hidden rounded-md border border-input bg-card shadow-xs">
-                  <Select value={countryCode} onValueChange={setCountryCode}>
-                    <SelectTrigger className="h-10 w-[90px] shrink-0 border-0 border-e border-input rounded-none bg-surface-container/80 focus:ring-0 [&>span]:text-primary-dark">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRY_CODES.map(({ value, label }) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <input
-                    id="phone"
-                    name="phone"
+                  <Controller
+                    name="countryCode"
+                    control={control}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger className="h-10 w-[90px] shrink-0 rounded-none border-0 border-e border-input bg-surface-container/80 focus:ring-0 [&>span]:text-primary-dark">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COUNTRY_CODES.map(({ value, label }) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  <Input
+                    id="phoneLocal"
                     type="tel"
                     placeholder={t("phonePlaceholder")}
                     className={cn(
-                      "h-10 min-w-0 flex-1 border-0 bg-transparent px-3 py-2 text-body-md outline-none",
+                      "h-10 min-w-0 flex-1 rounded-none border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
                       "placeholder:text-primary-dark/70",
-                      "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-dark/30"
                     )}
+                    aria-invalid={!!errors.phoneLocal}
+                    {...register("phoneLocal")}
                   />
                 </div>
+                {errors.phoneLocal ? (
+                  <p className="text-sm text-destructive">{errors.phoneLocal.message}</p>
+                ) : null}
+                {errors.countryCode ? (
+                  <p className="text-sm text-destructive">{errors.countryCode.message}</p>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">{t("emailAddress")}</Label>
                 <div className="relative">
-                  <Mail className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Mail className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="email"
-                    name="email"
                     type="email"
                     placeholder={t("emailPlaceholder")}
                     className="ps-9"
-                    required
+                    aria-invalid={!!errors.email}
+                    {...register("email")}
                   />
                 </div>
+                {errors.email ? (
+                  <p className="text-sm text-destructive">{errors.email.message}</p>
+                ) : null}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <MapPin className="size-5 text-primary-dark" />
+              {t("addressInformation")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="address.countryId">{t("countryId")}</Label>
+                <Input
+                  id="address.countryId"
+                  inputMode="numeric"
+                  placeholder={t("idPlaceholder")}
+                  aria-invalid={!!addrErr?.countryId}
+                  {...register("address.countryId")}
+                />
+                {addrErr?.countryId ? (
+                  <p className="text-sm text-destructive">{addrErr.countryId.message}</p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address.stateId">{t("stateId")}</Label>
+                <Input
+                  id="address.stateId"
+                  inputMode="numeric"
+                  placeholder={t("idPlaceholder")}
+                  aria-invalid={!!addrErr?.stateId}
+                  {...register("address.stateId")}
+                />
+                {addrErr?.stateId ? (
+                  <p className="text-sm text-destructive">{addrErr.stateId.message}</p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address.cityId">{t("cityId")}</Label>
+                <Input
+                  id="address.cityId"
+                  inputMode="numeric"
+                  placeholder={t("idPlaceholder")}
+                  aria-invalid={!!addrErr?.cityId}
+                  {...register("address.cityId")}
+                />
+                {addrErr?.cityId ? (
+                  <p className="text-sm text-destructive">{addrErr.cityId.message}</p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="address.streetName">{t("streetName")}</Label>
+                <Input
+                  id="address.streetName"
+                  placeholder={t("streetNamePlaceholder")}
+                  aria-invalid={!!addrErr?.streetName}
+                  {...register("address.streetName")}
+                />
+                {addrErr?.streetName ? (
+                  <p className="text-sm text-destructive">{addrErr.streetName.message}</p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address.streetNumber">{t("streetNumber")}</Label>
+                <Input
+                  id="address.streetNumber"
+                  placeholder={t("streetNumberPlaceholder")}
+                  aria-invalid={!!addrErr?.streetNumber}
+                  {...register("address.streetNumber")}
+                />
+                {addrErr?.streetNumber ? (
+                  <p className="text-sm text-destructive">{addrErr.streetNumber.message}</p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="address.postalCode">{t("postalCode")}</Label>
+                <Input
+                  id="address.postalCode"
+                  placeholder={t("postalCodePlaceholder")}
+                  aria-invalid={!!addrErr?.postalCode}
+                  {...register("address.postalCode")}
+                />
+                {addrErr?.postalCode ? (
+                  <p className="text-sm text-destructive">{addrErr.postalCode.message}</p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address.unitNumber">{t("unitNumber")}</Label>
+                <Input
+                  id="address.unitNumber"
+                  placeholder={t("unitNumberPlaceholder")}
+                  {...register("address.unitNumber")}
+                />
               </div>
             </div>
 
             <div className="mt-4 space-y-2">
-              <Label htmlFor="notes">{t("additionalNotes")}</Label>
+              <Label htmlFor="address.specialInstructions">{t("specialInstructions")}</Label>
               <textarea
-                id="notes"
-                name="notes"
-                rows={4}
-                placeholder={t("notesPlaceholder")}
+                id="address.specialInstructions"
+                rows={3}
+                placeholder={t("specialInstructionsPlaceholder")}
                 className={cn(
                   "w-full rounded-md border border-input bg-card px-3 py-2 text-body-md shadow-xs outline-none",
                   "placeholder:text-muted-foreground",
                   "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-                  "min-h-[100px] resize-y"
+                  "min-h-[80px] resize-y",
                 )}
+                {...register("address.specialInstructions")}
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col-reverse justify-end gap-2 border-t pt-6 sm:flex-row">
-            <Button
-              type="button"
-              variant="outline"
-              asChild
-              className="w-full sm:w-auto"
-            >
-              <Link href={ROUTES.DASHBOARD.CUSTOMERS}>
-                {tCommon("cancel")}
-              </Link>
-            </Button>
-            <Button
-              type="submit"
-              className="w-full bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 sm:w-auto"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "..." : t("saveCustomer")}
-            </Button>
-          </CardFooter>
         </Card>
+
+        <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+          <Button type="button" variant="outline" asChild className="w-full sm:w-auto">
+            <Link href={ROUTES.DASHBOARD.CUSTOMERS}>{tCommon("cancel")}</Link>
+          </Button>
+          <Button
+            type="submit"
+            className="w-full bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 sm:w-auto"
+            disabled={createCustomer.isPending}
+          >
+            {createCustomer.isPending ? "…" : t("saveCustomer")}
+          </Button>
+        </div>
       </form>
     </div>
   );

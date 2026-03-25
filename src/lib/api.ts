@@ -67,7 +67,9 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const originalRequest = error.config as RetryableRequestConfig | undefined;
 
-    if (status !== 401 || !originalRequest) {
+    /** 401 = غير مصادق عادةً؛ بعض الـ backends ترجع 403 عند انتهاء/رفض الـ JWT */
+    const shouldTryRefresh = status === 401 || status === 403;
+    if (!shouldTryRefresh || !originalRequest) {
       return Promise.reject(error);
     }
 

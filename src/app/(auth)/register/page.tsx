@@ -17,6 +17,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { registerUseCase } from "@/application/auth/register.use-case";
+import { ROUTES } from "@/constants/routes";
 
 const MIN_PASSWORD_LENGTH = 8;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -57,7 +58,7 @@ export default function RegisterPage() {
     setErrors({});
     try {
       await registerUseCase({ name: name.trim(), email: email.trim(), password });
-      router.push("/auth?registered=1");
+      router.push(`${ROUTES.AUTH.LOGIN}?registered=1`);
       router.refresh();
     } catch {
       setErrors({ form: tCommon("formError") });
@@ -192,7 +193,7 @@ export default function RegisterPage() {
             <p className="text-center text-sm text-muted-foreground">
               {tAuth("haveAccount")}{" "}
               <Link
-                href="/auth"
+                href={ROUTES.AUTH.LOGIN}
                 className="font-medium text-primary hover:underline"
               >
                 {tAuth("login")}
