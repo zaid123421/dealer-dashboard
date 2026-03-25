@@ -4,7 +4,7 @@ import { User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ThemeSwitcher } from "./theme-switcher";
 import { LocaleSwitcher } from "./locale-switcher";
-import { useRole } from "@/shared/hooks/use-can-access";
+import { useAuthUser, useRole } from "@/shared/hooks/use-can-access";
 import { ROLES } from "@/shared/config/roles";
 import type { Role } from "@/shared/config/roles";
 
@@ -26,8 +26,13 @@ export function SettingsContent() {
   const t = useTranslations("settings");
   const tNav = useTranslations("nav");
   const role = useRole();
+  const user = useAuthUser();
   const roleLabel = getRoleLabel(role, tNav);
-  const accountName = tNav("defaultAccountName");
+  const accountName = (() => {
+    if (!user) return tNav("defaultAccountName");
+    const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+    return name || user.email || tNav("defaultAccountName");
+  })();
 
   return (
     <div className="space-y-6 break-words">
@@ -55,6 +60,17 @@ export function SettingsContent() {
               <p className="text-title-md font-semibold text-foreground">
                 {accountName}
               </p>
+              {user?.email ? (
+                <p className="mt-1 truncate text-body-sm text-muted-foreground">{user.email}</p>
+              ) : null}
+              {user?.tenantName ? (
+                <p className="mt-0.5 truncate text-body-sm text-muted-foreground">
+                  {user.tenantName}
+                  {user.backendRole ? (
+                    <span className="text-muted-foreground/80"> · {user.backendRole}</span>
+                  ) : null}
+                </p>
+              ) : null}
               <span className="mt-2 inline-block rounded-full bg-primary-dark px-2.5 py-0.5 text-label-sm font-medium text-primary-onContainer">
                 {tNav("professionalPlan")}
               </span>

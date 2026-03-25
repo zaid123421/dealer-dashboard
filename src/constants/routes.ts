@@ -3,6 +3,7 @@ export const ROUTES = {
     LOGIN: "/auth",
     REGISTER: "/register",
     FORGOT_PASSWORD: "/forgot-password",
+    ACTIVATE_ACCOUNT: "/activate-account",
   },
 
   DASHBOARD: {

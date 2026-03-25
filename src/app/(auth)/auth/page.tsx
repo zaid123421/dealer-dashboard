@@ -3,45 +3,71 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import TokenService from "@/infrastructure/auth/token-service";
 import { useAuthStore } from "@/shared/stores/auth-store";
 import { ROUTES } from "@/constants/routes";
-import { ROLES } from "@/shared/config/roles";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-
-const MOCK_TOKEN = "mock-jwt-token-for-base-project";
-const DEFAULT_LOGIN_ROLE = ROLES.SUPPLIER;
+import { loginUseCase, LoginError } from "@/application/auth/login.use-case";
 
 export default function LoginPage() {
   const t = useTranslations("auth");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const setRole = useAuthStore((s) => s.setRole);
+  const setSession = useAuthStore((s) => s.setSession);
   const [showRegisteredMessage, setShowRegisteredMessage] = useState(false);
+  const [showActivatedMessage, setShowActivatedMessage] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const isRegisteredSuccess = useMemo(
     () => searchParams.get("registered") === "1",
     [searchParams],
   );
+  const isActivatedSuccess = useMemo(
+    () => searchParams.get("activated") === "1",
+    [searchParams],
+  );
+
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitLockRef = useRef(false);
 
   useEffect(() => {
-    if (isRegisteredSuccess) {
-      setShowRegisteredMessage(true);
-      router.replace("/auth", { scroll: false });
-    }
-  }, [isRegisteredSuccess, router]);
+    if (!isRegisteredSuccess && !isActivatedSuccess) return;
+    if (isRegisteredSuccess) setShowRegisteredMessage(true);
+    if (isActivatedSuccess) setShowActivatedMessage(true);
+    router.replace("/auth", { scroll: false });
+  }, [isRegisteredSuccess, isActivatedSuccess, router]);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    TokenService.setRefreshToken(MOCK_TOKEN);
-    TokenService.setRole(DEFAULT_LOGIN_ROLE);
-    setRole(DEFAULT_LOGIN_ROLE);
-    router.push(ROUTES.DASHBOARD.ROOT);
-    router.refresh();
+    if (submitLockRef.current) return;
+    setFormError(null);
+    const form = e.currentTarget;
+    const email = (form.elements.namedItem("email") as HTMLInputElement)?.value?.trim() ?? "";
+    const password = (form.elements.namedItem("password") as HTMLInputElement)?.value ?? "";
+    if (!email || !password) {
+      setFormError(t("loginFailed"));
+      return;
+    }
+
+    submitLockRef.current = true;
+    setIsSubmitting(true);
+    try {
+      const { role, user } = await loginUseCase({ email, password });
+      setSession(role, user);
+      router.push(ROUTES.DASHBOARD.ROOT);
+    } catch (err) {
+      if (err instanceof LoginError) {
+        setFormError(err.message.trim() || t("loginFailed"));
+      } else {
+        setFormError(t("loginFailed"));
+      }
+    } finally {
+      submitLockRef.current = false;
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -101,6 +127,18 @@ export default function LoginPage() {
             {showRegisteredMessage && (
               <div className="mb-6 rounded-lg bg-success-container px-4 py-3 text-center text-label-lg text-success-onContainer">
                 {t("registerSuccess")}
+              </div>
+            )}
+
+            {showActivatedMessage && (
+              <div className="mb-6 rounded-lg bg-success-container px-4 py-3 text-center text-label-lg text-success-onContainer">
+                {t("activateAccountSuccess")}
+              </div>
+            )}
+
+            {formError && (
+              <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-center text-sm text-destructive">
+                {formError}
               </div>
             )}
 
@@ -165,9 +203,10 @@ export default function LoginPage() {
               {/* Sign In button */}
               <button
                 type="submit"
-                className="flex h-13 w-full items-center justify-center rounded-lg bg-primary-dark text-title-md font-bold text-secondary-main shadow-md transition-all hover:bg-primary-dark/90 hover:shadow-lg active:scale-[0.98]"
+                disabled={isSubmitting}
+                className="flex h-13 w-full items-center justify-center rounded-lg bg-primary-dark text-title-md font-bold text-secondary-main shadow-md transition-all hover:bg-primary-dark/90 hover:shadow-lg active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
               >
-                {t("signIn")}
+                {isSubmitting ? t("signingIn") : t("signIn")}
               </button>
             </form>
           </div>

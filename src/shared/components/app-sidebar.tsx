@@ -13,7 +13,6 @@ import {
   Mail,
   FileText,
   Settings,
-  User,
   Menu,
   type LucideIcon,
 } from "lucide-react";
@@ -23,9 +22,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { getAllowedNavEntries } from "@/shared/config/permissions";
-import { useRole } from "@/shared/hooks/use-can-access";
-import TokenService from "@/infrastructure/auth/token-service";
-import { useAuthStore } from "@/shared/stores/auth-store";
+import { useAuthUser, useRole } from "@/shared/hooks/use-can-access";
+import { performClientLogout } from "@/application/auth/logout.use-case";
 import { ROLES } from "@/shared/config/roles";
 import type { Role } from "@/shared/config/roles";
 
@@ -54,7 +52,6 @@ function getRoleLabel(role: Role | null | undefined, t: (key: string) => string)
 }
 
 function SidebarHeader() {
-  const tNav = useTranslations("nav");
   const tAuth = useTranslations("auth");
   return (
     <header className="flex h-16 shrink-0 items-center justify-center border-b border-surface-container px-4">
@@ -83,18 +80,47 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const t = useTranslations("nav");
   const role = useRole();
+  const user = useAuthUser();
   const navEntries = getAllowedNavEntries(role);
-  const clearAuth = useAuthStore((s) => s.clearAuth);
 
-  function handleLogout() {
-    TokenService.removeRefreshToken();
-    clearAuth();
+  async function handleLogout() {
     onNavigate?.();
-    window.location.href = "/auth";
+    await performClientLogout();
   }
 
   const roleLabel = getRoleLabel(role, t);
-  const accountName = t("defaultAccountName");
+  /** دور الـ API (مثلاً DEALER_ADMIN)، وليس tenantType ولا تسمية Dealer في الواجهة */
+  const roleDisplay = user?.backendRole?.trim() ? user.backendRole : roleLabel;
+  const displayName = (() => {
+    if (!user) return t("defaultAccountName");
+    const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+    return name || user.email || t("defaultAccountName");
+  })();
+
+  const avatarInitials = (() => {
+    if (user) {
+      const fi = user.firstName?.trim();
+      const la = user.lastName?.trim();
+      if (fi && la) return `${fi[0]}${la[0]}`.toUpperCase();
+      if (fi && fi.length >= 2) return fi.slice(0, 2).toUpperCase();
+      if (fi) return `${fi[0]}${fi[0]}`.toUpperCase();
+      const em = user.email?.trim();
+      if (em) {
+        const alpha = em.replace(/[^a-zA-Z\u0600-\u06FF]/g, "");
+        if (alpha.length >= 2) return alpha.slice(0, 2).toUpperCase();
+        return em.slice(0, 2).toUpperCase();
+      }
+    }
+    const p = displayName.trim();
+    const words = p.split(/\s+/).filter(Boolean);
+    if (words.length >= 2) {
+      const a = words[0][0];
+      const b = words[words.length - 1][0];
+      return `${a}${b}`.toUpperCase();
+    }
+    if (p.length >= 2) return p.slice(0, 2).toUpperCase();
+    return "?";
+  })();
 
   return (
     <>
@@ -133,15 +159,20 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <div className="mt-auto shrink-0 space-y-3 border-t border-surface-container p-3">
         <div className="rounded-lg border-2 border-gray-400 dark:border-border bg-surface-container/50 p-3">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-dark/20 text-primary-dark">
-              <User className="size-5" />
+            <div
+              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-dark/20 text-xs font-bold uppercase tracking-tight text-primary-dark"
+              aria-hidden
+            >
+              {avatarInitials}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground">{roleLabel}</p>
-              <p className="truncate text-sm font-semibold text-foreground">
-                {accountName}
+            <div className="min-w-0 flex-1 space-y-0.5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
+                {roleDisplay}
               </p>
-              <span className="mt-1 inline-block rounded-full bg-primary-dark px-2 py-0.5 text-[10px] font-medium text-primary-on-container">
+              <p className="truncate text-sm font-semibold text-foreground leading-tight">
+                {displayName}
+              </p>
+              <span className="mt-1 inline-block max-w-full truncate rounded-full bg-primary-dark px-2 py-0.5 text-[10px] font-medium text-primary-on-container">
                 {t("professionalPlan")}
               </span>
             </div>
