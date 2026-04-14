@@ -11,6 +11,8 @@ const ROLE_ROUTE_PREFIXES: Record<Role, string[]> = {
   admin: [
     ROUTES.DASHBOARD.ROOT,
     ROUTES.DASHBOARD.CUSTOMERS,
+    ROUTES.DASHBOARD.STAFF,
+    '/dashboard/staff/',
     ROUTES.DASHBOARD.TIRE_SETS,
     ROUTES.DASHBOARD.ORDERS.LIST,
     '/dashboard/orders/',
@@ -26,6 +28,8 @@ const ROLE_ROUTE_PREFIXES: Record<Role, string[]> = {
   supplier: [
     ROUTES.DASHBOARD.ROOT,
     ROUTES.DASHBOARD.CUSTOMERS,
+    ROUTES.DASHBOARD.STAFF,
+    '/dashboard/staff/',
     ROUTES.DASHBOARD.TIRE_SETS,
     ROUTES.DASHBOARD.ORDERS.LIST,
     '/dashboard/orders/',
@@ -62,6 +66,7 @@ export function canAccess(role: Role | null | undefined, pathname: string): bool
 export const NAV_ENTRIES = [
   { path: ROUTES.DASHBOARD.ROOT, label: 'Overview', key: 'overview' },
   { path: ROUTES.DASHBOARD.CUSTOMERS, label: 'Customers', key: 'customers' },
+  { path: ROUTES.DASHBOARD.STAFF, label: 'Staff', key: 'staff' },
   { path: ROUTES.DASHBOARD.TIRE_SETS, label: 'Tire Sets', key: 'tireSets' },
   { path: ROUTES.DASHBOARD.ORDERS.LIST, label: 'Orders', key: 'orders' },
   { path: ROUTES.DASHBOARD.EMAIL_INBOX, label: 'Email Inbox', key: 'emailInbox' },

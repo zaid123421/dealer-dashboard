@@ -34,6 +34,7 @@ import {
 import { dealerCustomerToFormValues } from "@/modules/customers/lib/customer-form-mapper";
 import { useDealerCustomer } from "@/modules/customers/hooks/use-dealer-customer";
 import { useUpdateDealerCustomer } from "@/modules/customers/hooks/use-update-dealer-customer";
+import { DealerCustomerAddressRegionFields } from "@/modules/customers/components/dealer-customer-address-region-fields";
 
 const COUNTRY_CODES = [
   { value: "+966", label: "+966" },
@@ -75,6 +76,7 @@ export default function EditCustomerPage() {
   const {
     register,
     control,
+    setValue,
     handleSubmit,
     reset,
     formState: { errors },
@@ -260,47 +262,11 @@ export default function EditCustomerPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="address.countryId">{t("countryId")}</Label>
-                <Input
-                  id="address.countryId"
-                  inputMode="numeric"
-                  placeholder={t("idPlaceholder")}
-                  aria-invalid={!!addrErr?.countryId}
-                  {...register("address.countryId")}
-                />
-                {addrErr?.countryId ? (
-                  <p className="text-sm text-destructive">{addrErr.countryId.message}</p>
-                ) : null}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address.stateId">{t("stateId")}</Label>
-                <Input
-                  id="address.stateId"
-                  inputMode="numeric"
-                  placeholder={t("idPlaceholder")}
-                  aria-invalid={!!addrErr?.stateId}
-                  {...register("address.stateId")}
-                />
-                {addrErr?.stateId ? (
-                  <p className="text-sm text-destructive">{addrErr.stateId.message}</p>
-                ) : null}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address.cityId">{t("cityId")}</Label>
-                <Input
-                  id="address.cityId"
-                  inputMode="numeric"
-                  placeholder={t("idPlaceholder")}
-                  aria-invalid={!!addrErr?.cityId}
-                  {...register("address.cityId")}
-                />
-                {addrErr?.cityId ? (
-                  <p className="text-sm text-destructive">{addrErr.cityId.message}</p>
-                ) : null}
-              </div>
-            </div>
+            <DealerCustomerAddressRegionFields
+              control={control}
+              setValue={setValue}
+              errors={addrErr}
+            />
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">

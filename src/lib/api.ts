@@ -1,10 +1,18 @@
-import axios, { type InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosHeaders, type InternalAxiosRequestConfig } from "axios";
 import TokenService from "@/infrastructure/auth/token-service";
 import { ROUTES } from "@/constants/routes";
 import { refreshAccessTokenUseCase } from "@/application/auth/refresh-access-token.use-case";
 import { useAuthStore } from "@/shared/stores/auth-store";
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & { _retry?: boolean };
+
+function attachBearerToken(config: InternalAxiosRequestConfig, rawToken: string) {
+  const token = rawToken.trim();
+  if (!token) return;
+  const headers = AxiosHeaders.from(config.headers ?? {});
+  headers.set("Authorization", `Bearer ${token}`);
+  config.headers = headers;
+}
 
 const api = axios.create({
   baseURL:
@@ -42,6 +50,18 @@ function isLogoutRequest(config: InternalAxiosRequestConfig): boolean {
   return path.includes("auth/logout");
 }
 
+/** 401 بسبب كلمة السر الحالية الخاطئة — لا نفترض انتهاء الـ access token ولا نستدعي refresh */
+function isWrongCurrentPassword401(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false;
+  if (error.response?.status !== 401) return false;
+  const data = error.response.data;
+  if (!data || typeof data !== "object") return false;
+  const msg = (data as Record<string, unknown>).message;
+  if (typeof msg !== "string") return false;
+  const lower = msg.toLowerCase();
+  return lower.includes("current password") && lower.includes("incorrect");
+}
+
 function clearSessionAndRedirectLogin(): void {
   TokenService.removeRefreshToken();
   useAuthStore.getState().clearAuth();
@@ -54,7 +74,7 @@ api.interceptors.request.use(
   (config) => {
     const token = TokenService.getAccessToken();
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      attachBearerToken(config, token);
     }
     return config;
   },
@@ -67,25 +87,32 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const originalRequest = error.config as RetryableRequestConfig | undefined;
 
-    /** 401 = غير مصادق عادةً؛ بعض الـ backends ترجع 403 عند انتهاء/رفض الـ JWT */
+    /**
+     * 401: غالباً انتهاء أو رفض access token — نحدّث عبر refresh ثم نعيد الطلب.
+     * لا نوجّه لتسجيل الدخول إلا بعد فشل الـ refresh أو فشل إعادة المحاولة.
+     */
     const shouldTryRefresh = status === 401 || status === 403;
     if (!shouldTryRefresh || !originalRequest) {
       return Promise.reject(error);
     }
 
-    if (
-      isRefreshRequest(originalRequest) ||
-      isLogoutRequest(originalRequest) ||
-      originalRequest._retry
-    ) {
+    if (status === 401 && isWrongCurrentPassword401(error)) {
+      return Promise.reject(error);
+    }
+
+    if (isRefreshRequest(originalRequest) || isLogoutRequest(originalRequest)) {
+      clearSessionAndRedirectLogin();
+      return Promise.reject(error);
+    }
+
+    if (originalRequest._retry) {
       clearSessionAndRedirectLogin();
       return Promise.reject(error);
     }
 
     try {
       const access = await getRefreshedAccessToken();
-      originalRequest.headers = originalRequest.headers ?? {};
-      originalRequest.headers.Authorization = `Bearer ${access}`;
+      attachBearerToken(originalRequest, access);
       originalRequest._retry = true;
       return api.request(originalRequest);
     } catch {

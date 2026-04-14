@@ -15,6 +15,7 @@ export const ROUTES = {
       `/dashboard/customers/${customerId}/edit`,
     CUSTOMER_ADD_VEHICLE: (customerId: string) =>
       `/dashboard/customers/${customerId}/add-vehicle`,
+    STAFF: "/dashboard/staff",
     TIRE_SETS: "/dashboard/tire-sets",
     EMAIL_INBOX: "/dashboard/email-inbox",
     REPORTS: "/dashboard/reports",

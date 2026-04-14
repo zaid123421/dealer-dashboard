@@ -8,6 +8,7 @@ import { useLocale, useTranslations } from "next-intl";
 import {
   Home,
   Users,
+  UserCog,
   CircleDot,
   ShoppingCart,
   Mail,
@@ -30,6 +31,7 @@ import type { Role } from "@/shared/config/roles";
 const KEY_ICON_MAP: Record<string, LucideIcon> = {
   overview: Home,
   customers: Users,
+  staff: UserCog,
   tireSets: CircleDot,
   orders: ShoppingCart,
   emailInbox: Mail,
