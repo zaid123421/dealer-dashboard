@@ -2,8 +2,9 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Eye, Trash2, AlertCircle, Car, Plus } from 'lucide-react'
+import { Eye, Trash2, AlertCircle, Car, Plus, CreditCard, Palette, Gauge, Package, Snowflake, Sun, Cloud, ChevronRight, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 import {
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
 import { useVehicleTireSets } from '@/modules/tire-sets/hooks/use-vehicle-tire-sets'
 import { useVehicleDetails } from '@/modules/vehicles/hooks/use-vehicle-details'
+import { useDealerCustomer } from '@/modules/customers/hooks/use-dealer-customer'
 import { useTranslations } from 'next-intl'
 import { AddTireSetModal } from '@/modules/tire-sets/components/add-tire-set-modal'
 
@@ -35,6 +37,8 @@ export default function VehicleDetailsPage() {
     vehicleId,
   })
   
+  const { data: customer } = useDealerCustomer(customerId)
+  
   const { tireSets, isLoading, isError, error, refetch } = useVehicleTireSets({
     customerId,
     vehicleId,
@@ -49,13 +53,13 @@ export default function VehicleDetailsPage() {
   const getSeasonBadgeColor = (season: string) => {
     switch (season) {
       case 'Winter':
-        return 'bg-blue-50 text-blue-900 border-blue-200'
+        return 'text-blue-500 px-3 py-1 min-w-[80px]'
       case 'Summer':
-        return 'bg-yellow-50 text-yellow-900 border-yellow-200'
+        return 'text-orange-500 px-3 py-1 min-w-[80px]'
       case 'All-Season':
-        return 'bg-gray-100 text-gray-800 border-gray-300'
+        return 'text-gray-500 px-3 py-1 min-w-[80px]'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'text-gray-500 px-3 py-1 min-w-[80px]'
     }
   }
 
@@ -70,6 +74,25 @@ export default function VehicleDetailsPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      {/* Breadcrumbs */}
+      <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
+        <Link href="/dashboard/customers" className="hover:text-foreground transition-colors">
+          <Home className="size-4 text-primary-dark" />
+        </Link>
+        <ChevronRight className="size-4" />
+        {!vehicleLoading && !vehicleError && customer && (
+          <span className="text-primary-dark font-medium">
+            {customer?.firstName} {customer?.lastName}
+          </span>
+        )}
+        {!vehicleLoading && !vehicleError && customer && <ChevronRight className="size-4" />}
+        {!vehicleLoading && !vehicleError && vehicle && (
+          <span className="font-medium text-white">
+            {vehicle?.make} {vehicle?.model} ({vehicle?.year})
+          </span>
+        )}
+      </nav>
+
       {/* Vehicle Details Card */}
       {vehicleLoading ? (
         <div className="rounded-lg border p-6">
@@ -88,41 +111,62 @@ export default function VehicleDetailsPage() {
           </div>
         </div>
       ) : vehicle ? (
-        <Card className="border-2 border-border">
+        <Card className="border-0 bg-surface-container rounded-lg">
           <CardContent className="p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-primary-dark/15 text-primary-dark">
-                  <Car className="size-8" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h1 className="text-headline-sm font-bold text-foreground mb-4">
-                    {vehicle.make} {vehicle.model} ({vehicle.year})
-                  </h1>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">VIN</p>
-                      <p className="text-sm font-mono">{vehicle.vin}</p>
+            <div className="flex flex-col gap-4 sm:gap-6 md:flex-row md:items-start">
+              <div className="flex size-12 sm:size-16 shrink-0 items-center justify-center rounded-full bg-surface-container text-primary-dark mx-auto md:mx-0">
+                <Car className="size-6 sm:size-8" />
+              </div>
+              <div className="min-w-0 flex-1 text-center md:text-left">
+                <h1 className="text-lg font-bold text-onSurface mb-2 sm:text-xl md:text-headline-sm">
+                  {vehicle.make} {vehicle.model} ({vehicle.year})
+                </h1>
+                <p className="text-sm font-mono text-secondary-on-surface mb-4 px-2 md:px-0 overflow-hidden truncate">
+                  VIN: {vehicle.vin}
+                </p>
+                <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="group">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CreditCard className="size-4 text-white" />
+                      <span className="text-sm font-medium text-secondary-on-surface">Plate Number</span>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Plate Number</p>
-                      <p className="text-sm font-mono">{vehicle.plateNumber}</p>
+                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-secondary-main group-hover:shadow-md">
+                      <p className="text-body-md font-semibold text-onSurface font-mono text-sm sm:text-base">{vehicle.plateNumber}</p>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Color</p>
-                      <p className="text-sm">{vehicle.color}</p>
+                  </div>
+                  <div className="group">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Palette className="size-3 sm:size-4 text-tertiary-main" />
+                      <span className="text-xs sm:text-sm font-medium text-secondary-on-surface">Color</span>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Odometer</p>
-                      <p className="text-sm">{vehicle.odometerKm.toLocaleString()} km</p>
+                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-tertiary-main group-hover:shadow-md">
+                      <p className="text-body-md font-semibold text-onSurface text-sm sm:text-base">{vehicle.color}</p>
+                    </div>
+                  </div>
+                  <div className="group">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Gauge className="size-3 sm:size-4 text-primary-main" />
+                      <span className="text-xs sm:text-sm font-medium text-secondary-on-surface">Odometer</span>
+                    </div>
+                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-primary-main group-hover:shadow-md">
+                      <p className="text-body-md font-semibold text-onSurface text-sm sm:text-base">{vehicle.odometerKm.toLocaleString()} km</p>
+                    </div>
+                  </div>
+                  <div className="group">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Package className="size-3 sm:size-4 text-success-main" />
+                      <span className="text-xs sm:text-sm font-medium text-secondary-on-surface">Tire Sets</span>
+                    </div>
+                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-success-main group-hover:shadow-md">
+                      <p className="text-body-md font-semibold text-onSurface text-sm sm:text-base">{tireSets.length} sets</p>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="shrink-0">
+              <div className="shrink-0 sm:mt-0 mt-4 text-center sm:text-left">
                 <Button
                   type="button"
-                  className="bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90"
+                  className="bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-light w-full sm:w-auto"
                   onClick={() => setIsAddTireSetModalOpen(true)}
                 >
                   <Plus className="me-2 size-4 shrink-0" />
@@ -199,6 +243,9 @@ export default function VehicleDetailsPage() {
                 header: "Season",
                 render: (tireSet) => (
                   <Badge className={getSeasonBadgeColor(tireSet.seasonType)}>
+                    {tireSet.seasonType === 'Winter' && <Snowflake className="inline size-3 me-1" />}
+                    {tireSet.seasonType === 'Summer' && <Sun className="inline size-3 me-1" />}
+                    {tireSet.seasonType === 'All-Season' && <Cloud className="inline size-3 me-1" />}
                     {tireSet.seasonType}
                   </Badge>
                 ),

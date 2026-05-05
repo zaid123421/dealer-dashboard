@@ -28,120 +28,37 @@ interface UseVehicleTireSetsResult {
 
 }
 
-
-
-// Mock data for demonstration
-
 const mockTireSets: TireSetDetail[] = [
-
   {
-
     id: 1,
-
+    vehicleId: 1,
+    tireCount: 4,
+    seasonType: 'Summer',
     brand: 'Michelin',
-
-    model: 'Pilot Sport 4S',
-
     size: '245/35R19',
-
-    seasonType: 'summer',
-
-    tireCount: 4,
-
-    treadDepth: 8.5,
-
-    purchaseDate: '2024-01-15',
-
-    purchasePrice: 983.96,
-
-    location: 'Warehouse A - Shelf 1',
-
-    status: 'available',
-
-    customerName: null,
-
+    displayLabel: 'Summer Performance Set',
     createdAt: '2024-01-15T10:30:00Z',
-
-    updatedAt: '2024-01-15T10:30:00Z',
-
-    addedDate: '2024-01-15',
-
-    updatedDate: '2024-01-15',
-
   },
-
   {
-
     id: 2,
-
+    vehicleId: 1,
+    tireCount: 4,
+    seasonType: 'Winter',
     brand: 'Bridgestone',
-
-    model: 'Blizzak LM005',
-
     size: '225/45R17',
-
-    seasonType: 'winter',
-
-    tireCount: 4,
-
-    treadDepth: 9.2,
-
-    purchaseDate: '2024-01-10',
-
-    purchasePrice: 759.96,
-
-    location: 'Warehouse B - Shelf 3',
-
-    status: 'available',
-
-    customerName: null,
-
+    displayLabel: 'Winter Safety Set',
     createdAt: '2024-01-10T14:20:00Z',
-
-    updatedAt: '2024-01-10T14:20:00Z',
-
-    addedDate: '2024-01-10',
-
-    updatedDate: '2024-01-10',
-
   },
-
   {
-
     id: 3,
-
-    brand: 'Continental',
-
-    model: 'ContiSportContact 6',
-
-    size: '255/40R18',
-
-    seasonType: 'all_season',
-
+    vehicleId: 1,
     tireCount: 4,
-
-    treadDepth: 7.8,
-
-    purchaseDate: '2023-12-20',
-
-    purchasePrice: 845.50,
-
-    location: 'Warehouse C - Shelf 2',
-
-    status: 'in_use',
-
-    customerName: 'John Doe',
-
+    seasonType: 'All-Season',
+    brand: 'Continental',
+    size: '255/40R18',
+    displayLabel: 'All-Season Comfort Set',
     createdAt: '2023-12-20T09:15:00Z',
-
-    updatedAt: '2024-01-05T16:45:00Z',
-
-    addedDate: '2023-12-20',
-
-    updatedDate: '2024-01-05',
-
   },
-
 ]
 
 

@@ -25,18 +25,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { z } from "zod";
+import { Controller } from "react-hook-form";
 
 const createTireSetSchema = z.object({
   tireCount: z.number().min(1, "At least 1 tire is required").max(8, "Maximum 8 tires allowed"),
   minimum: z.number().min(1, "Minimum must be at least 1"),
-  seasonType: z.enum(["Winter", "Summer", "All-Season"], {
-    errorMap: (issue: any, ctx: any) => {
-      if (issue.code === z.ZodIssueCode.invalid_type) {
-        return { message: "Season type is required" };
-      }
-      return { message: ctx.defaultError };
-    },
-  }),
+  seasonType: z.enum(["Winter", "Summer", "All-Season"]),
   brand: z.string().min(1, "Brand is required"),
   size: z.string().min(1, "Size is required"),
   displayLabel: z.string().optional(),
@@ -60,6 +54,7 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId }: A
     handleSubmit,
     formState: { errors },
     reset,
+    control,
   } = useForm<CreateTireSetFormValues>({
     resolver: zodResolver(createTireSetSchema),
     defaultValues: {
@@ -137,21 +132,25 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId }: A
 
             <div className="space-y-2">
               <Label htmlFor="seasonType">Season Type</Label>
-              <Select
-                value={register("seasonType").value}
-                onValueChange={(value) => {
-                  register("seasonType").onChange({ target: { value } });
-                }}
-              >
-                <SelectTrigger className={errors.seasonType ? "border-red-500" : ""}>
-                  <SelectValue placeholder="Select season" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Winter">Winter</SelectItem>
-                  <SelectItem value="Summer">Summer</SelectItem>
-                  <SelectItem value="All-Season">All Seasons</SelectItem>
-                </SelectContent>
-              </Select>
+              <Controller
+                name="seasonType"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className={errors.seasonType ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Select season" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Winter">Winter</SelectItem>
+                      <SelectItem value="Summer">Summer</SelectItem>
+                      <SelectItem value="All-Season">All Seasons</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.seasonType && (
                 <p className="text-sm text-red-500">{errors.seasonType.message}</p>
               )}
