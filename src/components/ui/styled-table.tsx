@@ -66,15 +66,17 @@ export function StyledTable<T>({
             </TableRow>
           ) : rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={columns.length} className="text-body-md text-muted-foreground h-32 text-center border-b-2 ${borderColor}">
+              <TableCell colSpan={columns.length} className="text-body-md text-muted-foreground h-32 text-center">
                 {emptyText}
               </TableCell>
             </TableRow>
           ) : (
-            rows.map((row) => (
+            rows.map((row, rowIndex) => (
               <TableRow 
                 key={String(keyProp(row))} 
-                className="hover:bg-[var(--color-surface-light)] dark:hover:bg-[var(--color-surface-bright)]/10 transition-colors"
+                className={`hover:bg-[var(--color-surface-light)] dark:hover:bg-[var(--color-surface-bright)]/10 transition-colors ${
+                  rowIndex === rows.length - 1 ? "" : "border-b-2 " + borderColor
+                }`}
               >
                 {columns.map((col, ci) => (
                   <TableCell 
@@ -82,7 +84,9 @@ export function StyledTable<T>({
                     className={`${col.className ?? ""} ${
                       col.align === "right" ? "text-right" : 
                       col.align === "left" ? "text-left" : "text-center"
-                    } text-foreground py-3 px-4 align-middle border-b-2 ${borderColor} text-sm`}
+                    } text-foreground py-3 px-4 align-middle ${
+                      rowIndex === rows.length - 1 ? "" : "border-b-2 " + borderColor
+                    } text-sm`}
                   > 
                     {col.render(row)}
                   </TableCell>

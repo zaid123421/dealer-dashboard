@@ -225,14 +225,14 @@ function CustomersPageContent() {
           <Button
             variant="outline"
             onClick={handleImportExcel}
-            className="w-full shrink-0 border-primary-dark text-primary-dark bg-transparent hover:bg-primary-dark/10 hover:text-primary-dark hover:border-primary-dark sm:w-auto"
+            className="w-full shrink-0 border-primary-dark text-primary-dark bg-transparent hover:bg-primary-dark/10 hover:text-primary-dark hover:border-primary-dark sm:w-auto transition-all duration-[var(--duration-normal)]"
           >
             <Download className="size-4 shrink-0" />
             <span className="truncate">{t("importExcel")}</span>
           </Button>
           <Button
             asChild
-            className="w-full shrink-0 bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 sm:w-auto"
+            className="w-full shrink-0 bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 sm:w-auto transition-all duration-[var(--duration-normal)]"
           >
             <Link href={ROUTES.DASHBOARD.CUSTOMERS_ADD} className="flex items-center justify-center gap-2">
               <Plus className="size-4 shrink-0" />
@@ -305,7 +305,7 @@ function CustomersPageContent() {
                   type="button"
                   onClick={() => setSelectedCustomerId(String(customer.id))}
                   className={cn(
-                    "relative flex w-full min-w-0 items-start gap-2 rounded-xl p-3 text-start transition-colors hover:bg-accent/50 sm:gap-3 sm:p-4",
+                    "relative flex w-full min-w-0 items-start gap-2 rounded-md p-3 text-start transition-colors hover:bg-accent/50 sm:gap-3 sm:p-4",
                     selectedCustomerId === String(customer.id)
                       ? "border border-primary-dark bg-primary-container/20 dark:bg-[#231f1a]"
                       : "border border-transparent bg-muted/20 dark:bg-surface-container",
@@ -313,7 +313,7 @@ function CustomersPageContent() {
                 >
                   {selectedCustomerId === String(customer.id) && (
                     <span
-                      className="absolute start-2.5 top-2.5 bottom-2.5 w-1.5 rounded-full bg-primary-dark"
+                      className="absolute start-0 top-0 h-full w-2 rounded-full bg-primary-dark"
                       aria-hidden
                     />
                   )}
@@ -360,7 +360,7 @@ function CustomersPageContent() {
                 <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
                   <div
                     className={cn(
-                      "flex size-12 shrink-0 items-center justify-center rounded-full font-bold text-title-md sm:size-16 sm:text-title-lg",
+                      "flex size-12 shrink-0 items-center justify-center rounded-full font-bold text-title-md sm:size-16 sm:text-title-lg transition-all duration-200 transform hover:scale-105",
                       INITIAL_COLORS[colorIndexFor(selectedCustomer)],
                     )}
                   >

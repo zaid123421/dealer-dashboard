@@ -26,7 +26,7 @@ export function splitPhoneNumberForForm(raw: string): { countryCode: string; pho
 
 export function dealerCustomerToFormValues(c: DealerCustomer): CreateDealerCustomerFormValues {
   const { countryCode, phoneLocal } = splitPhoneNumberForForm(c.phoneNumber);
-  const a = c.address;
+  const address = c.address;
   return {
     firstName: c.firstName,
     lastName: c.lastName,
@@ -34,14 +34,14 @@ export function dealerCustomerToFormValues(c: DealerCustomer): CreateDealerCusto
     countryCode,
     phoneLocal,
     address: {
-      cityId: a.cityId != null ? String(a.cityId) : "",
-      countryId: a.countryId != null ? String(a.countryId) : "",
-      stateId: a.stateId != null ? String(a.stateId) : "",
-      streetName: a.streetName,
-      streetNumber: a.streetNumber,
-      postalCode: a.postalCode,
-      unitNumber: a.unitNumber ?? "",
-      specialInstructions: a.specialInstructions ?? "",
+      cityId: address?.cityId != null ? String(address.cityId) : "",
+      countryId: address?.countryId != null ? String(address.countryId) : "",
+      stateId: address?.stateId != null ? String(address.stateId) : "",
+      streetName: address?.streetName ?? "",
+      streetNumber: address?.streetNumber ?? "",
+      postalCode: address?.postalCode ?? "",
+      unitNumber: address?.unitNumber ?? "",
+      specialInstructions: address?.specialInstructions ?? "",
     },
   };
 }
