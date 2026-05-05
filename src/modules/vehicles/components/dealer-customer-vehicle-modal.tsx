@@ -132,7 +132,7 @@ export function DealerCustomerVehicleModal({
         className="max-h-[min(90vh,720px)] w-full max-w-2xl overflow-y-auto gap-0 p-0 sm:rounded-xl"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="border-b px-6 pb-4 pt-6">
+        <div className="px-6 pb-4 pt-6">
           <DialogHeader>
             <DialogTitle>
               {isEdit ? t("editVehicleTitle") : t("addVehicleTitle")}
@@ -272,19 +272,20 @@ export function DealerCustomerVehicleModal({
           </div>
         </form>
 
-        <DialogFooter className="border-t px-6 py-4 sm:justify-end">
+        <DialogFooter className="px-6 py-4 gap-2 sm:justify-end sm:gap-0">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={mutationPending}
+            className="w-full sm:w-auto"
           >
             {tCommon("cancel")}
           </Button>
           <Button
             type="submit"
             form="dealer-customer-vehicle-form"
-            className="bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90"
+            className="bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 w-full sm:w-auto"
             disabled={mutationPending}
           >
             {mutationPending ? t("loading") : isEdit ? t("saveVehicleChanges") : t("saveVehicle")}

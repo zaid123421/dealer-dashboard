@@ -195,13 +195,13 @@ export default function EditCustomerPage() {
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="min-w-0 space-y-2">
                 <Label htmlFor="phoneLocal">{t("phoneNumber")}</Label>
-                <div className="flex min-w-0 overflow-hidden rounded-md border border-input bg-card shadow-xs">
+                <div className="flex min-w-0">
                   <Controller
                     name="countryCode"
                     control={control}
                     render={({ field }) => (
                       <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="h-10 w-[90px] shrink-0 rounded-none border-0 border-e border-input bg-surface-container/80 focus:ring-0 [&>span]:text-primary-dark">
+                        <SelectTrigger className="w-[90px] shrink-0 rounded-e-none border-e-0 [&>span]:text-primary-dark">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -219,7 +219,7 @@ export default function EditCustomerPage() {
                     type="tel"
                     placeholder={t("phonePlaceholder")}
                     className={cn(
-                      "h-10 min-w-0 flex-1 rounded-none border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
+                      "h-10 min-w-0 flex-1 rounded-s-none shadow-xs focus-visible:ring-0 focus-visible:ring-offset-0",
                       "placeholder:text-primary-dark/70",
                     )}
                     aria-invalid={!!errors.phoneLocal}
@@ -325,10 +325,8 @@ export default function EditCustomerPage() {
                 rows={3}
                 placeholder={t("specialInstructionsPlaceholder")}
                 className={cn(
-                  "w-full rounded-md border border-input bg-card px-3 py-2 text-body-md shadow-xs outline-none",
-                  "placeholder:text-muted-foreground",
-                  "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-                  "min-h-[80px] resize-y",
+                  "placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border border-input min-h-[80px] w-full min-w-0 resize-none rounded-md bg-transparent px-3 py-2 text-body-lg text-foreground transition-colors outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
+                  "focus-visible:border-primary-dark focus-visible:ring-0",
                 )}
                 {...register("address.specialInstructions")}
               />

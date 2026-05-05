@@ -150,7 +150,7 @@ export default function ActivateAccountPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       autoComplete="new-password"
-                      className="h-12 border-2 border-gray-400 bg-transparent ps-12 pe-12 text-start text-body-lg text-foreground placeholder:text-muted-foreground transition-colors focus-visible:border-primary-dark focus-visible:ring-0"
+                      className="ps-12 pe-12"
                       required
                     />
                     <button
@@ -180,7 +180,7 @@ export default function ActivateAccountPage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       autoComplete="new-password"
-                      className="h-12 border-2 border-gray-400 bg-transparent ps-12 pe-12 text-start text-body-lg text-foreground placeholder:text-muted-foreground transition-colors focus-visible:border-primary-dark focus-visible:ring-0"
+                      className="ps-12 pe-12"
                       required
                     />
                     <button

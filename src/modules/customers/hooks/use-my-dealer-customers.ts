@@ -7,14 +7,11 @@ export type MyDealerCustomersFilters = Pick<
   MyDealerCustomersParams,
   "size" | "sortBy" | "direction" | "includeArchived"
 > & {
-  /** مطابقة بادئة النص في البحث (starts with) */
   startsWith?: boolean;
 };
 
 export type DealerCustomersInfiniteOptions = MyDealerCustomersFilters & {
-  /** `tenantId` من جلسة الـ dealer */
   dealerId: number | null;
-  /** نص البحث؛ فاضي = كل العملاء ضمن باقي الفلاتر */
   searchTerm: string;
 };
 

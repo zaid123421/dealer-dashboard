@@ -286,7 +286,7 @@ export default function ForgotPasswordPage() {
                         type="email"
                         placeholder={tForgot("emailPlaceholder")}
                         autoComplete="email"
-                        className="h-12 border-2 border-gray-400 bg-transparent ps-12 text-start text-body-lg text-foreground placeholder:text-muted-foreground transition-colors focus-visible:border-primary-dark focus-visible:ring-0"
+                        className="ps-12"
                         required
                       />
                     </div>
@@ -336,7 +336,7 @@ export default function ForgotPasswordPage() {
                           value={code[i] ?? ""}
                           onChange={(e) => handleOtpChange(i, e.target.value)}
                           onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                          className="h-14 w-12 rounded-lg border-2 border-gray-400 bg-transparent text-center text-headline-md font-bold text-foreground transition-colors focus-visible:border-primary-dark focus-visible:ring-0"
+                          className="h-14 w-12 rounded-lg text-center text-headline-md font-bold"
                         />
                       ))}
                     </div>
@@ -402,7 +402,7 @@ export default function ForgotPasswordPage() {
                         autoComplete="new-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="h-12 border-2 border-gray-400 bg-transparent ps-12 pe-12 text-start text-body-lg text-foreground placeholder:text-muted-foreground transition-colors focus-visible:border-primary-dark focus-visible:ring-0"
+                        className="ps-12 pe-12"
                       />
                       <button
                         type="button"
@@ -432,7 +432,7 @@ export default function ForgotPasswordPage() {
                         autoComplete="new-password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="h-12 border-2 border-gray-400 bg-transparent ps-12 pe-12 text-start text-body-lg text-foreground placeholder:text-muted-foreground transition-colors focus-visible:border-primary-dark focus-visible:ring-0"
+                        className="ps-12 pe-12"
                       />
                       <button
                         type="button"

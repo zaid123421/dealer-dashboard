@@ -151,7 +151,7 @@ export function AddStaffModal({ open, onOpenChange, staffToEdit = null }: AddSta
         className="max-h-[min(90vh,720px)] w-full max-w-2xl overflow-y-auto gap-0 p-0 sm:rounded-xl"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="border-b px-6 pb-4 pt-6">
+        <div className="px-6 pb-4 pt-6">
           <DialogHeader>
             <DialogTitle>{isEdit ? t("editStaffTitle") : t("addStaffTitle")}</DialogTitle>
             <DialogDescription
@@ -327,8 +327,8 @@ export function AddStaffModal({ open, onOpenChange, staffToEdit = null }: AddSta
                 placeholder={t("notesPlaceholder")}
                 disabled={formLocked}
                 className={cn(
-                  "placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input w-full min-w-0 rounded-md border bg-card px-3 py-2 text-body-md shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
-                  "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+                  "placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border border-input min-h-[80px] w-full min-w-0 resize-none rounded-md bg-transparent px-3 py-2 text-body-lg text-foreground transition-colors outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
+                  "focus-visible:border-primary-dark focus-visible:ring-0",
                   errors.notes && "border-destructive",
                 )}
                 {...register("notes")}
@@ -337,14 +337,14 @@ export function AddStaffModal({ open, onOpenChange, staffToEdit = null }: AddSta
           </div>
         </form>
 
-        <DialogFooter className="border-t px-6 py-4 sm:justify-end">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={formLocked}>
+        <DialogFooter className="px-6 py-4 gap-2 sm:justify-end sm:gap-0">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={formLocked} className="w-full sm:w-auto">
             {tCommon("cancel")}
           </Button>
           <Button
             type="submit"
             form="staff-form"
-            className="bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90"
+            className="bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 w-full sm:w-auto"
             disabled={formLocked}
           >
             {pending ? t("savingStaff") : isEdit ? t("saveStaffChanges") : t("saveStaff")}

@@ -30,8 +30,8 @@
     --popover: var(--color-surface-light-container);
     --popover-foreground: var(--color-secondary-main);
 
-    --border: var(--color-surface-container);
-    --input: var(--color-surface-container);
+    --border: #ddd8cf;
+    --input: #d6d0c6;
     --ring: var(--color-primary-main-light);
     --radius: var(--radius-md);
   }
@@ -73,8 +73,8 @@
     --popover: var(--color-surface-bright);
     --popover-foreground: var(--color-secondary-on-surface);
 
-    --border: var(--color-surface-container);
-    --input: var(--color-surface-container);
+    --border: #3a3a35;
+    --input: #4a463f;
     --ring: var(--color-primary-main-dark);
   }
 }
@@ -109,6 +109,16 @@
     scrollbar-width: thin;
     scrollbar-color: rgb(148 163 184 / 0.5) transparent;
     padding-inline-end: 6px;
+  }
+  
+  /* Hide padding when no scrollbar is present */
+  .scrollbar-custom:not(:has(::-webkit-scrollbar-thumb:visible)) {
+    padding-inline-end: 0;
+  }
+  
+  /* Alternative approach - check if content overflows */
+  .scrollbar-custom[data-scrollable="false"] {
+    padding-inline-end: 0;
   }
   .scrollbar-custom::-webkit-scrollbar {
     width: 5px;

@@ -157,7 +157,7 @@ export default function LoginPage() {
                     type="email"
                     placeholder="name@example.com"
                     autoComplete="email"
-                    className="h-12 border-2 border-gray-400 bg-transparent ps-12 text-start text-body-lg text-foreground placeholder:text-muted-foreground transition-colors focus-visible:border-primary-dark focus-visible:ring-0"
+                    className="ps-12"
                     required
                   />
                 </div>
@@ -176,7 +176,7 @@ export default function LoginPage() {
                     type={showPassword ? "text" : "password"}
                     placeholder="********"
                     autoComplete="current-password"
-                    className="h-12 border-2 border-gray-400 bg-transparent ps-12 pe-12 text-start text-body-lg text-foreground placeholder:text-muted-foreground transition-colors focus-visible:border-primary-dark focus-visible:ring-0"
+                    className="ps-12 pe-12"
                     required
                   />
                   <button

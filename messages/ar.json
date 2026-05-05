@@ -192,7 +192,8 @@
     "noStaff": "لا يوجد موظفون للعرض.",
     "paginationPrev": "السابق",
     "paginationNext": "التالي",
-    "pageInfo": "صفحة {current} من {total}"
+    "pageInfo": "صفحة {current} من {total}",
+    "pageCompact": "{current} من {total}"
   },
   "customers": {
     "title": "العملاء والمركبات",

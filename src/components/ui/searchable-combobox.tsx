@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronsUpDown, Search } from "lucide-react";
+import { Check, ChevronDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -74,7 +74,8 @@ export function SearchableCombobox({
           aria-invalid={ariaInvalid}
           disabled={disabled}
           className={cn(
-            "h-10 w-full justify-between gap-2 rounded-md border border-input bg-card px-3 font-normal shadow-xs hover:bg-card",
+            "flex h-10 w-full items-center justify-between gap-2 whitespace-nowrap rounded-md border border-input bg-card px-3 py-2 text-body-md font-normal shadow-xs hover:bg-card focus-visible:border-primary-dark focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50",
+            open && "border-primary-dark",
             !selected && "text-muted-foreground",
             ariaInvalid &&
               "border-destructive focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
@@ -84,19 +85,19 @@ export function SearchableCombobox({
           <span className="min-w-0 flex-1 truncate text-start text-body-md">
             {selected ? selected.label : placeholder}
           </span>
-          <ChevronsUpDown className="size-4 shrink-0 opacity-50" aria-hidden />
+          <ChevronDown className="size-4 shrink-0 opacity-50" aria-hidden />
         </Button>
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="border-neutral-800 bg-neutral-950 p-0 text-zinc-100 shadow-xl"
+        className="min-w-[var(--radix-popover-trigger-width)] rounded-lg border-transparent bg-surface-light p-0 text-popover-foreground shadow-lg dark:bg-surface-bright"
         sideOffset={4}
       >
-        <div className="flex items-center gap-2 border-b border-neutral-800 bg-neutral-950 px-2 py-2">
-          <Search className="size-4 shrink-0 text-zinc-500" aria-hidden />
+        <div className="flex items-center gap-2 px-2 py-2">
+          <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           <Input
             ref={searchInputRef}
-            className="h-9 border-0 bg-transparent text-zinc-100 shadow-none placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="h-9 border-0 bg-transparent text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
             placeholder={searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -105,11 +106,11 @@ export function SearchableCombobox({
           />
         </div>
         <ul
-          className="max-h-[min(280px,50vh)] overflow-y-auto overscroll-contain bg-neutral-950 p-1"
+          className="max-h-[min(280px,50vh)] overflow-y-auto overscroll-contain p-1"
           role="listbox"
         >
           {filtered.length === 0 ? (
-            <li className="px-3 py-6 text-center text-sm text-zinc-500">{emptyText}</li>
+            <li className="px-3 py-6 text-center text-sm text-muted-foreground">{emptyText}</li>
           ) : (
             filtered.map((opt) => {
               const isSel = opt.value === value;
@@ -120,9 +121,9 @@ export function SearchableCombobox({
                     role="option"
                     aria-selected={isSel}
                     className={cn(
-                      "flex w-full cursor-default items-center rounded-md px-2.5 py-2 text-start text-body-md text-zinc-100 outline-none",
-                      "hover:bg-neutral-800 focus:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-zinc-600 focus-visible:ring-offset-0 focus-visible:ring-offset-neutral-950",
-                      isSel && "bg-neutral-800 font-medium text-white",
+                      "relative flex w-full cursor-default items-center rounded-md py-2 ps-3 pe-8 text-start text-body-md text-foreground outline-none",
+                      "hover:bg-primary-dark/10 hover:text-primary-dark focus:bg-primary-dark/10 focus:text-primary-dark focus-visible:ring-0",
+                      isSel && "text-primary-dark",
                     )}
                     onClick={() => {
                       onValueChange(opt.value);
@@ -130,6 +131,9 @@ export function SearchableCombobox({
                     }}
                   >
                     <span className="line-clamp-2">{opt.label}</span>
+                    {isSel ? (
+                      <Check className="absolute end-2 size-4" aria-hidden />
+                    ) : null}
                   </button>
                 </li>
               );

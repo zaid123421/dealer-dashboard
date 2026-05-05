@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Ban, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import {
   Table,
   TableBody,
@@ -19,6 +20,7 @@ import { useDisableDealerStaff } from "@/modules/staff/hooks/use-disable-dealer-
 import { useDeleteDealerStaff } from "@/modules/staff/hooks/use-delete-dealer-staff";
 import { AddStaffModal } from "@/modules/staff/components/add-staff-modal";
 import type { DealerStaffMember } from "@/modules/staff/schemas/dealer-staff-page.schema";
+import StyledTable from "@/modules/staff/components/styled-table";
 
 const PAGE_SIZE = 10;
 const DEFAULT_SORT = "createdAt" as const;
@@ -115,121 +117,103 @@ export default function StaffPage() {
         </div>
       ) : null}
 
-      <div
-        className={`min-h-0 overflow-auto rounded-lg border border-border bg-card ${isPlaceholderData ? "opacity-70" : ""}`}
-      >
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("name")}</TableHead>
-              <TableHead>{t("username")}</TableHead>
-              <TableHead>{t("position")}</TableHead>
-              <TableHead>{t("role")}</TableHead>
-              <TableHead>{t("status")}</TableHead>
-              <TableHead>{t("accessLevel")}</TableHead>
-              <TableHead className="min-w-[220px] text-end">{t("actions")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isPending && !data ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-body-md text-muted-foreground">
-                  {t("loading")}
-                </TableCell>
-              </TableRow>
-            ) : !data?.content.length ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-body-md text-muted-foreground">
-                  {t("noStaff")}
-                </TableCell>
-              </TableRow>
-            ) : (
-              data.content.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell className="font-medium">{staffFullName(row)}</TableCell>
-                  <TableCell className="max-w-[140px] truncate font-mono text-sm" title={row.username ?? undefined}>
-                    {row.username ?? "—"}
-                  </TableCell>
-                  <TableCell>{row.position ?? "—"}</TableCell>
-                  <TableCell className="font-mono text-sm">{row.role}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="font-normal">
-                      {row.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">{row.accessLevel}</TableCell>
-                  <TableCell className="text-end">
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        aria-label={t("edit")}
-                        onClick={() => {
-                          setStaffToEdit(row);
-                          setStaffModalOpen(true);
-                        }}
-                      >
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 text-destructive hover:text-destructive"
-                        aria-label={t("disable")}
-                        disabled={disableStaff.isPending && disableStaff.variables === row.id}
-                        onClick={() => handleDisable(row)}
-                      >
-                        <Ban className="size-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 text-destructive hover:text-destructive"
-                        aria-label={t("delete")}
-                        disabled={deleteStaff.isPending && deleteStaff.variables === row.id}
-                        onClick={() => handleDelete(row)}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <StyledTable
+        isLoading={isPlaceholderData}
+        rows={data?.content ?? []}
+        keyProp={(r) => r.id}
+        emptyText={t("noStaff")}
+        columns={[
+          {
+            header: t("name"),
+            render: (row: DealerStaffMember) => <span className="font-medium">{staffFullName(row)}</span>,
+          },
+          {
+            header: t("email"),
+            render: (row: DealerStaffMember) => (
+              <span className="max-w-[140px] truncate font-mono text-sm" title={row.email ?? undefined}>
+                {row.username ?? "—"}
+              </span>
+            ),
+          },
+          { header: t("position"), render: (row: DealerStaffMember) => row.position ?? "—" },
+          { header: t("role"), render: (row: DealerStaffMember) => <span className="font-mono text-sm">{row.role}</span> },
+          {
+            header: t("status"),
+            render: (row: DealerStaffMember) => (
+              <span className="inline-flex items-center rounded-full bg-emerald-600 px-3 py-1 text-white text-sm">
+                {row.status}
+              </span>
+            ),
+          },
+          { header: t("accessLevel"), render: (row: DealerStaffMember) => <span className="font-mono text-sm">{row.accessLevel}</span> },
+          {
+            header: t("actions"),
+            className: "min-w-[220px]",
+            render: (row: DealerStaffMember) => (
+              <div className="flex justify-center gap-2">
+                {/* زر التعديل - أزرق لوجستي (Tertiary) */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
+                            hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
+                            transition-all duration-[var(--duration-normal)]"
+                  aria-label={t("edit")}
+                  onClick={() => {
+                    setStaffToEdit(row);
+                    setStaffModalOpen(true);
+                  }}
+                >
+                  <Pencil className="size-4" />
+                </Button>
+
+                {/* زر التعطيل - برتقالي (Warning) */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-warning-main-light)] bg-transparent text-[var(--color-warning-main-light)] 
+                            hover:bg-[var(--color-warning-main-dark)] hover:text-white hover:border-[var(--color-warning-main-dark)] 
+                            transition-all duration-[var(--duration-normal)]"
+                  aria-label={t("disable")}
+                  disabled={disableStaff.isPending && disableStaff.variables === row.id}
+                  onClick={() => handleDisable(row)}
+                >
+                  <Ban className="size-4" />
+                </Button>
+
+                {/* زر الحذف - أحمر (Error) */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
+                            hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
+                            transition-all duration-[var(--duration-normal)]"
+                  aria-label={t("delete")}
+                  disabled={deleteStaff.isPending && deleteStaff.variables === row.id}
+                  onClick={() => handleDelete(row)}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+      />
 
       {data != null && totalPages > 0 ? (
-        <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
-          <p className="text-body-sm text-muted-foreground">
-            {t("pageInfo", { current: page + 1, total: totalPages })}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={!canPrev}
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-            >
-              {t("paginationPrev")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={!canNext}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              {t("paginationNext")}
-            </Button>
-          </div>
-        </div>
+        <PaginationControls
+          canPrevious={canPrev}
+          canNext={canNext}
+          previousLabel={t("paginationPrev")}
+          nextLabel={t("paginationNext")}
+          pageLabel={t("pageInfo", { current: page + 1, total: totalPages })}
+          pageText={t("pageCompact", { current: page + 1, total: totalPages })}
+          onPrevious={() => setPage((p) => Math.max(0, p - 1))}
+          onNext={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+        />
       ) : null}
     </div>
   );

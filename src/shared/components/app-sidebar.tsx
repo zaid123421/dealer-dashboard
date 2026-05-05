@@ -159,7 +159,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       <div className="mt-auto shrink-0 space-y-3 border-t border-surface-container p-3">
-        <div className="rounded-lg border-2 border-gray-400 dark:border-border bg-surface-container/50 p-3">
+        <div className="rounded-lg border border-border bg-surface-container/50 p-3">
           <div className="flex items-center gap-3">
             <div
               className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-dark/20 text-xs font-bold uppercase tracking-tight text-primary-dark"

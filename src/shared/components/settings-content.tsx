@@ -185,7 +185,7 @@ export function SettingsContent() {
 
           <Dialog open={changePasswordOpen} onOpenChange={onChangePasswordOpenChange}>
             <DialogContent className="max-w-md gap-0 p-0 sm:rounded-xl">
-              <DialogHeader className="border-b border-border p-6 pb-4 text-start">
+              <DialogHeader className="p-6 pb-4 text-start">
                 <DialogTitle>{t("changePasswordModalTitle")}</DialogTitle>
                 <DialogDescription>{t("changePasswordModalDescription")}</DialogDescription>
               </DialogHeader>
@@ -286,12 +286,13 @@ export function SettingsContent() {
                 </div>
               </form>
 
-              <DialogFooter className="gap-2 border-t border-border p-6 pt-4 sm:space-x-0">
+              <DialogFooter className="gap-2 p-6 pt-4 sm:space-x-0">
                 <Button
                   type="button"
                   variant="outline"
                   disabled={isSubmitting}
                   onClick={() => onChangePasswordOpenChange(false)}
+                  className="w-full sm:w-auto"
                 >
                   {tCommon("cancel")}
                 </Button>
@@ -299,6 +300,7 @@ export function SettingsContent() {
                   type="submit"
                   form="settings-change-password-form"
                   disabled={isSubmitting}
+                  className="w-full sm:w-auto"
                 >
                   {t("updatePasswordButton")}
                 </Button>

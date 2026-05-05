@@ -79,8 +79,8 @@ export function DealerCustomerAddressRegionFields({ control, setValue, errors }:
               value={selectValue(field.value)}
               onValueChange={(v) => {
                 field.onChange(v);
-                setValue("address.stateId", "", { shouldValidate: true, shouldDirty: true });
-                setValue("address.cityId", "", { shouldValidate: true, shouldDirty: true });
+                setValue("address.stateId", "", { shouldDirty: true });
+                setValue("address.cityId", "", { shouldDirty: true });
               }}
               options={countryOptions}
               placeholder={t("addressSelectCountry")}
@@ -110,7 +110,7 @@ export function DealerCustomerAddressRegionFields({ control, setValue, errors }:
               value={selectValue(field.value)}
               onValueChange={(v) => {
                 field.onChange(v);
-                setValue("address.cityId", "", { shouldValidate: true, shouldDirty: true });
+                setValue("address.cityId", "", { shouldDirty: true });
               }}
               options={provinceOptions}
               placeholder={

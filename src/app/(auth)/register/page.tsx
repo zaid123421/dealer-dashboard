@@ -96,7 +96,7 @@ export default function RegisterPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t("fullName")}
-                className="h-12 border-2 border-gray-400 bg-transparent text-end text-body-lg text-foreground placeholder:text-muted-foreground transition-colors focus-visible:border-primary-dark focus-visible:ring-0"
+                className="text-end"
               />
               {errors.name && (
                 <p className="text-right text-sm text-destructive">
@@ -115,7 +115,7 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="h-12 border-2 border-gray-400 bg-transparent text-end text-body-lg text-foreground placeholder:text-muted-foreground transition-colors focus-visible:border-primary-dark focus-visible:ring-0"
+                className="text-end"
               />
               {errors.email && (
                 <p className="text-right text-sm text-destructive">
@@ -135,7 +135,7 @@ export default function RegisterPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-12 border-2 border-gray-400 bg-transparent ps-12 pe-12 text-end text-body-lg text-foreground placeholder:text-muted-foreground transition-colors focus-visible:border-primary-dark focus-visible:ring-0"
+                  className="ps-12 pe-12 text-end"
                 />
                 <button
                   type="button"
@@ -164,7 +164,7 @@ export default function RegisterPage() {
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="h-12 border-2 border-gray-400 bg-transparent ps-12 pe-12 text-end text-body-lg text-foreground placeholder:text-muted-foreground transition-colors focus-visible:border-primary-dark focus-visible:ring-0"
+                  className="ps-12 pe-12 text-end"
                 />
                 <button
                   type="button"

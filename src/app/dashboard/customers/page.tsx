@@ -13,6 +13,7 @@ import {
   Pencil,
   Trash2,
   Archive,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import StyledTable from "@/components/ui/styled-table";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { DealerCustomer } from "@/modules/customers/schemas/create-dealer-customer.schema";
@@ -76,7 +78,6 @@ function CustomersPageContent() {
     authUser?.tenantId != null && authUser.tenantId > 0 ? authUser.tenantId : null;
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
-  /** يُرسَل كـ includeArchived للـ API مع نفس endpoint البحث */
   const [includeArchived, setIncludeArchived] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -86,7 +87,6 @@ function CustomersPageContent() {
     return () => window.clearTimeout(id);
   }, [searchQuery]);
 
-  /** أرقام فقط في الطلب لتطابق تخزين الهاتف في الـ API */
   const phoneSearchTerm = useMemo(
     () => debouncedSearch.replace(/\D/g, ""),
     [debouncedSearch],
@@ -356,7 +356,7 @@ function CustomersPageContent() {
         <div className="scrollbar-custom flex min-h-[280px] flex-col gap-4 overflow-auto border border-border rounded-lg bg-card p-4 sm:min-h-0 sm:p-6">
           {selectedCustomer ? (
             <>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                 <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
                   <div
                     className={cn(
@@ -381,8 +381,8 @@ function CustomersPageContent() {
                         className={cn(
                           "border-0",
                           selectedCustomer.archived
-                            ? "bg-muted text-muted-foreground"
-                            : "bg-success-container text-success-onContainer",
+                            ? "bg-gray-500 text-white"
+                            : "bg-emerald-600 text-white",
                         )}
                       >
                         {selectedCustomer.archived ? t("archivedBadge") : t("activeBadge")}
@@ -391,25 +391,38 @@ function CustomersPageContent() {
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-2">
-                  <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-initial">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="flex-1 h-9 border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
+                      hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
+                      transition-all duration-[var(--duration-normal)] sm:flex-initial"
+                  >
                     <Link href={ROUTES.DASHBOARD.CUSTOMER_EDIT(String(selectedCustomer.id))}>
                       <Pencil className="size-4 shrink-0" />
                       {t("edit")}
                     </Link>
                   </Button>
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
-                    className="flex-1 border-error-main text-error-main hover:bg-error-container hover:text-error-main sm:flex-initial"
+                    className="flex-1 h-9 border-[var(--color-warning-main-light)] bg-transparent text-[var(--color-warning-main-light)] 
+                      hover:bg-[var(--color-warning-main-dark)] hover:text-white hover:border-[var(--color-warning-main-dark)] 
+                      transition-all duration-[var(--duration-normal)] sm:flex-initial"
                     disabled={selectedCustomer.archived || customerMutationPending}
                     onClick={handleArchiveCustomer}
                   >
                     {archiveCustomer.isPending ? t("loading") : t("archive")}
                   </Button>
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
-                    className="flex flex-1 items-center justify-center gap-2 border-destructive/60 text-destructive hover:bg-destructive/10 hover:text-destructive sm:flex-initial"
+                    className="flex flex-1 h-9 items-center justify-center gap-2 border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
+                      hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
+                      transition-all duration-[var(--duration-normal)] sm:flex-initial"
                     disabled={customerMutationPending}
                     onClick={handleDeleteCustomer}
                   >
@@ -425,47 +438,43 @@ function CustomersPageContent() {
                 </h3>
                 <dl className="grid gap-2 text-body-sm sm:grid-cols-2">
                   <div>
-                    <dt className="text-muted-foreground">{t("addressRecordId")}</dt>
-                    <dd className="font-medium text-foreground">{selectedCustomer.address.id}</dd>
-                  </div>
-                  <div>
                     <dt className="text-muted-foreground">{t("uniqueCustomerId")}</dt>
                     <dd className="font-mono text-foreground">{selectedCustomer.dealerCustomerUniqueId}</dd>
                   </div>
                   <div className="sm:col-span-2">
                     <dt className="text-muted-foreground">{t("streetName")}</dt>
-                    <dd className="font-medium text-foreground">{selectedCustomer.address.streetName}</dd>
+                    <dd className="font-medium text-foreground">{selectedCustomer.address?.streetName || "—"}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">{t("streetNumber")}</dt>
-                    <dd className="font-medium text-foreground">{selectedCustomer.address.streetNumber}</dd>
+                    <dd className="font-medium text-foreground">{selectedCustomer.address?.streetNumber || "—"}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">{t("postalCode")}</dt>
-                    <dd className="font-medium text-foreground">{selectedCustomer.address.postalCode}</dd>
+                    <dd className="font-medium text-foreground">{selectedCustomer.address?.postalCode || "—"}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">{t("city")}</dt>
-                    <dd className="font-medium text-foreground">{selectedCustomer.address.city}</dd>
+                    <dd className="font-medium text-foreground">{selectedCustomer.address?.city || "—"}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">{t("province")}</dt>
-                    <dd className="font-medium text-foreground">{selectedCustomer.address.province}</dd>
+                    <dd className="font-medium text-foreground">{selectedCustomer.address?.province || "—"}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">{t("country")}</dt>
-                    <dd className="font-medium text-foreground">{selectedCustomer.address.country}</dd>
+                    <dd className="font-medium text-foreground">{selectedCustomer.address?.country || "—"}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">{t("unitNumber")}</dt>
                     <dd className="font-medium text-foreground">
-                      {selectedCustomer.address.unitNumber ?? "—"}
+                      {selectedCustomer.address?.unitNumber ?? "—"}
                     </dd>
                   </div>
                   <div className="sm:col-span-2">
                     <dt className="text-muted-foreground">{t("specialInstructions")}</dt>
                     <dd className="whitespace-pre-wrap text-foreground">
-                      {selectedCustomer.address.specialInstructions?.trim() || "—"}
+                      {selectedCustomer.address?.specialInstructions?.trim() || "—"}
                     </dd>
                   </div>
                 </dl>
@@ -475,17 +484,15 @@ function CustomersPageContent() {
                 <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="text-title-md font-semibold text-foreground">{t("vehicles")}</h3>
                   <Button
-                    variant="outline"
-                    size="sm"
                     type="button"
-                    className="shrink-0"
+                    className="w-full shrink-0 bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 sm:w-auto"
                     disabled={selectedCustomer.archived}
                     onClick={() => {
                       setVehicleToEdit(null);
                       setVehicleModalOpen(true);
                     }}
                   >
-                    <Plus className="size-4" />
+                    <Plus className="me-2 size-4 shrink-0" />
                     {t("addVehicle")}
                   </Button>
                 </div>
@@ -506,66 +513,109 @@ function CustomersPageContent() {
                     </Button>
                   </div>
                 ) : customerVehicles.length > 0 ? (
-                  <div className="scrollbar-custom overflow-x-auto rounded-lg border border-border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t("makeBrand")}</TableHead>
-                          <TableHead>{t("model")}</TableHead>
-                          <TableHead>{t("year")}</TableHead>
-                          <TableHead>{t("plateNumber")}</TableHead>
-                          <TableHead>{t("vinNumber")}</TableHead>
-                          <TableHead>{t("color")}</TableHead>
-                          <TableHead>{t("odometerKm")}</TableHead>
-                          <TableHead className="w-[88px]">{t("actions")}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {customerVehicles.map((v) => (
-                          <TableRow key={v.id}>
-                            <TableCell className="max-w-[120px] truncate">{v.make}</TableCell>
-                            <TableCell className="max-w-[120px] truncate">{v.model}</TableCell>
-                            <TableCell>{v.year}</TableCell>
-                            <TableCell className="font-mono text-label-md">{v.plateNumber}</TableCell>
-                            <TableCell className="max-w-[140px] truncate font-mono text-label-md">
-                              {v.vin}
-                            </TableCell>
-                            <TableCell>{v.color}</TableCell>
-                            <TableCell>{v.odometerKm}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon-xs"
-                                  className="text-muted-foreground hover:text-foreground"
-                                  disabled={selectedCustomer.archived}
-                                  aria-label={t("edit")}
-                                  onClick={() => {
-                                    setVehicleToEdit(dealerCustomerVehicleToEdit(v));
-                                    setVehicleModalOpen(true);
-                                  }}
-                                >
-                                  <Pencil className="size-4" />
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon-xs"
-                                  className="text-muted-foreground hover:text-error-main"
-                                  disabled={selectedCustomer.archived || customerMutationPending}
-                                  aria-label={t("delete")}
-                                  onClick={() => handleDeleteVehicle(v.id)}
-                                >
-                                  <Trash2 className="size-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  <StyledTable
+                    isLoading={vehiclesPending}
+                    rows={customerVehicles}
+                    keyProp={(v) => v.id}
+                    emptyText={t("noVehicles")}
+                    columns={[
+                      {
+                        header: t("makeBrand"),
+                        render: (v) => (
+                          <span className="max-w-[120px] truncate">{v.make}</span>
+                        ),
+                      },
+                      {
+                        header: t("model"),
+                        render: (v) => (
+                          <span className="max-w-[120px] truncate">{v.model}</span>
+                        ),
+                      },
+                      {
+                        header: t("year"),
+                        render: (v) => v.year,
+                        align: "center",
+                      },
+                      {
+                        header: t("plateNumber"),
+                        render: (v) => (
+                          <span className="font-mono text-label-md">{v.plateNumber}</span>
+                        ),
+                        align: "center",
+                      },
+                      {
+                        header: t("vinNumber"),
+                        render: (v) => (
+                          <span className="max-w-[140px] truncate font-mono text-label-md">
+                            {v.vin}
+                          </span>
+                        ),
+                      },
+                      {
+                        header: t("color"),
+                        render: (v) => v.color,
+                        align: "center",
+                      },
+                      {
+                        header: t("odometerKm"),
+                        render: (v) => v.odometerKm,
+                        align: "center",
+                      },
+                      {
+                        header: t("actions"),
+                        className: "min-w-[180px] sm:min-w-[220px]",
+                        render: (v) => (
+                          <div className="flex justify-center gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 sm:h-9 sm:w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
+                                        hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
+                                        transition-all duration-[var(--duration-normal)]"
+                              aria-label={t("viewTireDetails")}
+                              onClick={() => {
+                                router.push(
+                                  `/dashboard/customers/${selectedCustomer.id}/vehicles/${v.id}`
+                                );
+                              }}
+                            >
+                              <Eye className="size-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 sm:h-9 sm:w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
+                                        hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
+                                        transition-all duration-[var(--duration-normal)]"
+                              disabled={selectedCustomer.archived}
+                              aria-label={t("edit")}
+                              onClick={() => {
+                                setVehicleToEdit(dealerCustomerVehicleToEdit(v));
+                                setVehicleModalOpen(true);
+                              }}
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 sm:h-9 sm:w-9 rounded-[var(--radius-md)] border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
+                                        hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
+                                        transition-all duration-[var(--duration-normal)]"
+                              disabled={selectedCustomer.archived || customerMutationPending}
+                              aria-label={t("delete")}
+                              onClick={() => handleDeleteVehicle(v.id)}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
+                        ),
+                      },
+                    ]}
+                  />
                 ) : (
                   <div className="rounded-lg border border-dashed border-border p-6 text-center text-body-md text-muted-foreground">
                     {t("noVehicles")}

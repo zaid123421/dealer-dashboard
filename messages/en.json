@@ -192,7 +192,8 @@
     "noStaff": "No staff to display.",
     "paginationPrev": "Previous",
     "paginationNext": "Next",
-    "pageInfo": "Page {current} of {total}"
+    "pageInfo": "Page {current} of {total}",
+    "pageCompact": "{current} of {total}"
   },
   "customers": {
     "title": "Customers & Vehicles",
@@ -310,6 +311,7 @@
     "colorPlaceholder": "Vehicle color",
     "odometerKm": "Odometer (km)",
     "odometerKmPlaceholder": "e.g. 50000",
+    "viewTireDetails": "View tire details",
     "tireSize": "Tire Size",
     "tireSizePlaceholder": "e.g. 225/45R17",
     "numberOfTires": "Number of Tires",

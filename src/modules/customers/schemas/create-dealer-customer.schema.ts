@@ -10,14 +10,17 @@ export const createDealerCustomerFormFieldsSchema = z.object({
     cityId: z
       .string()
       .trim()
+      .min(1, "required")
       .regex(/^\d+$/, "invalidId"),
     countryId: z
       .string()
       .trim()
+      .min(1, "required")
       .regex(/^\d+$/, "invalidId"),
     stateId: z
       .string()
       .trim()
+      .min(1, "required")
       .regex(/^\d+$/, "invalidId"),
     streetName: z.string().trim().min(1),
     streetNumber: z.string().trim().min(1),
@@ -87,7 +90,8 @@ export const dealerCustomerResponseSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
   email: z.string(),
-  address: dealerCustomerAddressResponseSchema,
+  // 1. أضف .nullable() هنا لأن السيرفر يرسل العنوان null أحياناً
+  address: dealerCustomerAddressResponseSchema.nullable(), 
   phoneNumber: z.string(),
   dealerId: z.number(),
   dealerName: z.string(),
@@ -96,7 +100,8 @@ export const dealerCustomerResponseSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   createdBy: z.string(),
-  updatedBy: z.string(),
+  // 2. أضف .nullable() هنا لأن المستخدم الجديد لم يتم تحديثه بعد
+  updatedBy: z.string().nullable(), 
 });
 
 export type CreateDealerCustomerRequest = z.infer<typeof createDealerCustomerRequestSchema>;
