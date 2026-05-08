@@ -328,7 +328,7 @@ function CustomersPageContent() {
         </div>
       ) : null}
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[minmax(280px,1fr)_minmax(400px,2fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-auto lg:grid-cols-[minmax(280px,1fr)_minmax(400px,2fr)]">
         <div className="flex min-h-[200px] flex-col gap-2 overflow-hidden rounded-lg bg-card p-2 sm:min-h-0">
           <div className="scrollbar-custom overflow-auto space-y-3">
             {isPending ? (
