@@ -1,84 +1,23 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Plus, Eye, Pencil, Trash2, Package, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PaginationControls } from "@/components/ui/pagination-controls";
 import StyledTable from "@/components/ui/styled-table";
 
-const PAGE_SIZE = 10;
-
-// Sample data for demonstration
-const sampleProducts = [
-  {
-    id: 1,
-    sku: "TIRE-001",
-    name: "Michelin Pilot Sport 4S",
-    category: "Performance",
-    brand: "Michelin",
-    price: 245.99,
-    stock: 45,
-    status: "active",
-    description: "High-performance summer tire",
-  },
-  {
-    id: 2,
-    sku: "TIRE-002",
-    name: "Bridgestone Potenza RE-71R",
-    category: "Performance",
-    brand: "Bridgestone",
-    price: 189.99,
-    stock: 32,
-    status: "active",
-    description: "Track-ready performance tire",
-  },
-  {
-    id: 3,
-    sku: "TIRE-003",
-    name: "Continental ExtremeContact DWS06",
-    category: "All-Season",
-    brand: "Continental",
-    price: 156.99,
-    stock: 67,
-    status: "active",
-    description: "All-season performance tire",
-  },
-  {
-    id: 4,
-    sku: "TIRE-004",
-    name: "Goodyear Eagle F1 Asymmetric",
-    category: "Performance",
-    brand: "Goodyear",
-    price: 178.99,
-    stock: 0,
-    status: "out_of_stock",
-    description: "Ultra-high performance tire",
-  },
-  {
-    id: 5,
-    sku: "TIRE-005",
-    name: "Pirelli P Zero",
-    category: "Performance",
-    brand: "Pirelli",
-    price: 267.99,
-    stock: 12,
-    status: "active",
-    description: "Premium performance tire",
-  },
-  {
-    id: 6,
-    sku: "TIRE-006",
-    name: "Yokohama Advan Sport",
-    category: "Performance",
-    brand: "Yokohama",
-    price: 198.99,
-    stock: 8,
-    status: "low_stock",
-    description: "Sport performance tire",
-  },
-];
+/** صف منتج؛ يُملأ من الـ API عند توفر نقطة النهاية. */
+type ProductRow = {
+  id: number;
+  sku: string;
+  name: string;
+  category: string;
+  brand: string;
+  price: number;
+  stock: number;
+  status: string;
+  description: string;
+};
 
 function getStatusBadgeColor(status: string) {
   switch (status.toLowerCase()) {
@@ -103,23 +42,13 @@ function getStockStatus(stock: number) {
 
 export default function ProductsPage() {
   const t = useTranslations("dashboard");
-  const [page, setPage] = useState(0);
-
-  const totalPages = Math.ceil(sampleProducts.length / PAGE_SIZE);
-  const startIndex = page * PAGE_SIZE;
-  const endIndex = startIndex + PAGE_SIZE;
-  const currentProducts = sampleProducts.slice(startIndex, endIndex);
-
-  const canPrev = page > 0;
-  const canNext = page < totalPages - 1;
+  const rows: ProductRow[] = [];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-headline-sm font-bold text-foreground">
-            {t("productsTitle")}
-          </h1>
+          <h1 className="text-headline-sm font-bold text-foreground">{t("productsTitle")}</h1>
           <p className="mt-1 text-body-md text-muted-foreground">{t("productsIntro")}</p>
         </div>
         <Button
@@ -133,7 +62,7 @@ export default function ProductsPage() {
 
       <StyledTable
         isLoading={false}
-        rows={currentProducts}
+        rows={rows}
         keyProp={(product) => product.id}
         emptyText="No products found"
         columns={[
@@ -154,9 +83,7 @@ export default function ProductsPage() {
           },
           {
             header: "Category",
-            render: (product) => (
-              <Badge variant="outline">{product.category}</Badge>
-            ),
+            render: (product) => <Badge variant="outline">{product.category}</Badge>,
             align: "center",
           },
           {
@@ -169,9 +96,7 @@ export default function ProductsPage() {
             render: (product) => (
               <div className="flex items-center gap-1">
                 <DollarSign className="size-4" />
-                <span className="font-mono text-sm font-medium">
-                  {product.price.toFixed(2)}
-                </span>
+                <span className="font-mono text-sm font-medium">{product.price.toFixed(2)}</span>
               </div>
             ),
             align: "right",
@@ -183,9 +108,7 @@ export default function ProductsPage() {
               return (
                 <div className="flex items-center gap-2">
                   <Package className="size-4" />
-                  <span className={`font-medium ${stockStatus.color}`}>
-                    {product.stock}
-                  </span>
+                  <span className={`font-medium ${stockStatus.color}`}>{product.stock}</span>
                 </div>
               );
             },
@@ -203,14 +126,14 @@ export default function ProductsPage() {
           {
             header: "Actions",
             className: "min-w-[220px]",
-            render: (product) => (
+            render: () => (
               <div className="flex justify-center gap-2">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
-                            hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
+                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)]
+                            hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)]
                             transition-all duration-[var(--duration-normal)]"
                   title="View product details"
                 >
@@ -220,8 +143,8 @@ export default function ProductsPage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
-                            hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
+                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)]
+                            hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)]
                             transition-all duration-[var(--duration-normal)]"
                   title="Edit product"
                 >
@@ -231,8 +154,8 @@ export default function ProductsPage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
-                            hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
+                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)]
+                            hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)]
                             transition-all duration-[var(--duration-normal)]"
                   title="Delete product"
                 >
@@ -243,19 +166,6 @@ export default function ProductsPage() {
           },
         ]}
       />
-
-      {totalPages > 0 ? (
-        <PaginationControls
-          canPrevious={canPrev}
-          canNext={canNext}
-          previousLabel="Previous"
-          nextLabel="Next"
-          pageLabel={`Page ${page + 1} of ${totalPages}`}
-          pageText={`${page + 1}/${totalPages}`}
-          onPrevious={() => setPage((p) => Math.max(0, p - 1))}
-          onNext={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-        />
-      ) : null}
     </div>
   );
 }

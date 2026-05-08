@@ -130,7 +130,7 @@ export default function VehicleDetailsPage() {
                       <CreditCard className="size-4 text-white" />
                       <span className="text-sm font-medium text-secondary-on-surface">Plate Number</span>
                     </div>
-                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-secondary-main group-hover:shadow-md">
+                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-primary-dark group-hover:shadow-md">
                       <p className="text-body-md font-semibold text-onSurface font-mono text-sm sm:text-base">{vehicle.plateNumber}</p>
                     </div>
                   </div>
@@ -139,7 +139,7 @@ export default function VehicleDetailsPage() {
                       <Palette className="size-3 sm:size-4 text-tertiary-main" />
                       <span className="text-xs sm:text-sm font-medium text-secondary-on-surface">Color</span>
                     </div>
-                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-tertiary-main group-hover:shadow-md">
+                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-primary-dark group-hover:shadow-md">
                       <p className="text-body-md font-semibold text-onSurface text-sm sm:text-base">{vehicle.color}</p>
                     </div>
                   </div>
@@ -148,7 +148,7 @@ export default function VehicleDetailsPage() {
                       <Gauge className="size-3 sm:size-4 text-primary-main" />
                       <span className="text-xs sm:text-sm font-medium text-secondary-on-surface">Odometer</span>
                     </div>
-                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-primary-main group-hover:shadow-md">
+                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-primary-dark group-hover:shadow-md">
                       <p className="text-body-md font-semibold text-onSurface text-sm sm:text-base">{vehicle.odometerKm.toLocaleString()} km</p>
                     </div>
                   </div>
@@ -157,7 +157,7 @@ export default function VehicleDetailsPage() {
                       <Package className="size-3 sm:size-4 text-success-main" />
                       <span className="text-xs sm:text-sm font-medium text-secondary-on-surface">Tire Sets</span>
                     </div>
-                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-success-main group-hover:shadow-md">
+                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-primary-dark group-hover:shadow-md">
                       <p className="text-body-md font-semibold text-onSurface text-sm sm:text-base">{tireSets.length} sets</p>
                     </div>
                   </div>
@@ -308,6 +308,7 @@ export default function VehicleDetailsPage() {
         onOpenChange={setIsAddTireSetModalOpen}
         customerId={customerId}
         vehicleId={vehicleId}
+        onCreated={() => refetch()}
       />
     </div>
   )

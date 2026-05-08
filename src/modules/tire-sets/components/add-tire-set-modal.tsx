@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useMemo } from "react";
+import { Controller, useForm } from "react-hook-form";
+import axios from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,29 +25,47 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { z } from "zod";
-import { Controller } from "react-hook-form";
 
-const createTireSetSchema = z.object({
-  tireCount: z.number().min(1, "At least 1 tire is required").max(8, "Maximum 8 tires allowed"),
-  minimum: z.number().min(1, "Minimum must be at least 1"),
-  seasonType: z.enum(["Winter", "Summer", "All-Season"]),
-  brand: z.string().min(1, "Brand is required"),
-  size: z.string().min(1, "Size is required"),
-  displayLabel: z.string().optional(),
-});
+import api from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { dealerTireSetsOverviewQueryKey } from "../hooks/use-dealer-tire-sets-overview";
 
-type CreateTireSetFormValues = z.infer<typeof createTireSetSchema>;
+type CreateTireSetFormValues = {
+  tireCount: number;
+  seasonType: "Winter" | "Summer" | "All-Season";
+  brand: string;
+  size: string;
+  displayLabel?: string;
+};
 
 interface AddTireSetModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   customerId: string;
   vehicleId: string;
+  /** يُستدعى بعد إنشاء المجموعة بنجاح (مثلاً لإعادة جلب القائمة) */
+  onCreated?: () => void;
 }
 
-export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId }: AddTireSetModalProps) {
+export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId, onCreated }: AddTireSetModalProps) {
   const t = useTranslations("common");
   const tCustomers = useTranslations("customers");
+  const queryClient = useQueryClient();
+
+  const createTireSetSchema = useMemo(
+    () =>
+      z.object({
+        tireCount: z
+          .number()
+          .min(1, tCustomers("tireSetTireCountMinError"))
+          .max(8, tCustomers("tireSetTireCountMaxError")),
+        seasonType: z.enum(["Winter", "Summer", "All-Season"]),
+        brand: z.string().min(1, tCustomers("tireSetBrandRequiredError")),
+        size: z.string().min(1, tCustomers("tireSetSizeRequiredError")),
+        displayLabel: z.string().optional(),
+      }),
+    [tCustomers],
+  );
 
   const {
     register,
@@ -59,7 +77,6 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId }: A
     resolver: zodResolver(createTireSetSchema),
     defaultValues: {
       tireCount: 4,
-      minimum: 1,
       seasonType: "All-Season",
       brand: "",
       size: "",
@@ -69,23 +86,25 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId }: A
 
   const onSubmit = async (data: CreateTireSetFormValues) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/dealerCustomers/${customerId}/vehicles/${vehicleId}/tire-sets`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      await api.post(
+        `/v1/dealerCustomers/${customerId}/vehicles/${vehicleId}/tire-sets`,
+        data,
+      );
 
-      if (!response.ok) {
-        throw new Error('Failed to create tire set');
-      }
-
-      toast.success(tCustomers("tireSetCreatedSuccess") || "Tire set created successfully");
+      toast.success(tCustomers("tireSetCreatedSuccess"));
+      onCreated?.();
+      void queryClient.invalidateQueries({ queryKey: dealerTireSetsOverviewQueryKey });
       onOpenChange(false);
       reset();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create tire set");
+      if (axios.isAxiosError(error)) {
+        const body = error.response?.data as { message?: string } | undefined;
+        const apiMessage =
+          typeof body?.message === "string" ? body.message : error.message;
+        toast.error(apiMessage || tCustomers("tireSetCreateError"));
+        return;
+      }
+      toast.error(error instanceof Error ? error.message : tCustomers("tireSetCreateError"));
     }
   };
 
@@ -93,45 +112,28 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId }: A
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Tire Set</DialogTitle>
-          <DialogDescription>
-            Add a new tire set to this vehicle
-          </DialogDescription>
+          <DialogTitle>{tCustomers("addTireSet")}</DialogTitle>
+          <DialogDescription>{tCustomers("addTireSetModalDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="tireCount">Number of Tires</Label>
-                <Input
-                  id="tireCount"
-                  type="number"
-                  min="1"
-                  max="8"
-                  {...register("tireCount", { valueAsNumber: true })}
-                  className={errors.tireCount ? "border-red-500" : ""}
-                />
-                {errors.tireCount && (
-                  <p className="text-sm text-red-500">{errors.tireCount.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="minimum">Minimum</Label>
-                <Input
-                  id="minimum"
-                  type="number"
-                  min="1"
-                  {...register("minimum", { valueAsNumber: true })}
-                  className={errors.minimum ? "border-red-500" : ""}
-                />
-                {errors.minimum && (
-                  <p className="text-sm text-red-500">{errors.minimum.message}</p>
-                )}
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="tireCount">{tCustomers("numberOfTires")}</Label>
+              <Input
+                id="tireCount"
+                type="number"
+                min="1"
+                max="8"
+                {...register("tireCount", { valueAsNumber: true })}
+                className={errors.tireCount ? "border-red-500" : ""}
+              />
+              {errors.tireCount && (
+                <p className="text-sm text-red-500">{errors.tireCount.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="seasonType">Season Type</Label>
+              <Label htmlFor="seasonType">{tCustomers("seasonType")}</Label>
               <Controller
                 name="seasonType"
                 control={control}
@@ -141,12 +143,12 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId }: A
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger className={errors.seasonType ? "border-red-500" : ""}>
-                      <SelectValue placeholder="Select season" />
+                      <SelectValue placeholder={tCustomers("tireSetSeasonPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Winter">Winter</SelectItem>
-                      <SelectItem value="Summer">Summer</SelectItem>
-                      <SelectItem value="All-Season">All Seasons</SelectItem>
+                      <SelectItem value="Winter">{tCustomers("winter")}</SelectItem>
+                      <SelectItem value="Summer">{tCustomers("summer")}</SelectItem>
+                      <SelectItem value="All-Season">{tCustomers("allSeason")}</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -157,10 +159,10 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId }: A
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="brand">Brand</Label>
+              <Label htmlFor="brand">{tCustomers("tireBrand")}</Label>
               <Input
                 id="brand"
-                placeholder="Enter tire brand"
+                placeholder={tCustomers("tireBrandPlaceholder")}
                 {...register("brand")}
                 className={errors.brand ? "border-red-500" : ""}
               />
@@ -170,10 +172,10 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId }: A
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="size">Size</Label>
+              <Label htmlFor="size">{tCustomers("tireSize")}</Label>
               <Input
                 id="size"
-                placeholder="e.g. 225/45R17"
+                placeholder={tCustomers("tireSizePlaceholder")}
                 {...register("size")}
                 className={errors.size ? "border-red-500" : ""}
               />
@@ -183,10 +185,10 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId }: A
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="displayLabel">Display Label (Optional)</Label>
+              <Label htmlFor="displayLabel">{tCustomers("tireDisplayLabelOptional")}</Label>
               <Input
                 id="displayLabel"
-                placeholder="Optional display label"
+                placeholder={tCustomers("tireDisplayLabelPlaceholder")}
                 {...register("displayLabel")}
                 className={errors.displayLabel ? "border-red-500" : ""}
               />
@@ -209,7 +211,7 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId }: A
               type="submit"
               className="bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 w-full sm:w-auto"
             >
-              Add Tire Set
+              {tCustomers("addTireSet")}
             </Button>
           </DialogFooter>
         </form>

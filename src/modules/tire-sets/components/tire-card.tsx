@@ -4,18 +4,11 @@ import { TireDetail } from '../types'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { getTireStatusBadgeClass } from '../lib/tire-display'
 
 interface TireCardProps {
   tire: TireDetail
   onSelect?: (tire: TireDetail) => void
-}
-
-const statusColorMap: Record<TireDetail['status'], string> = {
-  CREATED: 'bg-gray-100 text-gray-800',
-  GOOD: 'bg-green-100 text-green-800',
-  FAIR: 'bg-yellow-100 text-yellow-800',
-  POOR: 'bg-orange-100 text-orange-800',
-  CRITICAL: 'bg-red-100 text-red-800',
 }
 
 export function TireCard({ tire, onSelect }: TireCardProps) {
@@ -23,7 +16,7 @@ export function TireCard({ tire, onSelect }: TireCardProps) {
     onSelect?.(tire)
   }
 
-  const statusColor = statusColorMap[tire.status]
+  const statusColor = getTireStatusBadgeClass(tire.status)
 
   return (
     <Button

@@ -104,7 +104,43 @@
     font-weight: var(--font-weight-medium);
   }
 
-  /* Custom scrollbar — thin pill thumb, transparent track */
+  /* Global scrollbar — same thin pill thumb everywhere */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(148 163 184 / 0.5) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: rgb(148 163 184 / 0.5);
+    border-radius: 9999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgb(148 163 184 / 0.7);
+  }
+
+  .dark * {
+    scrollbar-color: rgb(255 255 255 / 0.25) transparent;
+  }
+
+  .dark *::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 0.25);
+  }
+
+  .dark *::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 0.4);
+  }
+
+  /* Custom scrollbar — keep the customer-card gutter behavior */
   .scrollbar-custom {
     scrollbar-width: thin;
     scrollbar-color: rgb(148 163 184 / 0.5) transparent;

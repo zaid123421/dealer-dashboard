@@ -2,9 +2,9 @@ import { describe, it, expect, vi } from 'vitest'
 import type { TireDetail } from '../types'
 
 const mockTire: TireDetail = {
-  id: '1',
-  vehicleId: '1',
-  tireSetId: '1',
+  id: 1,
+  vehicleId: 1,
+  tireSetId: 1,
   wheelPosition: 'FL',
   tireUniqueId: 'unique-1',
   tireType: 'Summer',
@@ -48,9 +48,9 @@ describe('TireGrid Component', () => {
     it('should render multiple tires', () => {
       const tires = [
         mockTire,
-        { ...mockTire, id: '2', wheelPosition: 'FR' },
-        { ...mockTire, id: '3', wheelPosition: 'RL' },
-        { ...mockTire, id: '4', wheelPosition: 'RR' },
+        { ...mockTire, id: 2, wheelPosition: 'FR' },
+        { ...mockTire, id: 3, wheelPosition: 'RL' },
+        { ...mockTire, id: 4, wheelPosition: 'RR' },
       ]
 
       expect(tires.length).toBe(4)
@@ -81,12 +81,12 @@ describe('TireGrid Component', () => {
     it('should render tires in list format', () => {
       const tires = [
         mockTire,
-        { ...mockTire, id: '2', wheelPosition: 'FR' },
+        { ...mockTire, id: 2, wheelPosition: 'FR' },
       ]
 
       expect(tires.length).toBe(2)
-      expect(tires[0].id).toBe('1')
-      expect(tires[1].id).toBe('2')
+      expect(tires[0].id).toBe(1)
+      expect(tires[1].id).toBe(2)
     })
   })
 
@@ -100,7 +100,7 @@ describe('TireGrid Component', () => {
       const onTireSelect = vi.fn()
       const tires = [
         mockTire,
-        { ...mockTire, id: '2', wheelPosition: 'FR' },
+        { ...mockTire, id: 2, wheelPosition: 'FR' },
       ]
 
       // Simulate selection
@@ -145,7 +145,7 @@ describe('TireGrid Component', () => {
       const tires = [mockTire]
       const tire = tires[0]
 
-      expect(tire.id).toBe('1')
+      expect(tire.id).toBe(1)
       expect(tire.wheelPosition).toBe('FL')
       expect(tire.brand).toBe('Michelin')
       expect(tire.model).toBe('Pilot Sport')
@@ -157,10 +157,10 @@ describe('TireGrid Component', () => {
 
     it('should handle multiple tires with different positions', () => {
       const tires = [
-        { ...mockTire, id: '1', wheelPosition: 'FL' },
-        { ...mockTire, id: '2', wheelPosition: 'FR' },
-        { ...mockTire, id: '3', wheelPosition: 'RL' },
-        { ...mockTire, id: '4', wheelPosition: 'RR' },
+        { ...mockTire, id: 1, wheelPosition: 'FL' },
+        { ...mockTire, id: 2, wheelPosition: 'FR' },
+        { ...mockTire, id: 3, wheelPosition: 'RL' },
+        { ...mockTire, id: 4, wheelPosition: 'RR' },
       ]
 
       const positions = tires.map(t => t.wheelPosition)

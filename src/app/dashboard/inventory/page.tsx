@@ -1,90 +1,23 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Plus, Eye, Pencil, Trash2, Package, AlertTriangle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PaginationControls } from "@/components/ui/pagination-controls";
 import StyledTable from "@/components/ui/styled-table";
 
-const PAGE_SIZE = 10;
-
-// Sample data for demonstration
-const sampleInventory = [
-  {
-    id: 1,
-    productSku: "TIRE-001",
-    productName: "Michelin Pilot Sport 4S",
-    location: "Warehouse A - Shelf 1",
-    quantity: 45,
-    reservedQuantity: 5,
-    availableQuantity: 40,
-    minStockLevel: 10,
-    lastUpdated: "2024-01-15",
-    status: "healthy",
-  },
-  {
-    id: 2,
-    productSku: "TIRE-002",
-    productName: "Bridgestone Potenza RE-71R",
-    location: "Warehouse A - Shelf 2",
-    quantity: 32,
-    reservedQuantity: 8,
-    availableQuantity: 24,
-    minStockLevel: 15,
-    lastUpdated: "2024-01-16",
-    status: "healthy",
-  },
-  {
-    id: 3,
-    productSku: "TIRE-003",
-    productName: "Continental ExtremeContact DWS06",
-    location: "Warehouse B - Shelf 1",
-    quantity: 67,
-    reservedQuantity: 12,
-    availableQuantity: 55,
-    minStockLevel: 20,
-    lastUpdated: "2024-01-14",
-    status: "healthy",
-  },
-  {
-    id: 4,
-    productSku: "TIRE-004",
-    productName: "Goodyear Eagle F1 Asymmetric",
-    location: "Warehouse B - Shelf 3",
-    quantity: 0,
-    reservedQuantity: 0,
-    availableQuantity: 0,
-    minStockLevel: 8,
-    lastUpdated: "2024-01-13",
-    status: "out_of_stock",
-  },
-  {
-    id: 5,
-    productSku: "TIRE-005",
-    productName: "Pirelli P Zero",
-    location: "Warehouse A - Shelf 4",
-    quantity: 12,
-    reservedQuantity: 3,
-    availableQuantity: 9,
-    minStockLevel: 15,
-    lastUpdated: "2024-01-12",
-    status: "low_stock",
-  },
-  {
-    id: 6,
-    productSku: "TIRE-006",
-    productName: "Yokohama Advan Sport",
-    location: "Warehouse C - Shelf 2",
-    quantity: 8,
-    reservedQuantity: 2,
-    availableQuantity: 6,
-    minStockLevel: 10,
-    lastUpdated: "2024-01-11",
-    status: "critical",
-  },
-];
+type InventoryRow = {
+  id: number;
+  productSku: string;
+  productName: string;
+  location: string;
+  quantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+  minStockLevel: number;
+  lastUpdated: string;
+  status: string;
+};
 
 function getStatusBadgeColor(status: string) {
   switch (status.toLowerCase()) {
@@ -118,7 +51,7 @@ function getStatusIcon(status: string) {
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -127,23 +60,13 @@ function formatDate(dateString: string) {
 
 export default function InventoryPage() {
   const t = useTranslations("dashboard");
-  const [page, setPage] = useState(0);
-
-  const totalPages = Math.ceil(sampleInventory.length / PAGE_SIZE);
-  const startIndex = page * PAGE_SIZE;
-  const endIndex = startIndex + PAGE_SIZE;
-  const currentInventory = sampleInventory.slice(startIndex, endIndex);
-
-  const canPrev = page > 0;
-  const canNext = page < totalPages - 1;
+  const rows: InventoryRow[] = [];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-headline-sm font-bold text-foreground">
-            {t("inventoryTitle")}
-          </h1>
+          <h1 className="text-headline-sm font-bold text-foreground">{t("inventoryTitle")}</h1>
           <p className="mt-1 text-body-md text-muted-foreground">{t("inventoryIntro")}</p>
         </div>
         <Button
@@ -157,7 +80,7 @@ export default function InventoryPage() {
 
       <StyledTable
         isLoading={false}
-        rows={currentInventory}
+        rows={rows}
         keyProp={(item) => item.id}
         emptyText="No inventory items found"
         columns={[
@@ -181,9 +104,7 @@ export default function InventoryPage() {
           },
           {
             header: "Total Qty",
-            render: (item) => (
-              <span className="font-mono text-sm font-medium">{item.quantity}</span>
-            ),
+            render: (item) => <span className="font-mono text-sm font-medium">{item.quantity}</span>,
             align: "center",
           },
           {
@@ -202,9 +123,7 @@ export default function InventoryPage() {
           },
           {
             header: "Min Level",
-            render: (item) => (
-              <span className="font-mono text-sm">{item.minStockLevel}</span>
-            ),
+            render: (item) => <span className="font-mono text-sm">{item.minStockLevel}</span>,
             align: "center",
           },
           {
@@ -227,14 +146,14 @@ export default function InventoryPage() {
           {
             header: "Actions",
             className: "min-w-[220px]",
-            render: (item) => (
+            render: () => (
               <div className="flex justify-center gap-2">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
-                            hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
+                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)]
+                            hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)]
                             transition-all duration-[var(--duration-normal)]"
                   title="View inventory details"
                 >
@@ -244,8 +163,8 @@ export default function InventoryPage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
-                            hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
+                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)]
+                            hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)]
                             transition-all duration-[var(--duration-normal)]"
                   title="Edit inventory"
                 >
@@ -255,8 +174,8 @@ export default function InventoryPage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
-                            hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
+                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)]
+                            hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)]
                             transition-all duration-[var(--duration-normal)]"
                   title="Delete inventory item"
                 >
@@ -267,19 +186,6 @@ export default function InventoryPage() {
           },
         ]}
       />
-
-      {totalPages > 0 ? (
-        <PaginationControls
-          canPrevious={canPrev}
-          canNext={canNext}
-          previousLabel="Previous"
-          nextLabel="Next"
-          pageLabel={`Page ${page + 1} of ${totalPages}`}
-          pageText={`${page + 1}/${totalPages}`}
-          onPrevious={() => setPage((p) => Math.max(0, p - 1))}
-          onNext={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-        />
-      ) : null}
     </div>
   );
 }

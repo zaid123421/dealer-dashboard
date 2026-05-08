@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuthUser } from "@/shared/hooks/use-can-access";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,18 +14,20 @@ import {
   Trash2,
   Archive,
   Eye,
+  User,
+  Mail,
+  Phone,
+  Hash,
+  MapPin,
+  Building2,
+  Home,
+  CheckCircle2,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import StyledTable from "@/components/ui/styled-table";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -68,6 +70,41 @@ const INITIAL_COLORS = [
   "bg-warning-dark text-warning-onContainer",
   "bg-info-main text-white",
 ];
+
+function CustomerDetailTile({
+  icon: Icon,
+  label,
+  value,
+  className,
+  valueClassName,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: ReactNode;
+  className?: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className={cn("group min-w-0", className)}>
+      <div className="mb-2 flex min-w-0 items-center gap-2">
+        <Icon className="size-3 text-primary-dark sm:size-4" />
+        <span className="min-w-0 truncate whitespace-nowrap text-xs font-medium text-secondary-on-surface sm:text-sm">
+          {label}
+        </span>
+      </div>
+      <div className="min-w-0 rounded-lg border-2 border-surface-high bg-surface-bright p-2 transition-all group-hover:border-primary-dark group-hover:shadow-md sm:p-3">
+        <div
+          className={cn(
+            "min-w-0 truncate whitespace-nowrap text-sm font-semibold text-onSurface sm:text-base",
+            valueClassName,
+          )}
+        >
+          {value}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function CustomersPageContent() {
   const t = useTranslations("customers");
@@ -353,134 +390,152 @@ function CustomersPageContent() {
           </div>
         </div>
 
-        <div className="scrollbar-custom flex min-h-[280px] flex-col gap-4 overflow-auto border border-border rounded-lg bg-card p-4 sm:min-h-0 sm:p-6">
+        <div className="scrollbar-custom flex min-h-[280px] min-w-0 flex-col gap-4 overflow-y-auto sm:min-h-0">
           {selectedCustomer ? (
             <>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
-                  <div
-                    className={cn(
-                      "flex size-12 shrink-0 items-center justify-center rounded-full font-bold text-title-md sm:size-16 sm:text-title-lg transition-all duration-200 transform hover:scale-105",
-                      INITIAL_COLORS[colorIndexFor(selectedCustomer)],
-                    )}
-                  >
-                    {customerInitials(selectedCustomer)}
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="text-headline-sm font-bold text-foreground">
-                      {selectedCustomer.firstName} {selectedCustomer.lastName}
-                    </h2>
-                    <p className="mt-0.5 break-words text-body-md text-muted-foreground sm:text-body-lg">
-                      {selectedCustomer.email.toLowerCase()}
-                    </p>
-                    <p className="mt-0.5 text-body-md text-muted-foreground">
-                      {formatPhoneDisplay(selectedCustomer.phoneNumber)}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Badge
-                        className={cn(
-                          "border-0",
-                          selectedCustomer.archived
-                            ? "bg-gray-500 text-white"
-                            : "bg-emerald-600 text-white",
-                        )}
+              <Card className="rounded-lg border-0 bg-surface-container">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-start">
+                    <div
+                      className={cn(
+                        "mx-auto flex size-12 shrink-0 items-center justify-center rounded-full font-bold text-title-md transition-all duration-200 hover:scale-105 sm:size-16 sm:text-title-lg lg:mx-0",
+                        INITIAL_COLORS[colorIndexFor(selectedCustomer)],
+                      )}
+                    >
+                      {customerInitials(selectedCustomer)}
+                    </div>
+                    <div className="min-w-0 flex-1 text-center lg:text-left">
+                      <h2 className="mb-2 truncate whitespace-nowrap text-lg font-bold text-onSurface sm:text-xl md:text-headline-sm">
+                        {selectedCustomer.firstName} {selectedCustomer.lastName}
+                      </h2>
+                      <p className="mb-4 truncate whitespace-nowrap px-2 font-mono text-sm text-secondary-on-surface lg:px-0">
+                        {t("uniqueCustomerId")}: {selectedCustomer.dealerCustomerUniqueId}
+                      </p>
+                      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(180px,1fr))] sm:gap-4">
+                        <CustomerDetailTile
+                          icon={Mail}
+                          label={t("emailAddress")}
+                          value={selectedCustomer.email.toLowerCase()}
+                          valueClassName="truncate"
+                        />
+                        <CustomerDetailTile
+                          icon={Phone}
+                          label={t("phoneNumber")}
+                          value={formatPhoneDisplay(selectedCustomer.phoneNumber)}
+                        />
+                        <div className="min-w-0">
+                          <div className="mb-2 flex min-w-0 items-center gap-2">
+                            <CheckCircle2 className="size-3 text-primary-dark sm:size-4" />
+                            <span className="min-w-0 truncate whitespace-nowrap text-xs font-medium text-secondary-on-surface sm:text-sm">
+                              {t("status")}
+                            </span>
+                          </div>
+                          <div className="flex min-h-10 items-center sm:min-h-12">
+                            <Badge
+                              className={cn(
+                                "max-w-full truncate whitespace-nowrap border-0 px-3 py-1 shadow-none",
+                                selectedCustomer.archived
+                                  ? "bg-gray-500 text-white"
+                                  : "bg-emerald-600 text-white",
+                              )}
+                            >
+                              {selectedCustomer.archived ? t("archivedBadge") : t("activeBadge")}
+                            </Badge>
+                          </div>
+                        </div>
+                        <CustomerDetailTile
+                          icon={Hash}
+                          label={t("uniqueCustomerId")}
+                          value={selectedCustomer.dealerCustomerUniqueId}
+                          valueClassName="font-mono"
+                        />
+                        <CustomerDetailTile
+                          icon={MapPin}
+                          label={t("streetName")}
+                          value={selectedCustomer.address?.streetName || "—"}
+                        />
+                        <CustomerDetailTile
+                          icon={Building2}
+                          label={t("streetNumber")}
+                          value={selectedCustomer.address?.streetNumber || "—"}
+                        />
+                        <CustomerDetailTile
+                          icon={Home}
+                          label={t("unitNumber")}
+                          value={selectedCustomer.address?.unitNumber ?? "—"}
+                        />
+                        <CustomerDetailTile
+                          icon={MapPin}
+                          label={t("city")}
+                          value={selectedCustomer.address?.city || "—"}
+                        />
+                        <CustomerDetailTile
+                          icon={MapPin}
+                          label={t("province")}
+                          value={selectedCustomer.address?.province || "—"}
+                        />
+                        <CustomerDetailTile
+                          icon={MapPin}
+                          label={t("country")}
+                          value={selectedCustomer.address?.country || "—"}
+                        />
+                        <CustomerDetailTile
+                          icon={Hash}
+                          label={t("postalCode")}
+                          value={selectedCustomer.address?.postalCode || "—"}
+                        />
+                        <CustomerDetailTile
+                          icon={User}
+                          label={t("specialInstructions")}
+                          value={selectedCustomer.address?.specialInstructions?.trim() || "—"}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap justify-center gap-2 lg:flex-col lg:items-stretch">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="h-9 flex-1 border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
+                          hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
+                          transition-all duration-[var(--duration-normal)] sm:flex-initial"
                       >
-                        {selectedCustomer.archived ? t("archivedBadge") : t("activeBadge")}
-                      </Badge>
+                        <Link href={ROUTES.DASHBOARD.CUSTOMER_EDIT(String(selectedCustomer.id))}>
+                          <Pencil className="size-4 shrink-0" />
+                          {t("edit")}
+                        </Link>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 flex-1 border-[var(--color-warning-main-light)] bg-transparent text-[var(--color-warning-main-light)] 
+                          hover:bg-[var(--color-warning-main-dark)] hover:text-white hover:border-[var(--color-warning-main-dark)] 
+                          transition-all duration-[var(--duration-normal)] sm:flex-initial"
+                        disabled={selectedCustomer.archived || customerMutationPending}
+                        onClick={handleArchiveCustomer}
+                      >
+                        {archiveCustomer.isPending ? t("loading") : t("archive")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="flex h-9 flex-1 items-center justify-center gap-2 border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
+                          hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
+                          transition-all duration-[var(--duration-normal)] sm:flex-initial"
+                        disabled={customerMutationPending}
+                        onClick={handleDeleteCustomer}
+                      >
+                        <Trash2 className="size-4 shrink-0" />
+                        {deleteCustomer.isPending ? t("loading") : t("delete")}
+                      </Button>
                     </div>
                   </div>
-                </div>
-                <div className="flex shrink-0 flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    asChild
-                    className="flex-1 h-9 border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
-                      hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
-                      transition-all duration-[var(--duration-normal)] sm:flex-initial"
-                  >
-                    <Link href={ROUTES.DASHBOARD.CUSTOMER_EDIT(String(selectedCustomer.id))}>
-                      <Pencil className="size-4 shrink-0" />
-                      {t("edit")}
-                    </Link>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 h-9 border-[var(--color-warning-main-light)] bg-transparent text-[var(--color-warning-main-light)] 
-                      hover:bg-[var(--color-warning-main-dark)] hover:text-white hover:border-[var(--color-warning-main-dark)] 
-                      transition-all duration-[var(--duration-normal)] sm:flex-initial"
-                    disabled={selectedCustomer.archived || customerMutationPending}
-                    onClick={handleArchiveCustomer}
-                  >
-                    {archiveCustomer.isPending ? t("loading") : t("archive")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="flex flex-1 h-9 items-center justify-center gap-2 border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
-                      hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
-                      transition-all duration-[var(--duration-normal)] sm:flex-initial"
-                    disabled={customerMutationPending}
-                    onClick={handleDeleteCustomer}
-                  >
-                    <Trash2 className="size-4 shrink-0" />
-                    {deleteCustomer.isPending ? t("loading") : t("delete")}
-                  </Button>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
-              <div className="rounded-lg border border-border bg-muted/10 p-4 sm:p-5">
-                <h3 className="mb-3 text-title-md font-semibold text-foreground">
-                  {t("addressDetails")}
-                </h3>
-                <dl className="grid gap-2 text-body-sm sm:grid-cols-2">
-                  <div>
-                    <dt className="text-muted-foreground">{t("uniqueCustomerId")}</dt>
-                    <dd className="font-mono text-foreground">{selectedCustomer.dealerCustomerUniqueId}</dd>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <dt className="text-muted-foreground">{t("streetName")}</dt>
-                    <dd className="font-medium text-foreground">{selectedCustomer.address?.streetName || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">{t("streetNumber")}</dt>
-                    <dd className="font-medium text-foreground">{selectedCustomer.address?.streetNumber || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">{t("postalCode")}</dt>
-                    <dd className="font-medium text-foreground">{selectedCustomer.address?.postalCode || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">{t("city")}</dt>
-                    <dd className="font-medium text-foreground">{selectedCustomer.address?.city || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">{t("province")}</dt>
-                    <dd className="font-medium text-foreground">{selectedCustomer.address?.province || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">{t("country")}</dt>
-                    <dd className="font-medium text-foreground">{selectedCustomer.address?.country || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">{t("unitNumber")}</dt>
-                    <dd className="font-medium text-foreground">
-                      {selectedCustomer.address?.unitNumber ?? "—"}
-                    </dd>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <dt className="text-muted-foreground">{t("specialInstructions")}</dt>
-                    <dd className="whitespace-pre-wrap text-foreground">
-                      {selectedCustomer.address?.specialInstructions?.trim() || "—"}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-
-              <div>
+              <div className="min-w-0">
                 <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="text-title-md font-semibold text-foreground">{t("vehicles")}</h3>
                   <Button
@@ -521,43 +576,50 @@ function CustomersPageContent() {
                     columns={[
                       {
                         header: t("makeBrand"),
+                        className: "min-w-[140px]",
                         render: (v) => (
-                          <span className="max-w-[120px] truncate">{v.make}</span>
+                          <span className="block max-w-[140px] truncate">{v.make}</span>
                         ),
                       },
                       {
                         header: t("model"),
+                        className: "min-w-[140px]",
                         render: (v) => (
-                          <span className="max-w-[120px] truncate">{v.model}</span>
+                          <span className="block max-w-[140px] truncate">{v.model}</span>
                         ),
                       },
                       {
                         header: t("year"),
+                        className: "min-w-[90px]",
                         render: (v) => v.year,
                         align: "center",
                       },
                       {
                         header: t("plateNumber"),
+                        className: "min-w-[150px]",
                         render: (v) => (
-                          <span className="font-mono text-label-md">{v.plateNumber}</span>
+                          <span className="block truncate font-mono text-label-md">{v.plateNumber}</span>
                         ),
                         align: "center",
                       },
                       {
                         header: t("vinNumber"),
+                        className: "min-w-[180px]",
                         render: (v) => (
-                          <span className="max-w-[140px] truncate font-mono text-label-md">
+                          <span className="block max-w-[180px] truncate font-mono text-label-md">
                             {v.vin}
                           </span>
                         ),
                       },
                       {
                         header: t("color"),
+                        className: "min-w-[110px]",
                         render: (v) => v.color,
                         align: "center",
                       },
                       {
                         header: t("odometerKm"),
+                        className: "min-w-[140px]",
                         render: (v) => v.odometerKm,
                         align: "center",
                       },

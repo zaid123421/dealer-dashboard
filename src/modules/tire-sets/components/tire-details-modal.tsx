@@ -11,19 +11,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { X } from 'lucide-react'
+import { getTireStatusBadgeClass } from '../lib/tire-display'
 
 interface TireDetailsModalProps {
   tire: TireDetail | null
   isOpen: boolean
   onClose: () => void
-}
-
-const statusColorMap: Record<TireDetail['status'], string> = {
-  CREATED: 'bg-gray-100 text-gray-800',
-  GOOD: 'bg-green-100 text-green-800',
-  FAIR: 'bg-yellow-100 text-yellow-800',
-  POOR: 'bg-orange-100 text-orange-800',
-  CRITICAL: 'bg-red-100 text-red-800',
 }
 
 function formatDate(dateString: string): string {
@@ -59,7 +52,7 @@ export function TireDetailsModal({
 }: TireDetailsModalProps) {
   if (!tire) return null
 
-  const statusColor = statusColorMap[tire.status]
+  const statusColor = getTireStatusBadgeClass(tire.status)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

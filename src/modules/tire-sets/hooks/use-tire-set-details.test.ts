@@ -25,10 +25,10 @@ vi.mock('../services/tire-set.service', () => ({
 }))
 
 const mockTireSet = {
-  id: '1',
-  vehicleId: '100',
+  id: 1,
+  vehicleId: 100,
   tireCount: 4,
-  seasonType: 'SUMMER' as const,
+  seasonType: 'Summer' as const,
   brand: 'Michelin',
   size: '225/45R17',
   displayLabel: 'Michelin Summer 225/45R17',
@@ -37,9 +37,9 @@ const mockTireSet = {
 
 const mockTires = [
   {
-    id: '1',
-    vehicleId: '100',
-    tireSetId: '1',
+    id: 1,
+    vehicleId: 100,
+    tireSetId: 1,
     wheelPosition: 'FL',
     tireUniqueId: 'TIRE001',
     tireType: 'Summer',
@@ -63,9 +63,9 @@ const mockTires = [
     version: 1,
   },
   {
-    id: '2',
-    vehicleId: '100',
-    tireSetId: '1',
+    id: 2,
+    vehicleId: 100,
+    tireSetId: 1,
     wheelPosition: 'FR',
     tireUniqueId: 'TIRE002',
     tireType: 'Summer',
@@ -186,8 +186,8 @@ describe('useTireSetDetails - Service Layer Tests', () => {
     const result = await tireSetService.getTireSetDetailsService(1, 100, '1')
 
     result.tires.forEach((tire) => {
-      expect(tire.tireSetId).toBe('1')
-      expect(tire.vehicleId).toBe('100')
+      expect(tire.tireSetId).toBe(1)
+      expect(tire.vehicleId).toBe(100)
     })
   })
 
@@ -213,8 +213,8 @@ describe('useTireSetDetails - Service Layer Tests', () => {
 
     const result = await tireSetService.getTireSetDetailsService(1, 100, '1')
 
-    expect(result.tireSet.id).toBe('1')
-    expect(result.tireSet.vehicleId).toBe('100')
+    expect(result.tireSet.id).toBe(1)
+    expect(result.tireSet.vehicleId).toBe(100)
   })
 
   it('should return tire count matching actual tires', async () => {

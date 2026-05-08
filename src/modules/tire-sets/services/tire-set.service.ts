@@ -47,7 +47,7 @@ interface ApiResponse {
   seasonType: string
   brand: string
   size: string
-  displayLabel: string
+  displayLabel: string | null
   createdAt: string
   tires: Array<{
     id: number
@@ -77,6 +77,132 @@ interface ApiResponse {
   }>
 }
 
+function normalizeSeasonType(raw: string): 'Summer' | 'Winter' | 'All-Season' {
+  const s = raw.replace(/_/g, ' ').trim().toLowerCase()
+  if (s.includes('winter')) return 'Winter'
+  if (s.includes('summer')) return 'Summer'
+  return 'All-Season'
+}
+
+function mapApiTireSetToDetail(tireSetData: ApiResponse): TireSetDetail {
+  return {
+    id: tireSetData.id,
+    vehicleId: tireSetData.vehicleId,
+    tireCount: tireSetData.tireCount,
+    seasonType: normalizeSeasonType(tireSetData.seasonType),
+    brand: tireSetData.brand,
+    size: tireSetData.size,
+    displayLabel: tireSetData.displayLabel ?? '',
+    createdAt: tireSetData.createdAt,
+  }
+}
+
+function mapApiTireToDetail(tire: ApiResponse['tires'][number]): TireDetail {
+  return {
+    id: tire.id,
+    vehicleId: tire.vehicleId,
+    tireSetId: tire.tireSetId,
+    wheelPosition: tire.wheelPosition,
+    tireUniqueId: tire.tireUniqueId,
+    tireType: tire.tireType,
+    treadWidth: tire.treadWidth,
+    aspectRatio: tire.aspectRatio,
+    construction: tire.construction,
+    diameter: tire.diameter,
+    composition: tire.composition,
+    mileage: tire.mileage,
+    treadCondition: tire.treadCondition,
+    status:
+      typeof tire.status === 'string' && tire.status.trim() !== ''
+        ? tire.status.trim()
+        : 'CREATED',
+    brand: tire.brand,
+    model: tire.model,
+    size: tire.size,
+    description: tire.description,
+    scanMetadata: tire.scanMetadata,
+    addedDate: tire.addedDate,
+    updatedDate: tire.updatedDate,
+    createdAt: tire.createdAt,
+    updatedAt: tire.updatedAt,
+    version: tire.version,
+  }
+}
+
+function rethrowAsTireServiceError(error: unknown): never {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status
+    const message =
+      (error.response?.data as Record<string, unknown>)?.message ||
+      error.message ||
+      'Request failed'
+
+    if (status === 401) {
+      throw new AuthenticationError()
+    }
+    if (status === 403) {
+      throw new AuthorizationError()
+    }
+    if (status === 404) {
+      throw new NotFoundError()
+    }
+    throw new ServerError(String(message))
+  }
+
+  if (error instanceof TireSetServiceError) {
+    throw error
+  }
+
+  throw new ServerError('An unexpected error occurred')
+}
+
+async function fetchVehicleTireSetsRaw(
+  customerId: number,
+  vehicleId: number,
+): Promise<ApiResponse[]> {
+  const endpoint = `/v1/dealerCustomers/${customerId}/vehicles/${vehicleId}/tire-sets`
+  const response = await api.get<ApiResponse[]>(endpoint)
+
+  if (!response.data || !Array.isArray(response.data)) {
+    throw new ServerError('Invalid response format from API')
+  }
+
+  return response.data
+}
+
+/**
+ * حذف مجموعة إطارات كاملة.
+ * DELETE /v1/dealerCustomers/:customerId/vehicles/:vehicleId/tire-sets/:tireSetId
+ */
+export async function deleteTireSetService(
+  customerId: number,
+  vehicleId: number,
+  tireSetId: number,
+): Promise<void> {
+  try {
+    await api.delete(
+      `/v1/dealerCustomers/${customerId}/vehicles/${vehicleId}/tire-sets/${tireSetId}`,
+    )
+  } catch (error) {
+    rethrowAsTireServiceError(error)
+  }
+}
+
+/**
+ * كل مجموعات الإطارات لمركبة واحدة (نفس استجابة GET tire-sets، بدون فلترة حسب set).
+ */
+export async function listVehicleTireSetsService(
+  customerId: number,
+  vehicleId: number,
+): Promise<TireSetDetail[]> {
+  try {
+    const data = await fetchVehicleTireSetsRaw(customerId, vehicleId)
+    return data.map(mapApiTireSetToDetail)
+  } catch (error) {
+    rethrowAsTireServiceError(error)
+  }
+}
+
 /**
  * Fetches tire set and tire details from the API
  * @param customerId - The customer ID (number)
@@ -94,96 +220,26 @@ export async function getTireSetDetailsService(
   tireSetId: string,
 ): Promise<{ tireSet: TireSetDetail; tires: TireDetail[] }> {
   try {
-    const endpoint = `/v1/dealerCustomers/${customerId}/vehicles/${vehicleId}/tire-sets`
+    const responseData = await fetchVehicleTireSetsRaw(customerId, vehicleId)
 
-    const response = await api.get<ApiResponse[]>(endpoint)
-
-    if (!response.data || !Array.isArray(response.data)) {
-      throw new ServerError('Invalid response format from API')
-    }
-
-    // Find the tire set matching the requested tireSetId
-    const tireSetData = response.data.find((set) => set.id.toString() === tireSetId)
+    const tireSetData = responseData.find((set) => set.id.toString() === tireSetId)
 
     if (!tireSetData) {
       throw new NotFoundError('Tire set not found')
     }
 
-    // Transform API response to TireSetDetail
-    const tireSet: TireSetDetail = {
-      id: tireSetData.id,
-      vehicleId: tireSetData.vehicleId,
-      tireCount: tireSetData.tireCount,
-      seasonType: tireSetData.seasonType as 'Summer' | 'Winter' | 'All-Season',
-      brand: tireSetData.brand,
-      size: tireSetData.size,
-      displayLabel: tireSetData.displayLabel,
-      createdAt: tireSetData.createdAt,
-    }
+    const tireSet = mapApiTireSetToDetail(tireSetData)
 
-    // Filter and transform tires belonging to this tire set
     const tires: TireDetail[] = tireSetData.tires
       .filter((tire) => tire.tireSetId === Number(tireSetId))
-      .map((tire) => ({
-        id: tire.id,
-        vehicleId: tire.vehicleId,
-        tireSetId: tire.tireSetId,
-        wheelPosition: tire.wheelPosition,
-        tireUniqueId: tire.tireUniqueId,
-        tireType: tire.tireType,
-        treadWidth: tire.treadWidth,
-        aspectRatio: tire.aspectRatio,
-        construction: tire.construction,
-        diameter: tire.diameter,
-        composition: tire.composition,
-        mileage: tire.mileage,
-        treadCondition: tire.treadCondition,
-        status: (tire.status as 'CREATED' | 'GOOD' | 'FAIR' | 'POOR' | 'CRITICAL') || 'CREATED',
-        brand: tire.brand,
-        model: tire.model,
-        size: tire.size,
-        description: tire.description,
-        scanMetadata: tire.scanMetadata,
-        addedDate: tire.addedDate,
-        updatedDate: tire.updatedDate,
-        createdAt: tire.createdAt,
-        updatedAt: tire.updatedAt,
-        version: tire.version,
-      }))
+      .map(mapApiTireToDetail)
 
-    // Validate that at least one tire exists for this set
     if (tires.length === 0) {
       throw new ServerError('No tires found for this tire set')
     }
 
     return { tireSet, tires }
   } catch (error) {
-    // Handle axios errors
-    if (axios.isAxiosError(error)) {
-      const status = error.response?.status
-      const message =
-        (error.response?.data as Record<string, unknown>)?.message ||
-        error.message ||
-        'Request failed'
-
-      if (status === 401) {
-        throw new AuthenticationError()
-      }
-      if (status === 403) {
-        throw new AuthorizationError()
-      }
-      if (status === 404) {
-        throw new NotFoundError()
-      }
-      throw new ServerError(String(message))
-    }
-
-    // Re-throw our custom errors
-    if (error instanceof TireSetServiceError) {
-      throw error
-    }
-
-    // Handle unknown errors
-    throw new ServerError('An unexpected error occurred')
+    rethrowAsTireServiceError(error)
   }
 }

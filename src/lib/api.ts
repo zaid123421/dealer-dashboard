@@ -16,8 +16,7 @@ function attachBearerToken(config: InternalAxiosRequestConfig, rawToken: string)
 
 const api = axios.create({
   baseURL:
-    process.env.NEXT_PUBLIC_BACKEND_URL_FOR_SERVER_REQUESTS ||
-    "http://localhost:5000/api",
+    process.env.NEXT_PUBLIC_BACKEND_URL_FOR_SERVER_REQUESTS,
   headers: {
     "Content-Type": "application/json",
   },

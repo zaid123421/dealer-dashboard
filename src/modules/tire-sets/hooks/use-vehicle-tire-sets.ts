@@ -1,165 +1,94 @@
-import { useState, useEffect } from 'react'
+'use client'
 
+import { useEffect, useState, useCallback } from 'react'
 import type { TireSetDetail } from '../types'
-
-
+import {
+  listVehicleTireSetsService,
+  AuthenticationError,
+  AuthorizationError,
+  NotFoundError,
+  ServerError,
+} from '../services/tire-set.service'
 
 interface UseVehicleTireSetsParams {
-
   customerId: string | undefined
-
   vehicleId: string | undefined
-
 }
-
-
 
 interface UseVehicleTireSetsResult {
-
   tireSets: TireSetDetail[]
-
   isLoading: boolean
-
   isError: boolean
-
   error: Error | null
-
   refetch: () => void
-
 }
-
-const mockTireSets: TireSetDetail[] = [
-  {
-    id: 1,
-    vehicleId: 1,
-    tireCount: 4,
-    seasonType: 'Summer',
-    brand: 'Michelin',
-    size: '245/35R19',
-    displayLabel: 'Summer Performance Set',
-    createdAt: '2024-01-15T10:30:00Z',
-  },
-  {
-    id: 2,
-    vehicleId: 1,
-    tireCount: 4,
-    seasonType: 'Winter',
-    brand: 'Bridgestone',
-    size: '225/45R17',
-    displayLabel: 'Winter Safety Set',
-    createdAt: '2024-01-10T14:20:00Z',
-  },
-  {
-    id: 3,
-    vehicleId: 1,
-    tireCount: 4,
-    seasonType: 'All-Season',
-    brand: 'Continental',
-    size: '255/40R18',
-    displayLabel: 'All-Season Comfort Set',
-    createdAt: '2023-12-20T09:15:00Z',
-  },
-]
-
-
 
 /**
-
- * Hook to fetch tire sets for a specific vehicle (using mock data)
-
+ * مجموعات الإطارات لمركبة من GET /dealerCustomers/:id/vehicles/:id/tire-sets
  */
-
 export function useVehicleTireSets({
-
   customerId,
-
   vehicleId,
-
 }: UseVehicleTireSetsParams): UseVehicleTireSetsResult {
-
   const [tireSets, setTireSets] = useState<TireSetDetail[]>([])
-
   const [isLoading, setIsLoading] = useState(true)
-
   const [isError, setIsError] = useState(false)
-
   const [error, setError] = useState<Error | null>(null)
 
+  const fetchTireSets = useCallback(async () => {
+    if (!customerId || !vehicleId) {
+      setTireSets([])
+      setIsLoading(false)
+      setIsError(false)
+      setError(null)
+      return
+    }
 
-
-  const refetch = () => {
+    const customIdNum = Number.parseInt(customerId, 10)
+    const vehicleIdNum = Number.parseInt(vehicleId, 10)
+    if (Number.isNaN(customIdNum) || Number.isNaN(vehicleIdNum)) {
+      setIsError(true)
+      setError(new Error('Invalid customer ID or vehicle ID'))
+      setTireSets([])
+      setIsLoading(false)
+      return
+    }
 
     setIsLoading(true)
-
     setIsError(false)
-
     setError(null)
 
-
-
-    // Simulate API call with timeout
-
-    setTimeout(() => {
-
-      try {
-
-        if (!customerId || !vehicleId) {
-
-          throw new Error('Customer ID and Vehicle ID are required')
-
-        }
-
-
-
-        // For demonstration, show empty tire sets for some vehicles
-
-        const vehicleIdNum = parseInt(vehicleId)
-
-        const hasTireSets = vehicleIdNum % 3 !== 0 // Every 3rd vehicle has no tire sets
-
-        
-
-        setTireSets(hasTireSets ? mockTireSets : [])
-
-        setIsLoading(false)
-
-      } catch (err) {
-
-        setIsError(true)
-
-        setError(err instanceof Error ? err : new Error('Unknown error'))
-
-        setIsLoading(false)
-
+    try {
+      const data = await listVehicleTireSetsService(customIdNum, vehicleIdNum)
+      setTireSets(data)
+    } catch (err) {
+      const normalized = err instanceof Error ? err : new Error('Unknown error')
+      if (
+        normalized instanceof AuthenticationError ||
+        normalized instanceof AuthorizationError ||
+        normalized instanceof NotFoundError ||
+        normalized instanceof ServerError
+      ) {
+        setError(normalized)
+      } else {
+        setError(normalized)
       }
-
-    }, 800) // Simulate network delay
-
-  }
-
-
-
-  useEffect(() => {
-
-    refetch()
-
+      setIsError(true)
+      setTireSets([])
+    } finally {
+      setIsLoading(false)
+    }
   }, [customerId, vehicleId])
 
-
+  useEffect(() => {
+    void fetchTireSets()
+  }, [fetchTireSets])
 
   return {
-
     tireSets,
-
     isLoading,
-
     isError,
-
     error,
-
-    refetch,
-
+    refetch: () => void fetchTireSets(),
   }
-
 }
-

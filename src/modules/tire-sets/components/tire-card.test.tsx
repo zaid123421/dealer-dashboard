@@ -4,12 +4,12 @@ import { TireDetail } from '../types'
 
 describe('TireCard', () => {
   const mockTire: TireDetail = {
-    id: 'tire-1',
-    vehicleId: 'vehicle-1',
-    tireSetId: 'set-1',
+    id: 1,
+    vehicleId: 100,
+    tireSetId: 10,
     wheelPosition: 'FL',
     tireUniqueId: 'unique-1',
-    tireType: 'SUMMER',
+    tireType: 'Summer',
     treadWidth: '225',
     aspectRatio: '45',
     construction: 'R',

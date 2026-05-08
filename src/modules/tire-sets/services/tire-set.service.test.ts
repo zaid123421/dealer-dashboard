@@ -103,7 +103,7 @@ describe('getTireSetDetailsService', () => {
         `/v1/dealerCustomers/${mockCustomerId}/vehicles/${mockVehicleId}/tire-sets`,
       )
       expect(result.tireSet).toBeDefined()
-      expect(result.tireSet.id).toBe('2')
+      expect(result.tireSet.id).toBe(2)
       expect(result.tireSet.brand).toBe('Michelin')
       expect(result.tireSet.size).toBe('205/55R16')
       expect(result.tires).toHaveLength(2)
@@ -126,7 +126,7 @@ describe('getTireSetDetailsService', () => {
       const result = await getTireSetDetailsService(mockCustomerId, mockVehicleId, mockTireSetId)
 
       const firstTire = result.tires[0]
-      expect(firstTire.id).toBe('8202')
+      expect(firstTire.id).toBe(8202)
       expect(firstTire.wheelPosition).toBe('FL')
       expect(firstTire.brand).toBe('Michelin')
       expect(firstTire.status).toBe('GOOD')
@@ -141,8 +141,8 @@ describe('getTireSetDetailsService', () => {
       const result = await getTireSetDetailsService(mockCustomerId, mockVehicleId, mockTireSetId)
 
       const secondTire = result.tires[1]
-      expect(secondTire.scanMetadata).toEqual({})
-      expect(secondTire.updatedDate).toBe('')
+      expect(secondTire.scanMetadata).toBeNull()
+      expect(secondTire.updatedDate).toBeNull()
       // model is 'Pilot Sport' in the mock data, not null
       expect(secondTire.model).toBe('Pilot Sport')
     })
@@ -197,7 +197,7 @@ describe('getTireSetDetailsService', () => {
 
       // Should only return tires from tire set 2
       expect(result.tires).toHaveLength(2)
-      expect(result.tires.every((t) => t.tireSetId === '2')).toBe(true)
+      expect(result.tires.every((t) => t.tireSetId === 2)).toBe(true)
     })
   })
 
@@ -332,8 +332,8 @@ describe('getTireSetDetailsService', () => {
       const result = await getTireSetDetailsService(mockCustomerId, mockVehicleId, mockTireSetId)
 
       expect(result.tireSet).toEqual({
-        id: '2',
-        vehicleId: '102',
+        id: 2,
+        vehicleId: 102,
         tireCount: 4,
         seasonType: 'Summer',
         brand: 'Michelin',
@@ -343,15 +343,15 @@ describe('getTireSetDetailsService', () => {
       })
     })
 
-    it('should convert numeric IDs to strings', async () => {
+    it('should keep numeric IDs from the API payload', async () => {
       const mockGet = vi.fn().mockResolvedValue({ data: mockApiResponse })
       ;(api.get as any) = mockGet
 
       const result = await getTireSetDetailsService(mockCustomerId, mockVehicleId, mockTireSetId)
 
-      expect(typeof result.tireSet.id).toBe('string')
-      expect(typeof result.tireSet.vehicleId).toBe('string')
-      expect(result.tires.every((t) => typeof t.id === 'string')).toBe(true)
+      expect(typeof result.tireSet.id).toBe('number')
+      expect(typeof result.tireSet.vehicleId).toBe('number')
+      expect(result.tires.every((t) => typeof t.id === 'number')).toBe(true)
     })
   })
 

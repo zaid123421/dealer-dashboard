@@ -3,10 +3,10 @@ import type { TireSetDetail } from '@/modules/tire-sets/types'
 
 describe('TireSetHeader Component', () => {
   const mockTireSet: TireSetDetail = {
-    id: 'tire-set-1',
-    vehicleId: 'vehicle-1',
+    id: 1,
+    vehicleId: 100,
     tireCount: 4,
-    seasonType: 'SUMMER',
+    seasonType: 'Summer',
     brand: 'Michelin',
     size: '225/45R17',
     displayLabel: 'Michelin 225/45R17',
@@ -30,67 +30,11 @@ describe('TireSetHeader Component', () => {
   })
 
   describe('Season Type Styling', () => {
-    it('should have correct styling for SUMMER season type', () => {
-      const seasonTypeStyles = {
-        SUMMER: {
-          badge: 'bg-blue-100 text-blue-800 border-blue-300',
-          label: 'Summer',
-        },
-        WINTER: {
-          badge: 'bg-blue-50 text-blue-900 border-blue-200',
-          label: 'Winter',
-        },
-        ALL_SEASON: {
-          badge: 'bg-gray-100 text-gray-800 border-gray-300',
-          label: 'All Season',
-        },
-      }
-
-      const summerStyle = seasonTypeStyles['SUMMER']
-      expect(summerStyle.label).toBe('Summer')
-      expect(summerStyle.badge).toContain('bg-blue-100')
-    })
-
-    it('should have correct styling for WINTER season type', () => {
-      const seasonTypeStyles = {
-        SUMMER: {
-          badge: 'bg-blue-100 text-blue-800 border-blue-300',
-          label: 'Summer',
-        },
-        WINTER: {
-          badge: 'bg-blue-50 text-blue-900 border-blue-200',
-          label: 'Winter',
-        },
-        ALL_SEASON: {
-          badge: 'bg-gray-100 text-gray-800 border-gray-300',
-          label: 'All Season',
-        },
-      }
-
-      const winterStyle = seasonTypeStyles['WINTER']
-      expect(winterStyle.label).toBe('Winter')
-      expect(winterStyle.badge).toContain('bg-blue-50')
-    })
-
-    it('should have correct styling for ALL_SEASON season type', () => {
-      const seasonTypeStyles = {
-        SUMMER: {
-          badge: 'bg-blue-100 text-blue-800 border-blue-300',
-          label: 'Summer',
-        },
-        WINTER: {
-          badge: 'bg-blue-50 text-blue-900 border-blue-200',
-          label: 'Winter',
-        },
-        ALL_SEASON: {
-          badge: 'bg-gray-100 text-gray-800 border-gray-300',
-          label: 'All Season',
-        },
-      }
-
-      const allSeasonStyle = seasonTypeStyles['ALL_SEASON']
-      expect(allSeasonStyle.label).toBe('All Season')
-      expect(allSeasonStyle.badge).toContain('bg-gray-100')
+    it('documents summer / winter / all-season variants on TireSetDetail', () => {
+      const seasons: TireSetDetail['seasonType'][] = ['Summer', 'Winter', 'All-Season']
+      expect(seasons).toContain('Summer')
+      expect(seasons).toContain('Winter')
+      expect(seasons).toContain('All-Season')
     })
   })
 
@@ -164,15 +108,8 @@ describe('TireSetHeader Component', () => {
       expect(tireCountDisplay).toBe('4 tires')
     })
 
-    it('should display season type label correctly', () => {
-      const seasonTypeStyles = {
-        SUMMER: { label: 'Summer' },
-        WINTER: { label: 'Winter' },
-        ALL_SEASON: { label: 'All Season' },
-      }
-
-      const label = seasonTypeStyles[mockTireSet.seasonType].label
-      expect(label).toBe('Summer')
+    it('should display season type label from tire set model', () => {
+      expect(mockTireSet.seasonType).toBe('Summer')
     })
   })
 })

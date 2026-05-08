@@ -1,12 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import { TireDetailsModal } from './tire-details-modal'
-import { TireDetail } from '../types'
+import type { TireDetail } from '../types'
+import { getTireStatusBadgeClass } from '../lib/tire-display'
 
 describe('TireDetailsModal', () => {
   const mockTire: TireDetail = {
-    id: 'tire-123',
-    vehicleId: 'vehicle-456',
-    tireSetId: 'set-789',
+    id: 123,
+    vehicleId: 456,
+    tireSetId: 789,
     wheelPosition: 'FL',
     tireUniqueId: 'unique-tire-001',
     tireType: 'Summer',
@@ -82,18 +83,8 @@ describe('TireDetailsModal', () => {
     })
 
     it('should have correct status color mapping', () => {
-      const statusColorMap: Record<TireDetail['status'], string> = {
-        GOOD: 'bg-green-100 text-green-800',
-        FAIR: 'bg-yellow-100 text-yellow-800',
-        POOR: 'bg-orange-100 text-orange-800',
-        CRITICAL: 'bg-red-100 text-red-800',
-      }
-
-      Object.entries(statusColorMap).forEach(([status, color]) => {
-        expect(color).toBeDefined()
-        expect(color).toContain('bg-')
-        expect(color).toContain('text-')
-      })
+      expect(getTireStatusBadgeClass('GOOD')).toContain('green')
+      expect(getTireStatusBadgeClass('STORED')).toContain('blue')
     })
   })
 

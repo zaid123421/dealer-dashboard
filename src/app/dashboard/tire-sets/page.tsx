@@ -1,157 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Plus, Eye, Pencil, Trash2, Package, Snowflake, Sun } from "lucide-react";
+import { Eye, Package, Snowflake, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import StyledTable from "@/components/ui/styled-table";
+import { useDealerTireSetsOverview } from "@/modules/tire-sets/hooks/use-dealer-tire-sets-overview";
+import type { DealerTireSetOverviewRow } from "@/modules/tire-sets/types";
 
 const PAGE_SIZE = 10;
 
-// Sample data for demonstration
-const sampleTireSets = [
-  {
-    id: 1,
-    setId: "TS-2024-001",
-    brand: "Michelin",
-    model: "Pilot Sport 4S",
-    size: "245/35R19",
-    seasonType: "summer",
-    tireCount: 4,
-    treadDepth: 8.5,
-    purchaseDate: "2024-01-15",
-    purchasePrice: 983.96,
-    location: "Warehouse A - Shelf 1",
-    status: "available",
-    customerName: null,
-  },
-  {
-    id: 2,
-    setId: "TS-2024-002",
-    brand: "Bridgestone",
-    model: "Blizzak LM005",
-    size: "225/45R17",
-    seasonType: "winter",
-    tireCount: 4,
-    treadDepth: 9.2,
-    purchaseDate: "2024-01-10",
-    purchasePrice: 759.96,
-    location: "Warehouse B - Shelf 3",
-    status: "available",
-    customerName: null,
-  },
-  {
-    id: 3,
-    setId: "TS-2024-003",
-    brand: "Continental",
-    model: "ExtremeContact DWS06",
-    size: "235/40R18",
-    seasonType: "all_season",
-    tireCount: 4,
-    treadDepth: 7.8,
-    purchaseDate: "2024-01-08",
-    purchasePrice: 627.96,
-    location: "Warehouse A - Shelf 2",
-    status: "installed",
-    customerName: "Ahmed Mohammed",
-  },
-  {
-    id: 4,
-    setId: "TS-2024-004",
-    brand: "Pirelli",
-    model: "P Zero",
-    size: "265/35R20",
-    seasonType: "summer",
-    tireCount: 4,
-    treadDepth: 6.2,
-    purchaseDate: "2024-01-05",
-    purchasePrice: 1071.96,
-    location: "Warehouse C - Shelf 1",
-    status: "reserved",
-    customerName: "Fatima Ali",
-  },
-  {
-    id: 5,
-    setId: "TS-2024-005",
-    brand: "Goodyear",
-    model: "Eagle F1 Asymmetric",
-    size: "255/40R19",
-    seasonType: "summer",
-    tireCount: 4,
-    treadDepth: 4.1,
-    purchaseDate: "2023-12-20",
-    purchasePrice: 715.96,
-    location: "Warehouse B - Shelf 2",
-    status: "maintenance",
-    customerName: null,
-  },
-  {
-    id: 6,
-    setId: "TS-2024-006",
-    brand: "Yokohama",
-    model: "Advan Sport",
-    size: "275/30R21",
-    seasonType: "summer",
-    tireCount: 2,
-    treadDepth: 8.9,
-    purchaseDate: "2024-01-12",
-    purchasePrice: 397.98,
-    location: "Warehouse A - Shelf 4",
-    status: "available",
-    customerName: null,
-  },
-];
-
-function getSeasonBadgeColor(season: string) {
-  switch (season.toLowerCase()) {
-    case "winter":
+function getSeasonBadgeClass(season: string) {
+  switch (season) {
+    case "Winter":
       return "bg-blue-100 text-blue-900 border-blue-200";
-    case "summer":
+    case "Summer":
       return "bg-yellow-50 text-yellow-900 border-yellow-200";
-    case "all_season":
-    case "all season":
+    case "All-Season":
       return "bg-gray-100 text-gray-800 border-gray-300";
     default:
-      return "bg-gray-100 text-gray-800";
+      return "bg-gray-100 text-gray-800 border-gray-300";
   }
 }
 
-function getSeasonIcon(season: string) {
-  switch (season.toLowerCase()) {
-    case "winter":
+function SeasonIcon({ season }: { season: string }) {
+  switch (season) {
+    case "Winter":
       return <Snowflake className="size-4 text-blue-600" />;
-    case "summer":
+    case "Summer":
       return <Sun className="size-4 text-yellow-600" />;
-    case "all_season":
-    case "all season":
+    default:
       return <Package className="size-4 text-gray-600" />;
-    default:
-      return <Package className="size-4" />;
-  }
-}
-
-function getStatusBadgeColor(status: string) {
-  switch (status.toLowerCase()) {
-    case "available":
-      return "bg-green-100 text-green-800 border-green-200";
-    case "installed":
-      return "bg-blue-100 text-blue-800 border-blue-200";
-    case "reserved":
-      return "bg-purple-100 text-purple-800 border-purple-200";
-    case "maintenance":
-      return "bg-orange-100 text-orange-800 border-orange-200";
-    case "sold":
-      return "bg-gray-100 text-gray-800 border-gray-300";
-    default:
-      return "bg-gray-100 text-gray-800";
   }
 }
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -162,151 +50,125 @@ export default function TireSetsPage() {
   const t = useTranslations("dashboard");
   const [page, setPage] = useState(0);
 
-  const totalPages = Math.ceil(sampleTireSets.length / PAGE_SIZE);
-  const startIndex = page * PAGE_SIZE;
-  const endIndex = startIndex + PAGE_SIZE;
-  const currentTireSets = sampleTireSets.slice(startIndex, endIndex);
+  const { data = [], isLoading, isError, error, refetch } = useDealerTireSetsOverview();
 
-  const canPrev = page > 0;
-  const canNext = page < totalPages - 1;
+  const totalPages =
+    data.length === 0 ? 0 : Math.ceil(data.length / PAGE_SIZE);
+
+  const effectivePage =
+    totalPages === 0 ? 0 : Math.min(page, totalPages - 1);
+
+  const currentRows = useMemo(() => {
+    const startIndex = effectivePage * PAGE_SIZE;
+    return data.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [data, effectivePage]);
+
+  const canPrev = effectivePage > 0;
+  const canNext = totalPages > 0 && effectivePage < totalPages - 1;
+
+  const detailHref = (row: DealerTireSetOverviewRow) =>
+    `/dashboard/customers/${row.dealerCustomerId}/vehicles/${row.vehicleId}/tire-sets/${row.id}`;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-headline-sm font-bold text-foreground">
-            {t("tireSetsTitle")}
-          </h1>
+          <h1 className="text-headline-sm font-bold text-foreground">{t("tireSetsTitle")}</h1>
           <p className="mt-1 text-body-md text-muted-foreground">{t("tireSetsIntro")}</p>
         </div>
-        <Button
-          type="button"
-          className="w-full shrink-0 bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 sm:w-auto"
-        >
-          <Plus className="me-2 size-4 shrink-0" />
-          Add Tire Set
-        </Button>
       </div>
 
+      {isError ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-body-md text-destructive">
+          <p>{error instanceof Error ? error.message : "Failed to load tire sets"}</p>
+          <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
+            Retry
+          </Button>
+        </div>
+      ) : null}
+
       <StyledTable
-        isLoading={false}
-        rows={currentTireSets}
-        keyProp={(tireSet) => tireSet.id}
+        isLoading={isLoading}
+        rows={currentRows}
+        keyProp={(row) => `${row.dealerCustomerId}-${row.vehicleId}-${row.id}`}
         emptyText="No tire sets found"
         columns={[
           {
-            header: "Set ID",
-            render: (tireSet) => (
-              <span className="font-mono text-sm font-medium">{tireSet.setId}</span>
+            header: "Customer",
+            render: (row) => (
+              <span className="font-medium">{row.customerDisplayName || "—"}</span>
             ),
           },
           {
-            header: "Brand & Model",
-            render: (tireSet) => (
-              <div>
-                <div className="font-medium">{tireSet.brand}</div>
-                <div className="text-sm text-muted-foreground">{tireSet.model}</div>
-              </div>
-            ),
+            header: "Vehicle ID",
+            render: (row) => <span className="font-mono text-sm">{row.vehicleId}</span>,
+            align: "center",
+          },
+          {
+            header: "Set ID",
+            render: (row) => <span className="font-mono text-sm font-medium">{row.id}</span>,
+            align: "center",
+          },
+          {
+            header: "Brand",
+            render: (row) => <span className="font-medium">{row.brand}</span>,
           },
           {
             header: "Size",
-            render: (tireSet) => (
-              <span className="font-mono text-sm">{tireSet.size}</span>
-            ),
+            render: (row) => <span className="font-mono text-sm">{row.size}</span>,
             align: "center",
           },
           {
             header: "Season",
-            render: (tireSet) => (
-              <div className="flex items-center gap-2">
-                {getSeasonIcon(tireSet.seasonType)}
-                <Badge className={getSeasonBadgeColor(tireSet.seasonType)}>
-                  {tireSet.seasonType.replace("_", " ")}
+            render: (row) => (
+              <div className="flex items-center justify-center gap-2">
+                <SeasonIcon season={row.seasonType} />
+                <Badge className={getSeasonBadgeClass(row.seasonType)} variant="outline">
+                  {row.seasonType}
                 </Badge>
               </div>
             ),
             align: "center",
           },
           {
-            header: "Tire Count",
-            render: (tireSet) => (
-              <div className="flex items-center gap-2">
-                <Package className="size-4" />
-                <span className="font-medium">{tireSet.tireCount}</span>
+            header: "Tires",
+            render: (row) => (
+              <div className="flex items-center justify-center gap-2">
+                <Package className="size-4 text-muted-foreground" />
+                <span className="font-medium">{row.tireCount}</span>
               </div>
             ),
             align: "center",
           },
           {
-            header: "Tread Depth",
-            render: (tireSet) => (
-              <span className="font-mono text-sm">{tireSet.treadDepth} mm</span>
+            header: "Display label",
+            render: (row) => (
+              <span className="text-muted-foreground text-sm">{row.displayLabel || "—"}</span>
             ),
-            align: "center",
           },
           {
-            header: "Purchase Price",
-            render: (tireSet) => (
-              <span className="font-mono text-sm font-medium">
-                ${tireSet.purchasePrice.toFixed(2)}
-              </span>
-            ),
-            align: "right",
-          },
-          {
-            header: "Status",
-            render: (tireSet) => (
-              <div>
-                <Badge className={getStatusBadgeColor(tireSet.status)}>
-                  {tireSet.status}
-                </Badge>
-                {tireSet.customerName && (
-                  <div className="text-sm text-muted-foreground mt-1">
-                    {tireSet.customerName}
-                  </div>
-                )}
-              </div>
-            ),
+            header: "Created",
+            render: (row) => <span className="text-sm text-muted-foreground">{formatDate(row.createdAt)}</span>,
             align: "center",
           },
           {
             header: "Actions",
-            className: "min-w-[220px]",
-            render: (tireSet) => (
-              <div className="flex justify-center gap-2">
+            className: "min-w-[100px]",
+            render: (row) => (
+              <div className="flex justify-center">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
-                            hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
+                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)]
+                            hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)]
                             transition-all duration-[var(--duration-normal)]"
                   title="View tire set details"
+                  asChild
                 >
-                  <Eye className="size-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
-                            hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
-                            transition-all duration-[var(--duration-normal)]"
-                  title="Edit tire set"
-                >
-                  <Pencil className="size-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
-                            hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
-                            transition-all duration-[var(--duration-normal)]"
-                  title="Delete tire set"
-                >
-                  <Trash2 className="size-4" />
+                  <Link href={detailHref(row)}>
+                    <Eye className="size-4" />
+                  </Link>
                 </Button>
               </div>
             ),
@@ -314,16 +176,18 @@ export default function TireSetsPage() {
         ]}
       />
 
-      {totalPages > 0 ? (
+      {!isLoading && data.length > 0 ? (
         <PaginationControls
           canPrevious={canPrev}
           canNext={canNext}
           previousLabel="Previous"
           nextLabel="Next"
-          pageLabel={`Page ${page + 1} of ${totalPages}`}
-          pageText={`${page + 1}/${totalPages}`}
+          pageLabel={`Page ${effectivePage + 1} of ${totalPages}`}
+          pageText={`${effectivePage + 1}/${totalPages}`}
           onPrevious={() => setPage((p) => Math.max(0, p - 1))}
-          onNext={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+          onNext={() =>
+            setPage((p) => (totalPages > 0 ? Math.min(totalPages - 1, p + 1) : p))
+          }
         />
       ) : null}
     </div>
