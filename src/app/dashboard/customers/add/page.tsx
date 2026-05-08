@@ -97,7 +97,7 @@ export default function AddCustomerPage() {
       <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 overflow-hidden text-sm">
         <Link
           href={ROUTES.DASHBOARD.CUSTOMERS}
-          className="min-w-0 truncate text-muted-foreground transition-colors hover:text-foreground"
+          className="min-w-0 truncate text-primary-dark transition-colors hover:text-primary-dark/80"
         >
           {t("title")}
         </Link>
@@ -111,7 +111,7 @@ export default function AddCustomerPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <Card className="border-border/60 bg-[var(--card)] shadow-xs">
+        <Card className="border-0 bg-[var(--card)] shadow-xs">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-foreground">
               <User className="size-5 text-primary-dark" />
@@ -208,7 +208,7 @@ export default function AddCustomerPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 bg-[var(--card)] shadow-xs">
+        <Card className="border-0 bg-[var(--card)] shadow-xs">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-foreground">
               <MapPin className="size-5 text-primary-dark" />

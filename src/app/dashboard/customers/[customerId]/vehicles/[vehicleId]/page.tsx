@@ -81,9 +81,12 @@ export default function VehicleDetailsPage() {
         </Link>
         <ChevronRight className="size-4" />
         {!vehicleLoading && !vehicleError && customer && (
-          <span className="text-primary-dark font-medium">
+          <Link
+            href="/dashboard/customers"
+            className="font-medium text-primary-dark hover:underline underline-offset-4 transition-colors"
+          >
             {customer?.firstName} {customer?.lastName}
-          </span>
+          </Link>
         )}
         {!vehicleLoading && !vehicleError && customer && <ChevronRight className="size-4" />}
         {!vehicleLoading && !vehicleError && vehicle && (
