@@ -255,7 +255,7 @@ function CustomersPageContent() {
     archiveCustomer.isPending || deleteCustomer.isPending || deleteVehicle.isPending;
 
   return (
-    <div className="flex min-w-0 flex-col h-full gap-4 overflow-hidden">
+    <div className="flex min-w-0 flex-col h-full gap-4 overflow-auto">
       <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <h1 className="text-headline-sm font-bold text-foreground">{t("title")}</h1>
         <div className="flex flex-wrap gap-2">
