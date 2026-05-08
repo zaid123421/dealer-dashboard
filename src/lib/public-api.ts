@@ -6,6 +6,7 @@ import axios from "axios";
  */
 const publicApi = axios.create({
   baseURL:
+    process.env.NEXT_PUBLIC_BACKEND_URL_FOR_CLIENT_REQUESTS ||
     process.env.NEXT_PUBLIC_BACKEND_URL_FOR_SERVER_REQUESTS ||
     "https://api.treadx.uqarsoft.com/api",
   headers: {
