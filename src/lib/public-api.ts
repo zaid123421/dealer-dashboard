@@ -7,7 +7,7 @@ import axios from "axios";
 const publicApi = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_BACKEND_URL_FOR_SERVER_REQUESTS ||
-    "http://localhost:5000/api",
+    "https://api.treadx.uqarsoft.com/api",
   headers: {
     "Content-Type": "application/json",
   },
