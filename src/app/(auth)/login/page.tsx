@@ -7,9 +7,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ErrorAlert } from "@/components/ui/error-alert";
 import { useAuthStore } from "@/shared/stores/auth-store";
 import { ROUTES } from "@/constants/routes";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { AUTH_PRIMARY_BUTTON_CLASS } from "@/lib/primary-button-styles";
 import { loginUseCase, LoginError } from "@/application/auth/login.use-case";
 
 export default function LoginPage() {
@@ -19,6 +21,7 @@ export default function LoginPage() {
   const setSession = useAuthStore((s) => s.setSession);
   const [showRegisteredMessage, setShowRegisteredMessage] = useState(false);
   const [showActivatedMessage, setShowActivatedMessage] = useState(false);
+  const [showResetLinkSentMessage, setShowResetLinkSentMessage] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const isRegisteredSuccess = useMemo(
     () => searchParams.get("registered") === "1",
@@ -28,17 +31,22 @@ export default function LoginPage() {
     () => searchParams.get("activated") === "1",
     [searchParams],
   );
+  const isResetLinkSent = useMemo(
+    () => searchParams.get("sent") === "1",
+    [searchParams],
+  );
 
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitLockRef = useRef(false);
 
   useEffect(() => {
-    if (!isRegisteredSuccess && !isActivatedSuccess) return;
+    if (!isRegisteredSuccess && !isActivatedSuccess && !isResetLinkSent) return;
     if (isRegisteredSuccess) setShowRegisteredMessage(true);
     if (isActivatedSuccess) setShowActivatedMessage(true);
+    if (isResetLinkSent) setShowResetLinkSentMessage(true);
     router.replace(ROUTES.AUTH.LOGIN, { scroll: false });
-  }, [isRegisteredSuccess, isActivatedSuccess, router]);
+  }, [isRegisteredSuccess, isActivatedSuccess, isResetLinkSent, router]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -136,11 +144,18 @@ export default function LoginPage() {
               </div>
             )}
 
-            {formError && (
-              <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-center text-sm text-destructive">
-                {formError}
+            {showResetLinkSentMessage && (
+              <div className="mb-6 rounded-lg border border-info-main/25 bg-info-container px-4 py-3 text-center text-label-lg text-info-onContainer">
+                {t("resetLinkSentInfo")}
               </div>
             )}
+
+            {formError ? (
+              <ErrorAlert
+                message={formError}
+                className="mb-6 bg-error-container dark:bg-error-main/10"
+              />
+            ) : null}
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -204,7 +219,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex h-13 w-full items-center justify-center rounded-lg bg-primary-dark text-title-md font-bold text-secondary-main shadow-md transition-all hover:bg-primary-dark/90 hover:shadow-lg active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
+                className={AUTH_PRIMARY_BUTTON_CLASS}
               >
                 {isSubmitting ? t("signingIn") : t("signIn")}
               </button>

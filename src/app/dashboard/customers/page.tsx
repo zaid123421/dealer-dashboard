@@ -1,14 +1,14 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { useAuthUser } from "@/shared/hooks/use-can-access";
+import { useDealerId } from "@/shared/hooks/use-can-access";
+import { useDealerMe } from "@/modules/dealer/hooks/use-dealer-me";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ROUTES } from "@/constants/routes";
 import {
   Search,
-  Download,
   Plus,
   Pencil,
   Trash2,
@@ -24,13 +24,17 @@ import {
   CheckCircle2,
   type LucideIcon,
 } from "lucide-react";
+import { ErrorAlert } from "@/components/ui/error-alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import StyledTable from "@/components/ui/styled-table";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { formatTableCell } from "@/lib/format-table-cell";
+import { TABLE_BORDER } from "@/lib/table-border";
 import type { DealerCustomer } from "@/modules/customers/schemas/create-dealer-customer.schema";
 import { useDealerCustomersInfinite } from "@/modules/customers/hooks/use-my-dealer-customers";
 import { useArchiveDealerCustomer } from "@/modules/customers/hooks/use-archive-dealer-customer";
@@ -106,13 +110,149 @@ function CustomerDetailTile({
   );
 }
 
+function CustomerListItemSkeleton() {
+  return (
+    <div
+      className="relative flex w-full min-w-0 items-start gap-2 rounded-md border border-transparent bg-muted/20 p-3 dark:bg-surface-container sm:gap-3 sm:p-4"
+      aria-hidden
+    >
+      <Skeleton className="size-9 shrink-0 rounded-full sm:size-10" />
+      <div className="min-w-0 flex-1 space-y-2 pt-0.5">
+        <Skeleton className="h-4 w-[68%]" />
+        <Skeleton className="h-3.5 w-[82%]" />
+        <Skeleton className="h-3 w-[48%]" />
+      </div>
+    </div>
+  );
+}
+
+function CustomerDetailTileSkeleton() {
+  return (
+    <div className="min-w-0">
+      <div className="mb-2 flex min-w-0 items-center gap-2">
+        <Skeleton className="size-3 rounded-sm sm:size-4" />
+        <Skeleton className="h-3 w-24" />
+      </div>
+      <Skeleton className="h-10 w-full rounded-lg border-2 border-transparent sm:h-12" />
+    </div>
+  );
+}
+
+function CustomerDetailCardSkeleton() {
+  return (
+    <Card className="rounded-lg border-0 bg-surface-container">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-start">
+          <Skeleton className="mx-auto size-12 shrink-0 rounded-full sm:size-16 lg:mx-0" />
+          <div className="min-w-0 flex-1">
+            <div className="mb-4 space-y-2 text-center lg:text-left">
+              <Skeleton className="mx-auto h-6 w-[58%] max-w-xs lg:mx-0" />
+              <Skeleton className="mx-auto h-4 w-[42%] max-w-[14rem] lg:mx-0" />
+            </div>
+            <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(180px,1fr))] sm:gap-4">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <CustomerDetailTileSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+          <div className="flex w-full shrink-0 flex-wrap justify-center gap-2 lg:w-auto lg:flex-col lg:items-stretch">
+            <Skeleton className="h-9 flex-1 rounded-md sm:flex-initial sm:w-24 lg:w-full" />
+            <Skeleton className="h-9 flex-1 rounded-md sm:flex-initial sm:w-24 lg:w-full" />
+            <Skeleton className="h-9 flex-1 rounded-md sm:flex-initial sm:w-28 lg:w-full" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CustomerVehiclesTableSkeleton() {
+  return (
+    <div
+      className={cn(
+        "w-full overflow-x-auto rounded-lg border-2 bg-card",
+        TABLE_BORDER,
+      )}
+    >
+      <div className="min-w-[640px]">
+        <div
+          className={cn(
+            "flex gap-4 border-b-2 px-4 py-3",
+            TABLE_BORDER,
+            "bg-[var(--color-surface-light-container)] dark:bg-[var(--color-surface-container-high)]",
+          )}
+        >
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-4 flex-1" />
+          ))}
+        </div>
+        {Array.from({ length: 3 }).map((_, row) => (
+          <div
+            key={row}
+            className={cn(
+              "flex gap-4 px-4 py-3.5",
+              row < 2 && `border-b-2 ${TABLE_BORDER}`,
+            )}
+          >
+            {Array.from({ length: 6 }).map((_, col) => (
+              <Skeleton
+                key={col}
+                className={cn("h-4 flex-1", col === 0 ? "max-w-[120px]" : "")}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CustomerVehiclesSectionSkeleton() {
+  return (
+    <div className="min-w-0">
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Skeleton className="h-6 w-28" />
+        <Skeleton className="h-9 w-full rounded-md sm:w-36" />
+      </div>
+      <CustomerVehiclesTableSkeleton />
+    </div>
+  );
+}
+
+function CustomersPageSkeleton() {
+  return (
+    <div className="flex min-w-0 flex-col gap-4" aria-busy="true" aria-live="polite">
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-9 w-full rounded-md sm:w-40" />
+      </div>
+      <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-nowrap sm:items-center sm:gap-2">
+        <Skeleton className="h-10 w-full rounded-md sm:flex-1" />
+        <Skeleton className="h-10 w-full rounded-md sm:w-44" />
+      </div>
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(280px,1fr)_minmax(400px,2fr)]">
+        <div className="flex min-h-[200px] flex-col gap-2 overflow-hidden rounded-lg bg-card p-2 sm:min-h-0">
+          <div className="space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <CustomerListItemSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+        <div className="flex min-h-[280px] min-w-0 flex-col gap-4 sm:min-h-0">
+          <CustomerDetailCardSkeleton />
+          <CustomerVehiclesSectionSkeleton />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CustomersPageContent() {
   const t = useTranslations("customers");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const authUser = useAuthUser();
-  const dealerId =
-    authUser?.tenantId != null && authUser.tenantId > 0 ? authUser.tenantId : null;
+  const dealerId = useDealerId();
+  const { isLoading: isProfileLoading } = useDealerMe({ enabled: dealerId == null });
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [includeArchived, setIncludeArchived] = useState(false);
@@ -205,10 +345,6 @@ function CustomersPageContent() {
     }
   }, [isPending, visibleCustomers, selectedCustomerId]);
 
-  const handleImportExcel = () => {
-    // Placeholder for API
-  };
-
   function handleDeleteVehicle(vehicleId: number) {
     const cid = selectedCustomer?.id;
     if (cid == null) return;
@@ -260,16 +396,9 @@ function CustomersPageContent() {
         <h1 className="text-headline-sm font-bold text-foreground">{t("title")}</h1>
         <div className="flex flex-wrap gap-2">
           <Button
-            variant="outline"
-            onClick={handleImportExcel}
-            className="w-full shrink-0 border-primary-dark text-primary-dark bg-transparent hover:bg-primary-dark/10 hover:text-primary-dark hover:border-primary-dark sm:w-auto transition-all duration-[var(--duration-normal)]"
-          >
-            <Download className="size-4 shrink-0" />
-            <span className="truncate">{t("importExcel")}</span>
-          </Button>
-          <Button
             asChild
-            className="w-full shrink-0 bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 sm:w-auto transition-all duration-[var(--duration-normal)]"
+            variant="brand"
+            className="w-full shrink-0 sm:w-auto"
           >
             <Link href={ROUTES.DASHBOARD.CUSTOMERS_ADD} className="flex items-center justify-center gap-2">
               <Plus className="size-4 shrink-0" />
@@ -299,7 +428,8 @@ function CustomersPageContent() {
           variant={includeArchived ? "secondary" : "outline"}
           className={cn(
             "h-10 w-full shrink-0 gap-2 sm:w-auto",
-            includeArchived && "border-primary-dark/30",
+            TABLE_BORDER,
+            includeArchived && "bg-primary-container/20",
           )}
           onClick={() => setIncludeArchived((v) => !v)}
           disabled={dealerId == null}
@@ -310,29 +440,34 @@ function CustomersPageContent() {
         </Button>
       </div>
 
-      {dealerId == null && authUser != null ? (
+      {dealerId == null && isProfileLoading ? (
+        <p className="text-body-sm text-muted-foreground" role="status">
+          {t("loadingDealerProfile")}
+        </p>
+      ) : dealerId == null ? (
         <p className="text-body-sm text-muted-foreground" role="status">
           {t("searchRequiresDealer")}
         </p>
       ) : null}
 
       {isError ? (
-        <div
-          className="flex shrink-0 items-center justify-between gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-body-sm"
-          role="alert"
-        >
-          <span>{error instanceof Error ? error.message : t("errorLoadingCustomers")}</span>
-          <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
-            {t("retry")}
-          </Button>
-        </div>
+        <ErrorAlert
+          message={error instanceof Error ? error.message : t("errorLoadingCustomers")}
+          onRetry={() => void refetch()}
+          retryLabel={t("retry")}
+          className="shrink-0"
+        />
       ) : null}
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-auto lg:grid-cols-[minmax(280px,1fr)_minmax(400px,2fr)]">
         <div className="flex min-h-[200px] flex-col gap-2 overflow-hidden rounded-lg bg-card p-2 sm:min-h-0">
           <div className="scrollbar-custom overflow-auto space-y-3">
             {isPending ? (
-              <p className="p-4 text-body-md text-muted-foreground">{t("loading")}</p>
+              <div className="space-y-3" aria-busy="true">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <CustomerListItemSkeleton key={i} />
+                ))}
+              </div>
             ) : visibleCustomers.length === 0 ? (
               <p className="p-4 text-body-md text-muted-foreground">{t("selectCustomer")}</p>
             ) : (
@@ -391,7 +526,12 @@ function CustomersPageContent() {
         </div>
 
         <div className="scrollbar-custom flex min-h-[280px] min-w-0 flex-col gap-4 overflow-y-auto sm:min-h-0">
-          {selectedCustomer ? (
+          {isPending ? (
+            <>
+              <CustomerDetailCardSkeleton />
+              <CustomerVehiclesSectionSkeleton />
+            </>
+          ) : selectedCustomer ? (
             <>
               <Card className="rounded-lg border-0 bg-surface-container">
                 <CardContent className="p-4 sm:p-6">
@@ -540,7 +680,8 @@ function CustomersPageContent() {
                   <h3 className="text-title-md font-semibold text-foreground">{t("vehicles")}</h3>
                   <Button
                     type="button"
-                    className="w-full shrink-0 bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 sm:w-auto"
+                    variant="brand"
+                    className="w-full shrink-0 sm:w-auto"
                     disabled={selectedCustomer.archived}
                     onClick={() => {
                       setVehicleToEdit(null);
@@ -552,21 +693,15 @@ function CustomersPageContent() {
                   </Button>
                 </div>
                 {vehiclesPending ? (
-                  <p className="rounded-lg border border-border p-6 text-center text-body-md text-muted-foreground">
-                    {t("loading")}
-                  </p>
+                  <CustomerVehiclesTableSkeleton />
                 ) : vehiclesError ? (
-                  <div
-                    className="flex flex-col items-stretch justify-between gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-3 text-body-sm sm:flex-row sm:items-center"
-                    role="alert"
-                  >
-                    <span>
-                      {vehiclesErr instanceof Error ? vehiclesErr.message : t("errorLoadingVehicles")}
-                    </span>
-                    <Button type="button" variant="outline" size="sm" onClick={() => void refetchVehicles()}>
-                      {t("retry")}
-                    </Button>
-                  </div>
+                  <ErrorAlert
+                    message={
+                      vehiclesErr instanceof Error ? vehiclesErr.message : t("errorLoadingVehicles")
+                    }
+                    onRetry={() => void refetchVehicles()}
+                    retryLabel={t("retry")}
+                  />
                 ) : customerVehicles.length > 0 ? (
                   <StyledTable
                     isLoading={vehiclesPending}
@@ -578,27 +713,29 @@ function CustomersPageContent() {
                         header: t("makeBrand"),
                         className: "min-w-[140px]",
                         render: (v) => (
-                          <span className="block max-w-[140px] truncate">{v.make}</span>
+                          <span className="block max-w-[140px] truncate">{formatTableCell(v.make)}</span>
                         ),
                       },
                       {
                         header: t("model"),
                         className: "min-w-[140px]",
                         render: (v) => (
-                          <span className="block max-w-[140px] truncate">{v.model}</span>
+                          <span className="block max-w-[140px] truncate">{formatTableCell(v.model)}</span>
                         ),
                       },
                       {
                         header: t("year"),
                         className: "min-w-[90px]",
-                        render: (v) => v.year,
+                        render: (v) => formatTableCell(v.year),
                         align: "center",
                       },
                       {
                         header: t("plateNumber"),
                         className: "min-w-[150px]",
                         render: (v) => (
-                          <span className="block truncate font-mono text-label-md">{v.plateNumber}</span>
+                          <span className="block truncate font-mono text-label-md">
+                            {formatTableCell(v.plateNumber)}
+                          </span>
                         ),
                         align: "center",
                       },
@@ -607,20 +744,20 @@ function CustomersPageContent() {
                         className: "min-w-[180px]",
                         render: (v) => (
                           <span className="block max-w-[180px] truncate font-mono text-label-md">
-                            {v.vin}
+                            {formatTableCell(v.vin)}
                           </span>
                         ),
                       },
                       {
                         header: t("color"),
                         className: "min-w-[110px]",
-                        render: (v) => v.color,
+                        render: (v) => formatTableCell(v.color),
                         align: "center",
                       },
                       {
                         header: t("odometerKm"),
                         className: "min-w-[140px]",
-                        render: (v) => v.odometerKm,
+                        render: (v) => formatTableCell(v.odometerKm),
                         align: "center",
                       },
                       {
@@ -632,7 +769,7 @@ function CustomersPageContent() {
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 sm:h-9 sm:w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
+                              className="h-8 w-8 sm:h-9 sm:w-9 rounded-md border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
                                         hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
                                         transition-all duration-[var(--duration-normal)]"
                               aria-label={t("viewTireDetails")}
@@ -648,7 +785,7 @@ function CustomersPageContent() {
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 sm:h-9 sm:w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
+                              className="h-8 w-8 sm:h-9 sm:w-9 rounded-md border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
                                         hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
                                         transition-all duration-[var(--duration-normal)]"
                               disabled={selectedCustomer.archived}
@@ -664,7 +801,7 @@ function CustomersPageContent() {
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 sm:h-9 sm:w-9 rounded-[var(--radius-md)] border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
+                              className="h-8 w-8 sm:h-9 sm:w-9 rounded-md border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
                                         hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
                                         transition-all duration-[var(--duration-normal)]"
                               disabled={selectedCustomer.archived || customerMutationPending}
@@ -711,15 +848,8 @@ function CustomersPageContent() {
 }
 
 export default function CustomersPage() {
-  const t = useTranslations("customers");
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[200px] items-center justify-center text-body-md text-muted-foreground">
-          {t("loading")}
-        </div>
-      }
-    >
+    <Suspense fallback={<CustomersPageSkeleton />}>
       <CustomersPageContent />
     </Suspense>
   );

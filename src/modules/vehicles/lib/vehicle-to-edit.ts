@@ -3,7 +3,10 @@ import type { VehicleToEdit } from "@/modules/vehicles/components/dealer-custome
 
 /** يضبط سنة النموذج ضمن نطاق الـ validation عند فتح التعديل */
 export function dealerCustomerVehicleToEdit(v: DealerCustomerVehicle): VehicleToEdit {
-  const year = Number.isFinite(v.year) ? Math.min(2035, Math.max(1980, v.year)) : new Date().getFullYear();
+  const year =
+    v.year != null && Number.isFinite(v.year)
+      ? Math.min(2035, Math.max(1980, v.year))
+      : new Date().getFullYear();
   return {
     id: v.id,
     vin: v.vin,
@@ -12,6 +15,6 @@ export function dealerCustomerVehicleToEdit(v: DealerCustomerVehicle): VehicleTo
     model: v.model,
     plateNumber: v.plateNumber,
     color: v.color,
-    odometerKm: v.odometerKm,
+    odometerKm: v.odometerKm ?? 0,
   };
 }

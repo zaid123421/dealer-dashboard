@@ -1,5 +1,5 @@
 /**
- * بيانات المستخدم والمستأجر من استجابة تسجيل الدخول (TreadX API).
+ * بيانات المستخدم من GET /v1/dealer/me (المصدر الرئيسي بعد تسجيل الدخول).
  */
 export interface AuthUser {
   email: string;
@@ -7,6 +7,8 @@ export interface AuthUser {
   lastName: string;
   /** الدور كما يعيده الـ backend، مثل DEALER_ADMIN */
   backendRole: string;
+  accessLevel: string;
+  userActive: boolean;
   tenantType: string;
   tenantId: number;
   tenantName: string;

@@ -9,7 +9,8 @@ import {
   useWatch,
 } from "react-hook-form";
 import { useTranslations } from "next-intl";
-import { Label } from "@/components/ui/label";
+import { Label, RequiredMark, FieldError } from "@/components/ui/label";
+import { ErrorAlert } from "@/components/ui/error-alert";
 import { SearchableCombobox } from "@/components/ui/searchable-combobox";
 import {
   useAddressCities,
@@ -69,7 +70,9 @@ export function DealerCustomerAddressRegionFields({ control, setValue, errors }:
   return (
     <div className="grid gap-4 sm:grid-cols-3">
       <div className="space-y-2">
-        <Label htmlFor="address.countryId">{t("addressCountry")}</Label>
+        <Label htmlFor="address.countryId">
+          {t("addressCountry")} <RequiredMark />
+        </Label>
         <Controller
           name="address.countryId"
           control={control}
@@ -92,15 +95,15 @@ export function DealerCustomerAddressRegionFields({ control, setValue, errors }:
           )}
         />
         {countriesQ.isError ? (
-          <p className="text-sm text-destructive">{t("addressOptionsError")}</p>
+          <ErrorAlert message={t("addressOptionsError")} className="px-3 py-2" />
         ) : null}
-        {errors?.countryId ? (
-          <p className="text-sm text-destructive">{errors.countryId.message}</p>
-        ) : null}
+          <FieldError>{errors?.countryId?.message}</FieldError>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="address.stateId">{t("addressProvince")}</Label>
+        <Label htmlFor="address.stateId">
+          {t("addressProvince")} <RequiredMark />
+        </Label>
         <Controller
           name="address.stateId"
           control={control}
@@ -130,15 +133,15 @@ export function DealerCustomerAddressRegionFields({ control, setValue, errors }:
           )}
         />
         {countryId && /^\d+$/.test(countryId.trim()) && provincesQ.isError ? (
-          <p className="text-sm text-destructive">{t("addressOptionsError")}</p>
+          <ErrorAlert message={t("addressOptionsError")} className="px-3 py-2" />
         ) : null}
-        {errors?.stateId ? (
-          <p className="text-sm text-destructive">{errors.stateId.message}</p>
-        ) : null}
+          <FieldError>{errors?.stateId?.message}</FieldError>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="address.cityId">{t("addressCity")}</Label>
+        <Label htmlFor="address.cityId">
+          {t("addressCity")} <RequiredMark />
+        </Label>
         <Controller
           name="address.cityId"
           control={control}
@@ -167,11 +170,9 @@ export function DealerCustomerAddressRegionFields({ control, setValue, errors }:
         {provinceId &&
         /^\d+$/.test(provinceId.trim()) &&
         citiesQ.isError ? (
-          <p className="text-sm text-destructive">{t("addressOptionsError")}</p>
+          <ErrorAlert message={t("addressOptionsError")} className="px-3 py-2" />
         ) : null}
-        {errors?.cityId ? (
-          <p className="text-sm text-destructive">{errors.cityId.message}</p>
-        ) : null}
+          <FieldError>{errors?.cityId?.message}</FieldError>
       </div>
     </div>
   );

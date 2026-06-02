@@ -49,6 +49,8 @@
   }
 
   .dark {
+    --color-text-subtle: #A8A29E;
+
     --background: var(--color-surface-default);
     --foreground: var(--color-secondary-on-surface);
 
@@ -80,6 +82,13 @@
 }
 
 @layer components {
+  /* Form validation messages — same red as invalid field border */
+  [data-slot="field-error"],
+  form p.text-error-main,
+  [role="dialog"] p.text-error-main {
+    color: var(--color-error-main);
+  }
+
   [data-slot="button"] {
     font-size: var(--font-size-label-lg);
     font-weight: var(--font-weight-medium);
@@ -96,6 +105,16 @@
   }
 
   [data-slot="card"] {
+    border-radius: var(--radius-lg);
+  }
+
+  [data-slot="dialog-content"] {
+    border-radius: var(--radius-xl);
+  }
+
+  [data-slot="select-content"],
+  [data-slot="dropdown-menu-content"],
+  [data-slot="combobox-content"] {
     border-radius: var(--radius-lg);
   }
 
@@ -178,5 +197,62 @@
   }
   .dark .scrollbar-custom::-webkit-scrollbar-thumb:hover {
     background: rgb(255 255 255 / 0.4);
+  }
+}
+
+@layer utilities {
+  /* Orange border on focus for all form fields */
+  [data-slot="input"]:focus,
+  [data-slot="input"]:focus-visible,
+  [data-slot="textarea"]:focus,
+  [data-slot="textarea"]:focus-visible,
+  [data-slot="select-trigger"]:focus,
+  [data-slot="select-trigger"]:focus-visible,
+  [data-slot="select-trigger"][data-state="open"],
+  [data-slot="combobox-trigger"]:focus,
+  [data-slot="combobox-trigger"]:focus-visible,
+  [data-slot="combobox-trigger"][aria-expanded="true"] {
+    border-color: var(--color-primary-main-light);
+    outline: none;
+    box-shadow: none;
+  }
+
+  .dark [data-slot="input"]:focus,
+  .dark [data-slot="input"]:focus-visible,
+  .dark [data-slot="textarea"]:focus,
+  .dark [data-slot="textarea"]:focus-visible,
+  .dark [data-slot="select-trigger"]:focus,
+  .dark [data-slot="select-trigger"]:focus-visible,
+  .dark [data-slot="select-trigger"][data-state="open"],
+  .dark [data-slot="combobox-trigger"]:focus,
+  .dark [data-slot="combobox-trigger"]:focus-visible,
+  .dark [data-slot="combobox-trigger"][aria-expanded="true"] {
+    border-color: var(--color-primary-main-dark);
+  }
+
+  [data-slot="field-group"][data-invalid="true"],
+  [data-slot="field-group"][data-invalid="true"]:focus-within {
+    border-color: var(--color-error-main);
+  }
+
+  [data-slot="input"][aria-invalid="true"],
+  [data-slot="textarea"][aria-invalid="true"],
+  [data-slot="select-trigger"][aria-invalid="true"],
+  [data-slot="combobox-trigger"][aria-invalid="true"] {
+    border-color: var(--color-error-main);
+  }
+
+  [data-slot="input"][aria-invalid="true"]:focus,
+  [data-slot="input"][aria-invalid="true"]:focus-visible,
+  [data-slot="textarea"][aria-invalid="true"]:focus,
+  [data-slot="textarea"][aria-invalid="true"]:focus-visible,
+  [data-slot="combobox-trigger"][aria-invalid="true"]:focus,
+  [data-slot="combobox-trigger"][aria-invalid="true"]:focus-visible {
+    border-color: var(--color-error-main);
+  }
+
+  [data-slot="required-mark"],
+  [data-slot="field-error"] {
+    color: var(--color-error-main);
   }
 }

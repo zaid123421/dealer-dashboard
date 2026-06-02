@@ -50,7 +50,8 @@ export function PaginationControls({
         <Button
           type="button"
           size="icon"
-          className="size-10 rounded-full border-0 bg-primary-dark text-primary-onContainer shadow-xs hover:bg-primary-dark/90 focus-visible:border-primary-dark focus-visible:ring-primary-dark/30 disabled:bg-primary-dark disabled:text-primary-onContainer"
+          variant="brand"
+          className="size-10 rounded-full shadow-xs focus-visible:border-primary-dark focus-visible:ring-primary-dark/30 disabled:bg-primary-dark disabled:text-primary-onContainer"
           disabled={!canNext}
           aria-label={nextLabel}
           onClick={onNext}

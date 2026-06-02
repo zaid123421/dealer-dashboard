@@ -7,7 +7,7 @@ export default async function ReportsPage() {
       <h1 className="text-headline-sm font-bold text-foreground">
         {t("reportsTitle")}
       </h1>
-      <p className="text-body-md text-muted-foreground">{t("reportsIntro")}</p>
+      <p className="text-body-md text-subtle">{t("reportsIntro")}</p>
     </div>
   );
 }

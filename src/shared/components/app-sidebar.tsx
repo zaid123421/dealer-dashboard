@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
+  ChevronDown,
   Home,
   Users,
   UserCog,
@@ -15,42 +16,72 @@ import {
   FileText,
   Settings,
   Menu,
+  ClipboardList,
+  Truck,
+  Store,
   type LucideIcon,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Sheet,
   SheetContent,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { ROUTES } from "@/constants/routes";
 import { getAllowedNavEntries } from "@/shared/config/permissions";
-import { useAuthUser, useRole } from "@/shared/hooks/use-can-access";
+import { useRole } from "@/shared/hooks/use-can-access";
+import { useDealerAccount } from "@/shared/hooks/use-dealer-account";
 import { performClientLogout } from "@/application/auth/logout.use-case";
-import { ROLES } from "@/shared/config/roles";
-import type { Role } from "@/shared/config/roles";
 
 const KEY_ICON_MAP: Record<string, LucideIcon> = {
   overview: Home,
+  cart: ShoppingCart,
+  pickupCart: ShoppingCart,
+  pickupOrders: ShoppingCart,
   customers: Users,
   staff: UserCog,
   tireSets: CircleDot,
   orders: ShoppingCart,
+  sessions: ClipboardList,
   emailInbox: Mail,
   reports: FileText,
   settings: Settings,
 };
 
-function getRoleLabel(role: Role | null | undefined, t: (key: string) => string): string {
-  if (!role) return "—";
-  switch (role) {
-    case ROLES.ADMIN:
-      return t("roleAdmin");
-    case ROLES.SUPPLIER:
-      return t("roleSupplier");
-    case ROLES.USER:
-      return t("roleUser");
-    default:
-      return role;
-  }
+function NavSubItem({
+  href,
+  active,
+  icon: Icon,
+  children,
+  onNavigate,
+}: {
+  href: string;
+  active: boolean;
+  icon: LucideIcon;
+  children: ReactNode;
+  onNavigate?: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={cn(
+        "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-200",
+        active
+          ? "bg-primary-dark/10 font-medium text-primary-dark dark:bg-primary-dark/15"
+          : "text-muted-foreground hover:bg-muted/55 hover:text-foreground dark:hover:bg-white/[0.06]",
+      )}
+    >
+      <Icon
+        className={cn(
+          "size-4 shrink-0 transition-opacity",
+          active ? "text-primary-dark opacity-100" : "opacity-55 group-hover:opacity-90",
+        )}
+        aria-hidden
+      />
+      <span className="min-w-0 flex-1 leading-snug">{children}</span>
+    </Link>
+  );
 }
 
 function SidebarHeader() {
@@ -82,53 +113,148 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const t = useTranslations("nav");
   const role = useRole();
-  const user = useAuthUser();
+  const { displayName, roleDisplay, planName, avatarInitials } = useDealerAccount();
   const navEntries = getAllowedNavEntries(role);
+  const pickupOrdersEntry = navEntries.find((entry) => entry.key === "pickupOrders");
+  const pickupCartEntry = navEntries.find((entry) => entry.key === "pickupCart");
+  const rootEntries = navEntries.filter(
+    (entry) => entry.key !== "pickupOrders" && entry.key !== "pickupCart",
+  );
+  const cartGroupActive =
+    pathname === ROUTES.DASHBOARD.DELIVERY_CART ||
+    pathname.startsWith(ROUTES.DASHBOARD.DELIVERY_CART + "/") ||
+    pathname === ROUTES.DASHBOARD.PICKUP_CART ||
+    pathname.startsWith(ROUTES.DASHBOARD.PICKUP_CART + "/");
+  const ordersGroupActive =
+    pathname === ROUTES.DASHBOARD.ORDERS.LIST ||
+    pathname.startsWith(ROUTES.DASHBOARD.ORDERS.LIST + "/") ||
+    pathname === ROUTES.DASHBOARD.PICKUP_ORDERS ||
+    pathname.startsWith(ROUTES.DASHBOARD.PICKUP_ORDERS + "/");
+  const [cartOpen, setCartOpen] = useState(cartGroupActive);
+  const [ordersOpen, setOrdersOpen] = useState(ordersGroupActive);
 
   async function handleLogout() {
     onNavigate?.();
     await performClientLogout();
   }
 
-  const roleLabel = getRoleLabel(role, t);
-  /** دور الـ API (مثلاً DEALER_ADMIN)، وليس tenantType ولا تسمية Dealer في الواجهة */
-  const roleDisplay = user?.backendRole?.trim() ? user.backendRole : roleLabel;
-  const displayName = (() => {
-    if (!user) return t("defaultAccountName");
-    const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-    return name || user.email || t("defaultAccountName");
-  })();
-
-  const avatarInitials = (() => {
-    if (user) {
-      const fi = user.firstName?.trim();
-      const la = user.lastName?.trim();
-      if (fi && la) return `${fi[0]}${la[0]}`.toUpperCase();
-      if (fi && fi.length >= 2) return fi.slice(0, 2).toUpperCase();
-      if (fi) return `${fi[0]}${fi[0]}`.toUpperCase();
-      const em = user.email?.trim();
-      if (em) {
-        const alpha = em.replace(/[^a-zA-Z\u0600-\u06FF]/g, "");
-        if (alpha.length >= 2) return alpha.slice(0, 2).toUpperCase();
-        return em.slice(0, 2).toUpperCase();
-      }
-    }
-    const p = displayName.trim();
-    const words = p.split(/\s+/).filter(Boolean);
-    if (words.length >= 2) {
-      const a = words[0][0];
-      const b = words[words.length - 1][0];
-      return `${a}${b}`.toUpperCase();
-    }
-    if (p.length >= 2) return p.slice(0, 2).toUpperCase();
-    return "?";
-  })();
-
   return (
     <>
       <nav className="flex-1 space-y-1.5 overflow-auto p-3">
-        {navEntries.map(({ path, key }) => {
+        {rootEntries.map(({ path, key }) => {
           const Icon = KEY_ICON_MAP[key] ?? Home;
+          if (key === "cart" && pickupCartEntry) {
+            const deliveryCartActive =
+              pathname === ROUTES.DASHBOARD.DELIVERY_CART ||
+              pathname.startsWith(ROUTES.DASHBOARD.DELIVERY_CART + "/");
+            const pickupCartActive =
+              pathname === ROUTES.DASHBOARD.PICKUP_CART ||
+              pathname.startsWith(ROUTES.DASHBOARD.PICKUP_CART + "/");
+            return (
+              <div key={path} className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setCartOpen((v) => !v)}
+                  className={`cursor-pointer flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${
+                    cartGroupActive
+                      ? "border-primary-dark bg-primary-dark/10 text-primary-dark dark:bg-primary-dark/15"
+                      : "border-transparent text-muted-foreground hover:bg-gray-200 hover:text-foreground dark:hover:bg-surface-container dark:hover:text-foreground"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className="size-5 shrink-0" />
+                    {t("cart")}
+                  </div>
+                  <ChevronDown
+                    className={`size-4 transition-transform duration-200 ${
+                      cartOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                <div
+                  className={`overflow-hidden transition-all duration-300 ease-out ${
+                    cartOpen ? "max-h-56 opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                >
+                  <div className="ms-2 mt-1 flex flex-col gap-0.5 py-0.5 ps-2">
+                    <NavSubItem
+                      href={ROUTES.DASHBOARD.DELIVERY_CART}
+                      active={deliveryCartActive}
+                      icon={Truck}
+                      onNavigate={onNavigate}
+                    >
+                      {t("deliveryCart")}
+                    </NavSubItem>
+                    <NavSubItem
+                      href={ROUTES.DASHBOARD.PICKUP_CART}
+                      active={pickupCartActive}
+                      icon={Store}
+                      onNavigate={onNavigate}
+                    >
+                      {t("pickupCart")}
+                    </NavSubItem>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          if (key === "orders" && pickupOrdersEntry) {
+            const deliveryActive =
+              pathname === ROUTES.DASHBOARD.ORDERS.LIST ||
+              pathname.startsWith(ROUTES.DASHBOARD.ORDERS.LIST + "/");
+            const pickupActive =
+              pathname === ROUTES.DASHBOARD.PICKUP_ORDERS ||
+              pathname.startsWith(ROUTES.DASHBOARD.PICKUP_ORDERS + "/");
+            return (
+              <div key={path} className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setOrdersOpen((v) => !v)}
+                  className={`cursor-pointer flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${
+                    ordersGroupActive
+                      ? "border-primary-dark bg-primary-dark/10 text-primary-dark dark:bg-primary-dark/15"
+                      : "border-transparent text-muted-foreground hover:bg-gray-200 hover:text-foreground dark:hover:bg-surface-container dark:hover:text-foreground"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className="size-5 shrink-0" />
+                    {t("orders")}
+                  </div>
+                  <ChevronDown
+                    className={`size-4 transition-transform duration-200 ${
+                      ordersOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                <div
+                  className={`overflow-hidden transition-all duration-300 ease-out ${
+                    ordersOpen ? "max-h-56 opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                >
+                  <div className="ms-2 mt-1 flex flex-col gap-0.5 py-0.5 ps-2">
+                    <NavSubItem
+                      href={ROUTES.DASHBOARD.ORDERS.LIST}
+                      active={deliveryActive}
+                      icon={Truck}
+                      onNavigate={onNavigate}
+                    >
+                      {t("deliveryOrders")}
+                    </NavSubItem>
+                    <NavSubItem
+                      href={ROUTES.DASHBOARD.PICKUP_ORDERS}
+                      active={pickupActive}
+                      icon={Store}
+                      onNavigate={onNavigate}
+                    >
+                      {t("pickupOrders")}
+                    </NavSubItem>
+                  </div>
+                </div>
+              </div>
+            );
+          }
           const isActive =
             key === "overview"
               ? pathname === path
@@ -174,9 +300,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               <p className="truncate text-sm font-semibold text-foreground leading-tight">
                 {displayName}
               </p>
-              <span className="mt-1 inline-block max-w-full truncate rounded-full bg-primary-dark px-2 py-0.5 text-[10px] font-medium text-primary-on-container">
-                {t("professionalPlan")}
-              </span>
+              {planName ? (
+                <span className="mt-1 inline-block max-w-full truncate rounded-full bg-primary-dark px-2 py-0.5 text-[10px] font-medium text-primary-on-container">
+                  {planName}
+                </span>
+              ) : null}
             </div>
           </div>
         </div>

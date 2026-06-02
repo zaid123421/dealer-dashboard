@@ -1,23 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import api from '@/lib/api'
+import { getVehicleDetailsService } from '@/modules/vehicles/services/get-vehicle-details.service'
+import type { VehicleDetails } from '@/modules/vehicles/schemas/dealer-customer-vehicle.schema'
 
 interface UseVehicleDetailsParams {
   customerId: string | undefined
   vehicleId: string | undefined
-}
-
-interface VehicleDetails {
-  id: number
-  vin: string
-  year: number
-  make: string
-  model: string
-  plateNumber: string
-  color: string
-  odometerKm: number
-  customerId: number
-  createdAt: string
-  updatedAt: string
 }
 
 interface UseVehicleDetailsResult {
@@ -46,11 +33,7 @@ export function useVehicleDetails({
         throw new Error('Customer ID and Vehicle ID are required')
       }
 
-      const response = await api.get<VehicleDetails>(
-        `/v1/dealerCustomers/${customerId}/vehicles/${vehicleId}`
-      )
-
-      return response.data
+      return getVehicleDetailsService(Number(customerId), Number(vehicleId))
     },
     enabled: !!customerId && !!vehicleId,
     staleTime: 1000 * 60 * 5, // 5 minutes

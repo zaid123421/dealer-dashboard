@@ -5,6 +5,8 @@ import * as SelectPrimitive from "@radix-ui/react-select"
 import { Check, ChevronDown, ChevronUp } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { TABLE_FIELD_BORDER } from "@/lib/table-border"
+import { FIELD_INVALID_BORDER_CLASS } from "@/lib/field-validation"
 
 const Select = SelectPrimitive.Root
 
@@ -18,8 +20,11 @@ const SelectTrigger = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Trigger
     ref={ref}
+    data-slot="select-trigger"
     className={cn(
-      "flex h-10 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-card px-3 py-2 text-body-md shadow-xs data-[placeholder]:text-muted-foreground data-[state=open]:border-primary-dark data-[state=open]:ring-0 focus:border-primary-dark focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      "flex h-10 w-full items-center justify-between whitespace-nowrap rounded-md px-3 py-2 text-body-md shadow-xs data-[placeholder]:text-muted-foreground data-[state=open]:border-[var(--color-primary-main-light)] data-[state=open]:ring-0 dark:data-[state=open]:border-[var(--color-primary-main-dark)] focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      TABLE_FIELD_BORDER,
+      FIELD_INVALID_BORDER_CLASS,
       className
     )}
     {...props}
@@ -74,6 +79,7 @@ const SelectContent = React.forwardRef<
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       ref={ref}
+      data-slot="select-content"
       className={cn(
         "relative z-50 max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-lg border border-transparent bg-surface-light text-popover-foreground shadow-lg dark:bg-surface-bright data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-select-content-transform-origin]",
         position === "popper" &&

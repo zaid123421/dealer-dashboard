@@ -47,6 +47,7 @@
   --color-chart-4: #F97316; /* Chart color 4 — Processing */
   --color-chart-5: #DC2828; /* Chart color 5 — Issues */
   --color-chart-6: #64748B; /* Chart color 6 — Unclassified */
+  --color-text-subtle: #7A746E; /* Page subtitles — warm neutral, light mode */
 
   /* ── Spacing ─────────────────────────────────────────────────── */
   --spacing-1: 4px; /* Icon gap, micro padding */

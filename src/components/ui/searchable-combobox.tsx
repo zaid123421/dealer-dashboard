@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { TABLE_FIELD_BORDER } from "@/lib/table-border";
+import { FIELD_INVALID_BORDER_CLASS } from "@/lib/field-validation";
 
 export type SearchableComboboxOption = {
   value: string;
@@ -70,15 +72,16 @@ export function SearchableCombobox({
           type="button"
           variant="outline"
           role="combobox"
+          data-slot="combobox-trigger"
           aria-expanded={open}
           aria-invalid={ariaInvalid}
           disabled={disabled}
           className={cn(
-            "flex h-10 w-full items-center justify-between gap-2 whitespace-nowrap rounded-md border border-input bg-card px-3 py-2 text-body-md font-normal shadow-xs hover:bg-card focus-visible:border-primary-dark focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50",
-            open && "border-primary-dark",
+            "flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-md px-3 py-2 text-body-md font-normal shadow-xs hover:bg-card disabled:cursor-not-allowed disabled:opacity-50",
+            TABLE_FIELD_BORDER,
+            open && "border-[var(--color-primary-main-light)] dark:border-[var(--color-primary-main-dark)]",
             !selected && "text-muted-foreground",
-            ariaInvalid &&
-              "border-destructive focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
+            ariaInvalid && cn(FIELD_INVALID_BORDER_CLASS, "border-error-main"),
             className,
           )}
         >
@@ -90,6 +93,7 @@ export function SearchableCombobox({
       </PopoverTrigger>
       <PopoverContent
         align="start"
+        data-slot="combobox-content"
         className="min-w-[var(--radix-popover-trigger-width)] rounded-lg border-transparent bg-surface-light p-0 text-popover-foreground shadow-lg dark:bg-surface-bright"
         sideOffset={4}
       >

@@ -10,7 +10,7 @@ export default async function DashboardPage() {
         <h1 className="text-headline-sm font-bold text-foreground">
           {t("title")}
         </h1>
-        <p className="mt-2 text-body-md text-muted-foreground">{t("intro")}</p>
+        <p className="mt-2 text-body-md text-subtle">{t("intro")}</p>
       </div>
       <Card>
         <CardHeader>

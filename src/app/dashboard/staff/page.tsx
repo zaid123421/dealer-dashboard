@@ -3,18 +3,13 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Ban, Pencil, Plus, Trash2 } from "lucide-react";
+import { ErrorAlert } from "@/components/ui/error-alert";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { PRIMARY_BUTTON_RESPONSIVE } from "@/lib/primary-button-styles";
 import { PaginationControls } from "@/components/ui/pagination-controls";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { toast } from "sonner";
+import { DealerQuotaPanel } from "@/modules/dealer/components/dealer-quota-panel";
+import { useDealerQuota } from "@/modules/dealer/hooks/use-dealer-quota";
 import { useDealerStaff } from "@/modules/staff/hooks/use-dealer-staff";
 import { useDisableDealerStaff } from "@/modules/staff/hooks/use-disable-dealer-staff";
 import { useDeleteDealerStaff } from "@/modules/staff/hooks/use-delete-dealer-staff";
@@ -33,6 +28,7 @@ function staffFullName(row: DealerStaffMember): string {
 
 export default function StaffPage() {
   const t = useTranslations("staff");
+  const { canAddStaff } = useDealerQuota();
   const [page, setPage] = useState(0);
   const [staffModalOpen, setStaffModalOpen] = useState(false);
   const [staffToEdit, setStaffToEdit] = useState<DealerStaffMember | null>(null);
@@ -51,6 +47,7 @@ export default function StaffPage() {
   const canPrev = page > 0 && !isPending;
   const canNext =
     data != null && !data.last && page < totalPages - 1 && !isPending;
+  const canAddNewStaff = canAddStaff();
 
   function handleDisable(row: DealerStaffMember) {
     if (typeof window !== "undefined" && !window.confirm(t("disableConfirm"))) return;
@@ -81,11 +78,13 @@ export default function StaffPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-headline-sm font-bold text-foreground">{t("title")}</h1>
-          <p className="mt-1 text-body-md text-muted-foreground">{t("intro")}</p>
+          <p className="mt-1 text-body-md text-subtle">{t("intro")}</p>
         </div>
         <Button
           type="button"
-          className="w-full shrink-0 bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 sm:w-auto"
+          variant="brand"
+          className={`shrink-0 ${PRIMARY_BUTTON_RESPONSIVE}`}
+          disabled={!canAddNewStaff}
           onClick={() => {
             setStaffToEdit(null);
             setStaffModalOpen(true);
@@ -95,6 +94,8 @@ export default function StaffPage() {
           {t("addStaff")}
         </Button>
       </div>
+
+      <DealerQuotaPanel filter="staff" showRoles variant="full" />
 
       <AddStaffModal
         open={staffModalOpen}
@@ -106,15 +107,12 @@ export default function StaffPage() {
       />
 
       {isError ? (
-        <div
-          className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-body-sm"
-          role="alert"
-        >
-          <span>{error instanceof Error ? error.message : t("errorLoading")}</span>
-          <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
-            {t("retry")}
-          </Button>
-        </div>
+        <ErrorAlert
+          message={error instanceof Error ? error.message : t("errorLoading")}
+          onRetry={() => void refetch()}
+          retryLabel={t("retry")}
+          className="shrink-0"
+        />
       ) : null}
 
       <StyledTable
@@ -156,7 +154,7 @@ export default function StaffPage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
+                  className="h-9 w-9 rounded-md border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
                             hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
                             transition-all duration-[var(--duration-normal)]"
                   aria-label={t("edit")}
@@ -173,7 +171,7 @@ export default function StaffPage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-warning-main-light)] bg-transparent text-[var(--color-warning-main-light)] 
+                  className="h-9 w-9 rounded-md border border-[var(--color-warning-main-light)] bg-transparent text-[var(--color-warning-main-light)] 
                             hover:bg-[var(--color-warning-main-dark)] hover:text-white hover:border-[var(--color-warning-main-dark)] 
                             transition-all duration-[var(--duration-normal)]"
                   aria-label={t("disable")}
@@ -188,7 +186,7 @@ export default function StaffPage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
+                  className="h-9 w-9 rounded-md border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
                             hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
                             transition-all duration-[var(--duration-normal)]"
                   aria-label={t("delete")}

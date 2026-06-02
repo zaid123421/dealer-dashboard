@@ -2,26 +2,31 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Eye, Trash2, AlertCircle, Car, Plus, CreditCard, Palette, Gauge, Package, Snowflake, Sun, Cloud, ChevronRight, Home } from 'lucide-react'
+import { Eye, Trash2, Car, Plus, CreditCard, Palette, Gauge, Package, Snowflake, Sun, Cloud, ChevronRight, Home } from 'lucide-react'
+import { ErrorAlert } from '@/components/ui/error-alert'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import StyledTable from '@/components/ui/styled-table'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  VehicleDetailsBreadcrumbSkeleton,
+  VehicleDetailsCardSkeleton,
+  VehicleTireSetsSectionSkeleton,
+} from '@/modules/vehicles/components/vehicle-details-skeleton'
 import { useVehicleTireSets } from '@/modules/tire-sets/hooks/use-vehicle-tire-sets'
 import { useVehicleDetails } from '@/modules/vehicles/hooks/use-vehicle-details'
 import { useDealerCustomer } from '@/modules/customers/hooks/use-dealer-customer'
 import { useTranslations } from 'next-intl'
 import { AddTireSetModal } from '@/modules/tire-sets/components/add-tire-set-modal'
+import { DealerQuotaNotice } from '@/modules/dealer/components/dealer-quota-notice'
+import { DealerQuotaPanel } from '@/modules/dealer/components/dealer-quota-panel'
+import { useDealerQuota } from '@/modules/dealer/hooks/use-dealer-quota'
+import {
+  formatOdometer,
+  formatTableCell,
+  formatVehicleLabel,
+} from '@/lib/format-table-cell'
 
 export default function VehicleDetailsPage() {
   const params = useParams()
@@ -30,6 +35,8 @@ export default function VehicleDetailsPage() {
   const customerId = params.customerId as string
   const vehicleId = params.vehicleId as string
   const [isAddTireSetModalOpen, setIsAddTireSetModalOpen] = useState(false)
+  const { snapshot, canAddTires } = useDealerQuota()
+  const canAddTireSet = canAddTires(1)
 
   // Fetch vehicle details and tire sets from API
   const { vehicle, isLoading: vehicleLoading, isError: vehicleError } = useVehicleDetails({
@@ -75,45 +82,46 @@ export default function VehicleDetailsPage() {
   return (
     <div className="flex flex-col gap-8">
       {/* Breadcrumbs */}
-      <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
-        <Link href="/dashboard/customers" className="hover:text-foreground transition-colors">
-          <Home className="size-4 text-primary-dark" />
-        </Link>
-        <ChevronRight className="size-4" />
-        {!vehicleLoading && !vehicleError && customer && (
-          <Link
-            href="/dashboard/customers"
-            className="font-medium text-primary-dark hover:underline underline-offset-4 transition-colors"
-          >
-            {customer?.firstName} {customer?.lastName}
+      {vehicleLoading ? (
+        <VehicleDetailsBreadcrumbSkeleton />
+      ) : (
+        <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
+          <Link href="/dashboard/customers" className="hover:text-foreground transition-colors">
+            <Home className="size-4 text-primary-dark" />
           </Link>
-        )}
-        {!vehicleLoading && !vehicleError && customer && <ChevronRight className="size-4" />}
-        {!vehicleLoading && !vehicleError && vehicle && (
-          <span className="font-medium text-white">
-            {vehicle?.make} {vehicle?.model} ({vehicle?.year})
-          </span>
-        )}
-      </nav>
+          <ChevronRight className="size-4" />
+          {!vehicleError && customer && (
+            <Link
+              href="/dashboard/customers"
+              className="font-medium text-primary-dark hover:underline underline-offset-4 transition-colors"
+            >
+              {customer?.firstName} {customer?.lastName}
+            </Link>
+          )}
+          {!vehicleError && customer && <ChevronRight className="size-4" />}
+          {!vehicleError && vehicle && (
+            <span className="font-medium text-white">
+              {formatVehicleLabel(vehicle.make, vehicle.model, vehicle.year)}
+            </span>
+          )}
+        </nav>
+      )}
 
       {/* Vehicle Details Card */}
       {vehicleLoading ? (
-        <div className="rounded-lg border p-6">
-          <div className="space-y-3">
-            <Skeleton className="h-24 w-full" />
-          </div>
-        </div>
+        <VehicleDetailsCardSkeleton />
       ) : vehicleError ? (
-        <div className="flex items-start gap-4 rounded-lg border border-red-200 bg-red-50 p-4">
-          <AlertCircle className="size-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <h2 className="font-semibold text-red-900">Failed to Load Vehicle Details</h2>
-            <p className="text-sm text-red-800 mt-1">
-              An error occurred while fetching vehicle details
-            </p>
-          </div>
-        </div>
+        <ErrorAlert message="An error occurred while fetching vehicle details" />
       ) : vehicle ? (
+        <>
+        <DealerQuotaPanel filter="tires" variant="compact" className="mb-2" />
+        {!canAddTireSet && snapshot.isLoaded ? (
+          !snapshot.hasActiveSubscription ? (
+            <DealerQuotaNotice variant="subscription" className="mb-2" />
+          ) : snapshot.tires ? (
+            <DealerQuotaNotice variant="tires" tireQuota={snapshot.tires} className="mb-2" />
+          ) : null
+        ) : null}
         <Card className="border-0 bg-surface-container rounded-lg">
           <CardContent className="p-6">
             <div className="flex flex-col gap-4 sm:gap-6 md:flex-row md:items-start">
@@ -122,10 +130,10 @@ export default function VehicleDetailsPage() {
               </div>
               <div className="min-w-0 flex-1 text-center md:text-left">
                 <h1 className="text-lg font-bold text-onSurface mb-2 sm:text-xl md:text-headline-sm">
-                  {vehicle.make} {vehicle.model} ({vehicle.year})
+                  {formatVehicleLabel(vehicle.make, vehicle.model, vehicle.year)}
                 </h1>
                 <p className="text-sm font-mono text-secondary-on-surface mb-4 px-2 md:px-0 overflow-hidden truncate">
-                  VIN: {vehicle.vin}
+                  VIN: {formatTableCell(vehicle.vin)}
                 </p>
                 <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                   <div className="group">
@@ -134,7 +142,7 @@ export default function VehicleDetailsPage() {
                       <span className="text-sm font-medium text-secondary-on-surface">Plate Number</span>
                     </div>
                     <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-primary-dark group-hover:shadow-md">
-                      <p className="text-body-md font-semibold text-onSurface font-mono text-sm sm:text-base">{vehicle.plateNumber}</p>
+                      <p className="text-body-md font-semibold text-onSurface font-mono text-sm sm:text-base">{formatTableCell(vehicle.plateNumber)}</p>
                     </div>
                   </div>
                   <div className="group">
@@ -143,7 +151,7 @@ export default function VehicleDetailsPage() {
                       <span className="text-xs sm:text-sm font-medium text-secondary-on-surface">Color</span>
                     </div>
                     <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-primary-dark group-hover:shadow-md">
-                      <p className="text-body-md font-semibold text-onSurface text-sm sm:text-base">{vehicle.color}</p>
+                      <p className="text-body-md font-semibold text-onSurface text-sm sm:text-base">{formatTableCell(vehicle.color)}</p>
                     </div>
                   </div>
                   <div className="group">
@@ -152,7 +160,7 @@ export default function VehicleDetailsPage() {
                       <span className="text-xs sm:text-sm font-medium text-secondary-on-surface">Odometer</span>
                     </div>
                     <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-primary-dark group-hover:shadow-md">
-                      <p className="text-body-md font-semibold text-onSurface text-sm sm:text-base">{vehicle.odometerKm.toLocaleString()} km</p>
+                      <p className="text-body-md font-semibold text-onSurface text-sm sm:text-base">{formatOdometer(vehicle.odometerKm)}</p>
                     </div>
                   </div>
                   <div className="group">
@@ -169,7 +177,9 @@ export default function VehicleDetailsPage() {
               <div className="shrink-0 sm:mt-0 mt-4 text-center sm:text-left">
                 <Button
                   type="button"
-                  className="bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-light w-full sm:w-auto"
+                  variant="brand"
+                  className="w-full sm:w-auto"
+                  disabled={!canAddTireSet}
                   onClick={() => setIsAddTireSetModalOpen(true)}
                 >
                   <Plus className="me-2 size-4 shrink-0" />
@@ -179,52 +189,30 @@ export default function VehicleDetailsPage() {
             </div>
           </CardContent>
         </Card>
+        </>
       ) : null}
 
       {/* Tire Sets Section */}
-      <div className="mt-8">
-        <h2 className="text-title-lg font-semibold text-foreground mb-6">Tire Sets</h2>
+      {isLoading ? (
+        <VehicleTireSetsSectionSkeleton />
+      ) : (
+        <div className="mt-8">
+          <h2 className="text-title-lg font-semibold text-foreground mb-6">Tire Sets</h2>
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="rounded-lg border p-6">
-            <div className="space-y-3">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          </div>
-        )}
+          {isError && (
+            <ErrorAlert
+              message={error?.message || 'An error occurred while fetching tire sets'}
+              onRetry={() => refetch()}
+            />
+          )}
 
-        {/* Error State */}
-        {isError && (
-          <div className="flex items-start gap-4 rounded-lg border border-red-200 bg-red-50 p-4">
-            <AlertCircle className="size-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h2 className="font-semibold text-red-900">Failed to Load Tire Sets</h2>
-              <p className="text-sm text-red-800 mt-1">
-                {error?.message || 'An error occurred while fetching tire sets'}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetch()}
-                className="mt-3"
-              >
-                Retry
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Tire Sets Table */}
-        {!isLoading && !isError && (
-          <StyledTable
-            isLoading={isLoading}
-            rows={tireSets}
-            keyProp={(tireSet) => tireSet.id}
-            emptyText="No tire sets found for this vehicle"
-            columns={[
+          {!isError && (
+            <StyledTable
+              isLoading={false}
+              rows={tireSets}
+              keyProp={(tireSet) => tireSet.id}
+              emptyText="No tire sets found for this vehicle"
+              columns={[
               {
                 header: "Set ID",
                 render: (tireSet) => (
@@ -278,7 +266,7 @@ export default function VehicleDetailsPage() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
+                      className="h-9 w-9 rounded-md border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
                                 hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
                                 transition-all duration-[var(--duration-normal)]"
                       onClick={() => handleViewTireDetails(tireSet.id)}
@@ -290,7 +278,7 @@ export default function VehicleDetailsPage() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
+                      className="h-9 w-9 rounded-md border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
                                 hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
                                 transition-all duration-[var(--duration-normal)]"
                       title="Delete tire set"
@@ -302,8 +290,9 @@ export default function VehicleDetailsPage() {
               },
             ]}
           />
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Add Tire Set Modal */}
       <AddTireSetModal

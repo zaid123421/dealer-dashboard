@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
@@ -16,10 +16,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import { FieldError, Label, RequiredMark } from "@/components/ui/label";
 import {
-  createVehicleFormSchema,
+  createVehicleFormFieldsSchema,
   mapVehicleFormToRequest,
   type CreateVehicleFormValues,
 } from "@/modules/vehicles/schemas/create-vehicle.schema";
@@ -58,7 +57,18 @@ export function DealerCustomerVehicleModal({
 }: DealerCustomerVehicleModalProps) {
   const t = useTranslations("customers");
   const tCommon = useTranslations("common");
+  const tValidation = useTranslations("validation");
   const isEdit = vehicleToEdit != null;
+
+  const formSchema = useMemo(
+    () =>
+      createVehicleFormFieldsSchema({
+        required: tValidation("required"),
+        invalidVin: tValidation("invalidVin"),
+        invalidYear: tValidation("invalidYear"),
+      }),
+    [tValidation],
+  );
 
   const createVehicle = useCreateVehicleForCustomer();
   const updateVehicle = useUpdateVehicleForCustomer();
@@ -70,7 +80,7 @@ export function DealerCustomerVehicleModal({
     reset,
     formState: { errors },
   } = useForm<CreateVehicleFormValues>({
-    resolver: zodResolver(createVehicleFormSchema) as Resolver<CreateVehicleFormValues>,
+    resolver: zodResolver(formSchema) as Resolver<CreateVehicleFormValues>,
     defaultValues: defaultFormValues,
   });
 
@@ -129,7 +139,7 @@ export function DealerCustomerVehicleModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[min(90vh,720px)] w-full max-w-2xl overflow-y-auto gap-0 p-0 sm:rounded-xl"
+        className="max-h-[min(90vh,720px)] w-full max-w-2xl overflow-y-auto gap-0 overflow-hidden p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="px-6 pb-4 pt-6">
@@ -160,13 +170,16 @@ export function DealerCustomerVehicleModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="modal-vin">{t("vinNumber")}</Label>
+              <Label htmlFor="modal-vin">
+                {t("vinNumber")} <RequiredMark />
+              </Label>
               <div className="relative">
                 <Input
                   id="modal-vin"
                   placeholder={t("vinPlaceholder")}
                   maxLength={17}
-                  className={cn("pe-10", errors.vin && "border-destructive")}
+                  className="pe-10"
+                  aria-invalid={!!errors.vin}
                   disabled={mutationPending}
                   {...register("vin")}
                 />
@@ -174,53 +187,47 @@ export function DealerCustomerVehicleModal({
                   <Info className="size-4" />
                 </span>
               </div>
-              {errors.vin ? (
-                <p className="text-label-sm text-destructive">{errors.vin.message}</p>
-              ) : null}
+              <FieldError>{errors.vin?.message}</FieldError>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="modal-year">{t("year")}</Label>
+                <Label htmlFor="modal-year">
+                  {t("year")} <RequiredMark />
+                </Label>
                 <Input
                   id="modal-year"
                   type="number"
                   min={1980}
                   max={2035}
                   placeholder={t("yearPlaceholder")}
-                  className={cn(errors.year && "border-destructive")}
+                  aria-invalid={!!errors.year}
                   disabled={mutationPending}
                   {...register("year", { valueAsNumber: true })}
                 />
-                {errors.year ? (
-                  <p className="text-label-sm text-destructive">{errors.year.message}</p>
-                ) : null}
+                <FieldError>{errors.year?.message}</FieldError>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="modal-make">{t("makeBrand")}</Label>
                 <Input
                   id="modal-make"
                   placeholder={t("makeBrand")}
-                  className={cn(errors.make && "border-destructive")}
+                  aria-invalid={!!errors.make}
                   disabled={mutationPending}
                   {...register("make")}
                 />
-                {errors.make ? (
-                  <p className="text-label-sm text-destructive">{errors.make.message}</p>
-                ) : null}
+                <FieldError>{errors.make?.message}</FieldError>
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="modal-model">{t("model")}</Label>
                 <Input
                   id="modal-model"
                   placeholder={t("modelPlaceholder")}
-                  className={cn(errors.model && "border-destructive")}
+                  aria-invalid={!!errors.model}
                   disabled={mutationPending}
                   {...register("model")}
                 />
-                {errors.model ? (
-                  <p className="text-label-sm text-destructive">{errors.model.message}</p>
-                ) : null}
+                <FieldError>{errors.model?.message}</FieldError>
               </div>
             </div>
 
@@ -230,26 +237,22 @@ export function DealerCustomerVehicleModal({
                 <Input
                   id="modal-plate"
                   placeholder={t("plateNumberPlaceholder")}
-                  className={cn(errors.plateNumber && "border-destructive")}
+                  aria-invalid={!!errors.plateNumber}
                   disabled={mutationPending}
                   {...register("plateNumber")}
                 />
-                {errors.plateNumber ? (
-                  <p className="text-label-sm text-destructive">{errors.plateNumber.message}</p>
-                ) : null}
+                <FieldError>{errors.plateNumber?.message}</FieldError>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="modal-color">{t("color")}</Label>
                 <Input
                   id="modal-color"
                   placeholder={t("colorPlaceholder")}
-                  className={cn(errors.color && "border-destructive")}
+                  aria-invalid={!!errors.color}
                   disabled={mutationPending}
                   {...register("color")}
                 />
-                {errors.color ? (
-                  <p className="text-label-sm text-destructive">{errors.color.message}</p>
-                ) : null}
+                <FieldError>{errors.color?.message}</FieldError>
               </div>
             </div>
 
@@ -261,13 +264,11 @@ export function DealerCustomerVehicleModal({
                 min={0}
                 step={1}
                 placeholder={t("odometerKmPlaceholder")}
-                className={cn(errors.odometerKm && "border-destructive")}
+                aria-invalid={!!errors.odometerKm}
                 disabled={mutationPending}
                 {...register("odometerKm", { valueAsNumber: true })}
               />
-              {errors.odometerKm ? (
-                <p className="text-label-sm text-destructive">{errors.odometerKm.message}</p>
-              ) : null}
+              <FieldError>{errors.odometerKm?.message}</FieldError>
             </div>
           </div>
         </form>
@@ -285,7 +286,8 @@ export function DealerCustomerVehicleModal({
           <Button
             type="submit"
             form="dealer-customer-vehicle-form"
-            className="bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 w-full sm:w-auto"
+            variant="brand"
+            className="w-full sm:w-auto"
             disabled={mutationPending}
           >
             {mutationPending ? t("loading") : isEdit ? t("saveVehicleChanges") : t("saveVehicle")}

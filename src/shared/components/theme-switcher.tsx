@@ -47,8 +47,8 @@ export function ThemeSwitcher() {
           title={t(value)}
           className={`rounded p-1.5 transition-colors ${
             theme === value
-            ? "bg-primary text-primary-foreground"
-            : "hover:bg-primary hover:text-primary-foreground"
+              ? "bg-primary-dark text-primary-onContainer"
+              : "text-muted-foreground hover:bg-primary-dark/90 hover:text-primary-onContainer"
           }`}
           aria-label={t(value)}
         >

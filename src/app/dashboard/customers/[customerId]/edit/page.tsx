@@ -2,22 +2,16 @@
 
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useEffect, useMemo } from "react";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { User, Mail, ChevronRight, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Label, RequiredMark, FieldError } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -25,7 +19,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
-import { cn } from "@/lib/utils";
 import {
   createDealerCustomerFormFieldsSchema,
   mapDealerCustomerFormToRequest,
@@ -35,15 +28,7 @@ import { dealerCustomerToFormValues } from "@/modules/customers/lib/customer-for
 import { useDealerCustomer } from "@/modules/customers/hooks/use-dealer-customer";
 import { useUpdateDealerCustomer } from "@/modules/customers/hooks/use-update-dealer-customer";
 import { DealerCustomerAddressRegionFields } from "@/modules/customers/components/dealer-customer-address-region-fields";
-
-const COUNTRY_CODES = [
-  { value: "+966", label: "+966" },
-  { value: "+971", label: "+971" },
-  { value: "+965", label: "+965" },
-  { value: "+963", label: "+963" },
-  { value: "+1", label: "+1" },
-  { value: "+44", label: "+44" },
-] as const;
+import { PhoneWithCountryCodeField } from "@/modules/customers/components/phone-with-country-code-field";
 
 const emptyFormValues: CreateDealerCustomerFormValues = {
   firstName: "",
@@ -66,12 +51,23 @@ const emptyFormValues: CreateDealerCustomerFormValues = {
 export default function EditCustomerPage() {
   const t = useTranslations("customers");
   const tCommon = useTranslations("common");
+  const tValidation = useTranslations("validation");
   const router = useRouter();
   const params = useParams();
   const customerIdParam = params.customerId as string | undefined;
 
   const { data: customer, isPending, isError, error } = useDealerCustomer(customerIdParam);
   const updateCustomer = useUpdateDealerCustomer();
+
+  const formSchema = useMemo(
+    () =>
+      createDealerCustomerFormFieldsSchema({
+        required: tValidation("required"),
+        invalidEmail: tValidation("invalidEmail"),
+        invalidId: tValidation("invalidId"),
+      }),
+    [tValidation],
+  );
 
   const {
     register,
@@ -81,7 +77,7 @@ export default function EditCustomerPage() {
     reset,
     formState: { errors },
   } = useForm<CreateDealerCustomerFormValues>({
-    resolver: zodResolver(createDealerCustomerFormFieldsSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: emptyFormValues,
   });
 
@@ -112,6 +108,7 @@ export default function EditCustomerPage() {
   }
 
   const addrErr = errors.address;
+  const phoneFieldInvalid = !!errors.phoneLocal;
 
   if (isPending) {
     return (
@@ -153,7 +150,7 @@ export default function EditCustomerPage() {
 
       <div>
         <h1 className="text-headline-sm font-bold text-foreground">{t("editCustomer")}</h1>
-        <p className="mt-2 text-body-md text-muted-foreground">{t("editCustomerSubtitle")}</p>
+        <p className="mt-2 text-body-md text-subtle">{t("editCustomerSubtitle")}</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -175,7 +172,7 @@ export default function EditCustomerPage() {
                   {...register("firstName")}
                 />
                 {errors.firstName ? (
-                  <p className="text-sm text-destructive">{errors.firstName.message}</p>
+                  <p className="text-sm text-error-main">{errors.firstName.message}</p>
                 ) : null}
               </div>
               <div className="space-y-2">
@@ -187,54 +184,29 @@ export default function EditCustomerPage() {
                   {...register("lastName")}
                 />
                 {errors.lastName ? (
-                  <p className="text-sm text-destructive">{errors.lastName.message}</p>
+                  <p className="text-sm text-error-main">{errors.lastName.message}</p>
                 ) : null}
               </div>
             </div>
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="min-w-0 space-y-2">
-                <Label htmlFor="phoneLocal">{t("phoneNumber")}</Label>
-                <div className="flex min-w-0">
-                  <Controller
-                    name="countryCode"
-                    control={control}
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="w-[90px] shrink-0 rounded-e-none border-e-0 [&>span]:text-primary-dark">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {COUNTRY_CODES.map(({ value, label }) => (
-                            <SelectItem key={value} value={value}>
-                              {label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  <Input
-                    id="phoneLocal"
-                    type="tel"
-                    placeholder={t("phonePlaceholder")}
-                    className={cn(
-                      "h-10 min-w-0 flex-1 rounded-s-none shadow-xs focus-visible:ring-0 focus-visible:ring-offset-0",
-                      "placeholder:text-primary-dark/70",
-                    )}
-                    aria-invalid={!!errors.phoneLocal}
-                    {...register("phoneLocal")}
-                  />
-                </div>
-                {errors.phoneLocal ? (
-                  <p className="text-sm text-destructive">{errors.phoneLocal.message}</p>
-                ) : null}
-                {errors.countryCode ? (
-                  <p className="text-sm text-destructive">{errors.countryCode.message}</p>
-                ) : null}
+                <Label htmlFor="phoneLocal">
+                  {t("phoneNumber")} <RequiredMark />
+                </Label>
+                <PhoneWithCountryCodeField
+                  control={control}
+                  register={register}
+                  invalid={phoneFieldInvalid}
+                  phonePlaceholder={t("phonePlaceholder")}
+                />
+                <FieldError>{errors.phoneLocal?.message}</FieldError>
+                <FieldError>{errors.countryCode?.message}</FieldError>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">{t("emailAddress")}</Label>
+                <Label htmlFor="email">
+                  {t("emailAddress")} <RequiredMark />
+                </Label>
                 <div className="relative">
                   <Mail className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -246,9 +218,7 @@ export default function EditCustomerPage() {
                     {...register("email")}
                   />
                 </div>
-                {errors.email ? (
-                  <p className="text-sm text-destructive">{errors.email.message}</p>
-                ) : null}
+                <FieldError>{errors.email?.message}</FieldError>
               </div>
             </div>
           </CardContent>
@@ -278,7 +248,7 @@ export default function EditCustomerPage() {
                   {...register("address.streetName")}
                 />
                 {addrErr?.streetName ? (
-                  <p className="text-sm text-destructive">{addrErr.streetName.message}</p>
+                  <p className="text-sm text-error-main">{addrErr.streetName.message}</p>
                 ) : null}
               </div>
               <div className="space-y-2">
@@ -290,7 +260,7 @@ export default function EditCustomerPage() {
                   {...register("address.streetNumber")}
                 />
                 {addrErr?.streetNumber ? (
-                  <p className="text-sm text-destructive">{addrErr.streetNumber.message}</p>
+                  <p className="text-sm text-error-main">{addrErr.streetNumber.message}</p>
                 ) : null}
               </div>
             </div>
@@ -305,7 +275,7 @@ export default function EditCustomerPage() {
                   {...register("address.postalCode")}
                 />
                 {addrErr?.postalCode ? (
-                  <p className="text-sm text-destructive">{addrErr.postalCode.message}</p>
+                  <p className="text-sm text-error-main">{addrErr.postalCode.message}</p>
                 ) : null}
               </div>
               <div className="space-y-2">
@@ -320,14 +290,10 @@ export default function EditCustomerPage() {
 
             <div className="mt-4 space-y-2">
               <Label htmlFor="address.specialInstructions">{t("specialInstructions")}</Label>
-              <textarea
+              <Textarea
                 id="address.specialInstructions"
                 rows={3}
                 placeholder={t("specialInstructionsPlaceholder")}
-                className={cn(
-                  "placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border border-input min-h-[80px] w-full min-w-0 resize-none rounded-md bg-transparent px-3 py-2 text-body-lg text-foreground transition-colors outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
-                  "focus-visible:border-primary-dark focus-visible:ring-0",
-                )}
                 {...register("address.specialInstructions")}
               />
             </div>
@@ -340,7 +306,8 @@ export default function EditCustomerPage() {
           </Button>
           <Button
             type="submit"
-            className="w-full bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 sm:w-auto"
+            variant="brand"
+            className="w-full sm:w-auto"
             disabled={updateCustomer.isPending}
           >
             {updateCustomer.isPending ? "…" : t("saveCustomer")}

@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ROUTES } from "@/constants/routes";
 import { Lock, Eye, EyeOff, KeyRound } from "lucide-react";
+import { ErrorAlert } from "@/components/ui/error-alert";
+import { AUTH_PRIMARY_BUTTON_CLASS } from "@/lib/primary-button-styles";
 import {
   activateDealerAccountUseCase,
   ActivateDealerAccountError,
@@ -129,11 +131,7 @@ export default function ActivateAccountPage() {
               </p>
             </div>
 
-            {formError && (
-              <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-start text-sm text-destructive">
-                {formError}
-              </div>
-            )}
+            {formError ? <ErrorAlert message={formError} className="mb-6" /> : null}
 
             {hasToken ? (
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -163,7 +161,7 @@ export default function ActivateAccountPage() {
                     </button>
                   </div>
                   {errors.password && (
-                    <p className="text-start text-sm text-destructive">{errors.password}</p>
+                    <p className="text-start text-sm text-error-main">{errors.password}</p>
                   )}
                 </div>
 
@@ -193,14 +191,14 @@ export default function ActivateAccountPage() {
                     </button>
                   </div>
                   {errors.confirmPassword && (
-                    <p className="text-start text-sm text-destructive">{errors.confirmPassword}</p>
+                    <p className="text-start text-sm text-error-main">{errors.confirmPassword}</p>
                   )}
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex h-13 w-full items-center justify-center rounded-lg bg-primary-dark text-title-md font-bold text-secondary-main shadow-md transition-all hover:bg-primary-dark/90 hover:shadow-lg active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
+                  className={AUTH_PRIMARY_BUTTON_CLASS}
                 >
                   {isSubmitting ? tActivate("submitting") : tActivate("submit")}
                 </button>

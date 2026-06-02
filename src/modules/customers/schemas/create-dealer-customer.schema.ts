@@ -1,70 +1,101 @@
 import { z } from "zod";
 
-export const createDealerCustomerFormFieldsSchema = z.object({
-  firstName: z.string().trim().min(1),
-  lastName: z.string().trim().min(1),
-  email: z.string().trim().email(),
-  countryCode: z.string().min(1),
-  phoneLocal: z.string().trim().min(1),
-  address: z.object({
-    cityId: z
+export type DealerCustomerValidationMessages = {
+  required: string;
+  invalidEmail: string;
+  invalidId: string;
+};
+
+const defaultValidationMessages: DealerCustomerValidationMessages = {
+  required: "Required",
+  invalidEmail: "Invalid email address",
+  invalidId: "Please select a valid option",
+};
+
+function requiredRegionId(messages: DealerCustomerValidationMessages) {
+  return z
+    .string()
+    .trim()
+    .min(1, messages.required)
+    .regex(/^\d+$/, messages.invalidId);
+}
+
+/** Form validation — email and phone are both required. */
+export function createDealerCustomerFormFieldsSchema(
+  messages: DealerCustomerValidationMessages = defaultValidationMessages,
+) {
+  return z.object({
+    firstName: z.string().trim().min(1, messages.required),
+    lastName: z.string().trim().min(1, messages.required),
+    email: z
       .string()
       .trim()
-      .min(1, "required")
-      .regex(/^\d+$/, "invalidId"),
-    countryId: z
+      .min(1, messages.required)
+      .email(messages.invalidEmail),
+    countryCode: z.string().min(1),
+    phoneLocal: z
       .string()
       .trim()
-      .min(1, "required")
-      .regex(/^\d+$/, "invalidId"),
-    stateId: z
-      .string()
-      .trim()
-      .min(1, "required")
-      .regex(/^\d+$/, "invalidId"),
-    streetName: z.string().trim().min(1),
-    streetNumber: z.string().trim().min(1),
-    postalCode: z.string().trim().min(1),
-    unitNumber: z.string().trim(),
-    specialInstructions: z.string().trim(),
-  }),
+      .min(1, messages.required)
+      .refine((val) => val.replace(/\D/g, "").length > 0, {
+        message: messages.required,
+      }),
+    address: z.object({
+      cityId: requiredRegionId(messages),
+      countryId: requiredRegionId(messages),
+      stateId: requiredRegionId(messages),
+      streetName: z.string().trim().min(1, messages.required),
+      streetNumber: z.string().trim(),
+      postalCode: z.string().trim(),
+      unitNumber: z.string().trim(),
+      specialInstructions: z.string().trim(),
+    }),
+  });
+}
+
+export const dealerCustomerAddressRequestSchema = z.object({
+  cityId: z.number().int().positive(),
+  countryId: z.number().int().positive(),
+  stateId: z.number().int().positive(),
+  streetName: z.string().trim().min(1),
+  streetNumber: z.string().optional(),
+  postalCode: z.string().optional(),
+  unitNumber: z.string().optional(),
+  specialInstructions: z.string().optional(),
 });
 
+/** API body validation — email and phone are both required. */
 export const createDealerCustomerRequestSchema = z.object({
   firstName: z.string().trim().min(1),
   lastName: z.string().trim().min(1),
   email: z.string().trim().email(),
-  address: z.object({
-    cityId: z.number().int().positive(),
-    countryId: z.number().int().positive(),
-    stateId: z.number().int().positive(),
-    streetName: z.string().min(1),
-    streetNumber: z.string().min(1),
-    postalCode: z.string().min(1),
-    unitNumber: z.string(),
-    specialInstructions: z.string(),
-  }),
   phoneNumber: z.string().trim().min(1),
+  address: dealerCustomerAddressRequestSchema,
 });
 
 /** يحوّل قيم النموذج إلى body الـ API (بعد نجاح zodResolver على الحقول). */
 export function mapDealerCustomerFormToRequest(
   data: CreateDealerCustomerFormValues,
 ): CreateDealerCustomerRequest {
+  const streetNumber = data.address.streetNumber.trim();
+  const postalCode = data.address.postalCode.trim();
+  const unitNumber = data.address.unitNumber.trim();
+  const specialInstructions = data.address.specialInstructions.trim();
+
   return createDealerCustomerRequestSchema.parse({
-    firstName: data.firstName,
-    lastName: data.lastName,
-    email: data.email,
+    firstName: data.firstName.trim(),
+    lastName: data.lastName.trim(),
+    email: data.email.trim(),
     phoneNumber: data.phoneLocal.replace(/\D/g, ""),
     address: {
       cityId: Number.parseInt(data.address.cityId, 10),
       countryId: Number.parseInt(data.address.countryId, 10),
       stateId: Number.parseInt(data.address.stateId, 10),
-      streetName: data.address.streetName,
-      streetNumber: data.address.streetNumber,
-      postalCode: data.address.postalCode,
-      unitNumber: data.address.unitNumber.trim(),
-      specialInstructions: data.address.specialInstructions.trim(),
+      streetName: data.address.streetName.trim(),
+      ...(streetNumber ? { streetNumber } : {}),
+      ...(postalCode ? { postalCode } : {}),
+      ...(unitNumber ? { unitNumber } : {}),
+      ...(specialInstructions ? { specialInstructions } : {}),
     },
   });
 }
@@ -90,8 +121,7 @@ export const dealerCustomerResponseSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
   email: z.string(),
-  // 1. أضف .nullable() هنا لأن السيرفر يرسل العنوان null أحياناً
-  address: dealerCustomerAddressResponseSchema.nullable(), 
+  address: dealerCustomerAddressResponseSchema.nullable(),
   phoneNumber: z.string(),
   dealerId: z.number(),
   dealerName: z.string(),
@@ -100,10 +130,11 @@ export const dealerCustomerResponseSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   createdBy: z.string(),
-  // 2. أضف .nullable() هنا لأن المستخدم الجديد لم يتم تحديثه بعد
-  updatedBy: z.string().nullable(), 
+  updatedBy: z.string().nullable(),
 });
 
 export type CreateDealerCustomerRequest = z.infer<typeof createDealerCustomerRequestSchema>;
 export type DealerCustomer = z.infer<typeof dealerCustomerResponseSchema>;
-export type CreateDealerCustomerFormValues = z.infer<typeof createDealerCustomerFormFieldsSchema>;
+export type CreateDealerCustomerFormValues = z.infer<
+  ReturnType<typeof createDealerCustomerFormFieldsSchema>
+>;

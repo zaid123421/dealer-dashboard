@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import axios from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
@@ -29,6 +29,9 @@ import { z } from "zod";
 import api from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { dealerTireSetsOverviewQueryKey } from "../hooks/use-dealer-tire-sets-overview";
+import { DealerQuotaNotice } from "@/modules/dealer/components/dealer-quota-notice";
+import { useDealerQuota } from "@/modules/dealer/hooks/use-dealer-quota";
+import { invalidateDealerMe } from "@/modules/dealer/lib/invalidate-dealer-me";
 
 type CreateTireSetFormValues = {
   tireCount: number;
@@ -50,7 +53,9 @@ interface AddTireSetModalProps {
 export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId, onCreated }: AddTireSetModalProps) {
   const t = useTranslations("common");
   const tCustomers = useTranslations("customers");
+  const tQuota = useTranslations("quota");
   const queryClient = useQueryClient();
+  const { snapshot, canAddTires } = useDealerQuota();
 
   const createTireSetSchema = useMemo(
     () =>
@@ -84,7 +89,36 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId, onC
     },
   });
 
+  const tireCount = useWatch({ control, name: "tireCount" }) ?? 4;
+  const tiresAllowed = canAddTires(tireCount);
+  const tireQuota = snapshot.tires;
+
   const onSubmit = async (data: CreateTireSetFormValues) => {
+    if (!canAddTires(data.tireCount)) {
+      if (!snapshot.hasActiveSubscription) {
+        toast.error(tQuota("noActiveSubscription"));
+        return;
+      }
+      if (tireQuota && tireQuota.remaining <= 0) {
+        toast.error(
+          tQuota("tireLimitReached", {
+            current: tireQuota.current,
+            max: tireQuota.max,
+            remaining: tireQuota.remaining,
+          }),
+        );
+        return;
+      }
+      toast.error(
+        tQuota("tiresInsufficientSlots", {
+          requested: data.tireCount,
+          remaining: tireQuota?.remaining ?? 0,
+          max: tireQuota?.max ?? 0,
+        }),
+      );
+      return;
+    }
+
     try {
       await api.post(
         `/v1/dealerCustomers/${customerId}/vehicles/${vehicleId}/tire-sets`,
@@ -94,6 +128,7 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId, onC
       toast.success(tCustomers("tireSetCreatedSuccess"));
       onCreated?.();
       void queryClient.invalidateQueries({ queryKey: dealerTireSetsOverviewQueryKey });
+      void invalidateDealerMe(queryClient);
       onOpenChange(false);
       reset();
     } catch (error) {
@@ -115,6 +150,35 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId, onC
           <DialogTitle>{tCustomers("addTireSet")}</DialogTitle>
           <DialogDescription>{tCustomers("addTireSetModalDescription")}</DialogDescription>
         </DialogHeader>
+
+        {open ? (
+          <div className="space-y-3 px-6">
+            {tireQuota ? (
+              <p className="text-body-sm text-muted-foreground">
+                {tiresAllowed
+                  ? tQuota("remainingSlots", {
+                      remaining: tireQuota.remaining,
+                      max: tireQuota.max,
+                    })
+                  : tQuota("limitFull", { max: tireQuota.max })}
+              </p>
+            ) : null}
+            {!snapshot.hasActiveSubscription ? (
+              <DealerQuotaNotice variant="subscription" />
+            ) : null}
+            {tireQuota && !tireQuota.canAdd ? (
+              <DealerQuotaNotice variant="tires" tireQuota={tireQuota} />
+            ) : null}
+            {tireQuota?.canAdd && !tiresAllowed ? (
+              <DealerQuotaNotice
+                variant="tiresInsufficient"
+                tireQuota={tireQuota}
+                requestedTireCount={tireCount}
+              />
+            ) : null}
+          </div>
+        ) : null}
+
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
@@ -209,7 +273,9 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId, onC
             </Button>
             <Button
               type="submit"
-              className="bg-primary-dark text-primary-onContainer font-bold hover:bg-primary-dark/90 w-full sm:w-auto"
+              variant="brand"
+              className="w-full sm:w-auto"
+              disabled={!tiresAllowed}
             >
               {tCustomers("addTireSet")}
             </Button>

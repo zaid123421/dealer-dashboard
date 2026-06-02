@@ -1,8 +1,12 @@
 import axios from "axios";
 import publicApi from "@/lib/public-api";
 import TokenService from "@/infrastructure/auth/token-service";
-import { ROLES, type Role, parseRole } from "@/shared/config/roles";
+import { ROLES, type Role } from "@/shared/config/roles";
 import type { AuthUser } from "@/shared/types/auth-session";
+import { syncDealerSessionFromMeApi } from "@/application/auth/sync-dealer-session.use-case";
+import { useAuthStore } from "@/shared/stores/auth-store";
+import { clearDealerProfileCache } from "@/modules/dealer/lib/dealer-profile-cache";
+import { DealerMeError } from "@/modules/dealer/services/dealer-me.service";
 
 export interface LoginInput {
   email: string;
@@ -65,31 +69,6 @@ function unwrapPayload(data: unknown): Record<string, unknown> {
   return root;
 }
 
-/** يطابق أدوار الـ backend إلى أدوار واجهة الـ dealer dashboard */
-function normalizeRole(raw: string): Role | null {
-  const u = raw.toUpperCase();
-  if (u.includes("TECHNICIAN")) return ROLES.USER;
-  if (u.includes("DEALER")) return ROLES.SUPPLIER;
-  if (u.includes("SALES") || u === "SYSTEM_ADMIN" || u === "PLATFORM_ADMIN")
-    return ROLES.ADMIN;
-  const direct = parseRole(raw.toLowerCase());
-  if (direct) return direct;
-  if (u.includes("ADMIN")) return ROLES.ADMIN;
-  if (u.includes("SUPPLIER") || u.includes("VENDOR")) return ROLES.SUPPLIER;
-  return null;
-}
-
-function extractAppRole(payload: Record<string, unknown>): Role | null {
-  const r = pickString(payload, "role") ?? pickString(payload, "userRole");
-  if (r) return normalizeRole(r);
-  const user = payload.user;
-  if (user && typeof user === "object") {
-    const role = pickString(user as Record<string, unknown>, "role");
-    if (role) return normalizeRole(role);
-  }
-  return null;
-}
-
 function extractTokensFromPayload(payload: Record<string, unknown>): {
   accessToken?: string;
   refreshToken?: string;
@@ -103,31 +82,19 @@ function extractTokensFromPayload(payload: Record<string, unknown>): {
   return { accessToken, refreshToken, legacyToken };
 }
 
-function buildAuthUser(payload: Record<string, unknown>): AuthUser {
-  const nested =
-    payload.user && typeof payload.user === "object" && !Array.isArray(payload.user)
-      ? (payload.user as Record<string, unknown>)
-      : undefined;
-
-  const str = (key: string): string =>
-    (nested ? pickString(nested, key) : undefined) ?? pickString(payload, key) ?? "";
-
-  const tenantId =
-    nested !== undefined
-      ? pickNumber(nested, "tenantId") || pickNumber(payload, "tenantId")
-      : pickNumber(payload, "tenantId");
-
+/** Minimal profile until GET /v1/dealer/me completes. */
+function buildTemporaryAuthUser(email: string, expiresInSeconds: number): AuthUser {
   return {
-    email: str("email"),
-    firstName: str("firstName"),
-    lastName: str("lastName"),
-    backendRole: str("role"),
-    tenantType: str("tenantType"),
-    tenantId,
-    tenantName: str("tenantName"),
-    expiresInSeconds:
-      pickNumber(payload, "expiresIn") ||
-      (nested !== undefined ? pickNumber(nested, "expiresIn") : 0),
+    email,
+    firstName: "",
+    lastName: "",
+    backendRole: "",
+    accessLevel: "",
+    userActive: true,
+    tenantType: "DEALER",
+    tenantId: 0,
+    tenantName: "",
+    expiresInSeconds,
   };
 }
 
@@ -149,19 +116,28 @@ export async function loginUseCase(input: LoginInput): Promise<LoginResult> {
       throw new LoginError("Invalid login response: missing tokens", undefined);
     }
 
-    const user = buildAuthUser(payload);
-    const appRole = extractAppRole(payload) ?? ROLES.SUPPLIER;
+    const expiresInSeconds = pickNumber(payload, "expiresIn") || 900;
 
     TokenService.persistSession({
       accessToken: access,
       refreshToken: refresh,
-      expiresInSeconds: user.expiresInSeconds || 900,
-      appRole,
-      user,
+      expiresInSeconds,
+      appRole: ROLES.SUPPLIER,
+      user: buildTemporaryAuthUser(input.email.trim(), expiresInSeconds),
     });
 
-    return { success: true, role: appRole, user };
+    const { user, role } = await syncDealerSessionFromMeApi();
+
+    return { success: true, role, user };
   } catch (err: unknown) {
+    TokenService.removeRefreshToken();
+    clearDealerProfileCache();
+    useAuthStore.getState().clearAuth();
+
+    if (err instanceof LoginError) throw err;
+    if (err instanceof DealerMeError) {
+      throw new LoginError(err.message, err.status);
+    }
     if (axios.isAxiosError(err)) {
       const status = err.response?.status;
       const msg =
@@ -170,7 +146,9 @@ export async function loginUseCase(input: LoginInput): Promise<LoginResult> {
         "Request failed";
       throw new LoginError(msg, status);
     }
-    if (err instanceof LoginError) throw err;
+    if (err instanceof Error) {
+      throw new LoginError(err.message);
+    }
     throw new LoginError("Unknown error");
   }
 }

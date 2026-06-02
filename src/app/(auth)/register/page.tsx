@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { AUTH_PRIMARY_BUTTON_CLASS } from "@/lib/primary-button-styles";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock, Eye, EyeOff } from "lucide-react";
+import { ErrorAlert } from "@/components/ui/error-alert";
 import {
   Card,
   CardHeader,
@@ -80,11 +82,7 @@ export default function RegisterPage() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="grid gap-4">
-            {errors.form && (
-              <p className="rounded-lg border border-destructive bg-destructive/10 p-2 text-right text-sm text-destructive">
-                {errors.form}
-              </p>
-            )}
+            {errors.form ? <ErrorAlert message={errors.form} /> : null}
             <div className="grid gap-2">
               <Label htmlFor="name" className="text-right">
                 {t("fullName")}
@@ -99,7 +97,7 @@ export default function RegisterPage() {
                 className="text-end"
               />
               {errors.name && (
-                <p className="text-right text-sm text-destructive">
+                <p className="text-right text-sm text-error-main">
                   {errors.name}
                 </p>
               )}
@@ -118,7 +116,7 @@ export default function RegisterPage() {
                 className="text-end"
               />
               {errors.email && (
-                <p className="text-right text-sm text-destructive">
+                <p className="text-right text-sm text-error-main">
                   {errors.email}
                 </p>
               )}
@@ -147,7 +145,7 @@ export default function RegisterPage() {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-right text-sm text-destructive">
+                <p className="text-right text-sm text-error-main">
                   {errors.password}
                 </p>
               )}
@@ -176,7 +174,7 @@ export default function RegisterPage() {
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="text-right text-sm text-destructive">
+                <p className="text-right text-sm text-error-main">
                   {errors.confirmPassword}
                 </p>
               )}
@@ -185,7 +183,8 @@ export default function RegisterPage() {
           <CardFooter className="flex flex-col gap-3">
             <Button
               type="submit"
-              className="w-full"
+              variant="brand"
+              className={AUTH_PRIMARY_BUTTON_CLASS}
               disabled={isSubmitting}
             >
               {isSubmitting ? t("submitting") : t("submit")}

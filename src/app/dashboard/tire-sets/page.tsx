@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Eye, Package, Snowflake, Sun } from "lucide-react";
+import { ErrorAlert } from "@/components/ui/error-alert";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import StyledTable from "@/components/ui/styled-table";
 import { useDealerTireSetsOverview } from "@/modules/tire-sets/hooks/use-dealer-tire-sets-overview";
+import { DealerQuotaPanel } from "@/modules/dealer/components/dealer-quota-panel";
 import type { DealerTireSetOverviewRow } from "@/modules/tire-sets/types";
 
 const PAGE_SIZE = 10;
@@ -48,6 +50,7 @@ function formatDate(dateString: string) {
 
 export default function TireSetsPage() {
   const t = useTranslations("dashboard");
+  const ts = useTranslations("staff");
   const [page, setPage] = useState(0);
 
   const { data = [], isLoading, isError, error, refetch } = useDealerTireSetsOverview();
@@ -74,17 +77,19 @@ export default function TireSetsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-headline-sm font-bold text-foreground">{t("tireSetsTitle")}</h1>
-          <p className="mt-1 text-body-md text-muted-foreground">{t("tireSetsIntro")}</p>
+          <p className="mt-1 text-body-md text-subtle">{t("tireSetsIntro")}</p>
         </div>
       </div>
 
+      <DealerQuotaPanel filter="tires" variant="full" />
+
       {isError ? (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-body-md text-destructive">
-          <p>{error instanceof Error ? error.message : "Failed to load tire sets"}</p>
-          <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
-            Retry
-          </Button>
-        </div>
+        <ErrorAlert
+          message={error instanceof Error ? error.message : t("tireSetsError")}
+          onRetry={() => void refetch()}
+          retryLabel={ts("retry")}
+          className="shrink-0"
+        />
       ) : null}
 
       <StyledTable
@@ -160,7 +165,7 @@ export default function TireSetsPage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-[var(--radius-md)] border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)]
+                  className="h-9 w-9 rounded-md border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)]
                             hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)]
                             transition-all duration-[var(--duration-normal)]"
                   title="View tire set details"
@@ -180,10 +185,10 @@ export default function TireSetsPage() {
         <PaginationControls
           canPrevious={canPrev}
           canNext={canNext}
-          previousLabel="Previous"
-          nextLabel="Next"
-          pageLabel={`Page ${effectivePage + 1} of ${totalPages}`}
-          pageText={`${effectivePage + 1}/${totalPages}`}
+          previousLabel={ts("paginationPrev")}
+          nextLabel={ts("paginationNext")}
+          pageLabel={ts("pageInfo", { current: effectivePage + 1, total: totalPages })}
+          pageText={ts("pageCompact", { current: effectivePage + 1, total: totalPages })}
           onPrevious={() => setPage((p) => Math.max(0, p - 1))}
           onNext={() =>
             setPage((p) => (totalPages > 0 ? Math.min(totalPages - 1, p + 1) : p))

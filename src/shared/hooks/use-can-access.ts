@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { canAccess as checkCanAccess } from "@/shared/config/permissions";
 import { useAuthStore } from "@/shared/stores/auth-store";
 import TokenService from "@/infrastructure/auth/token-service";
+import { readDealerProfileCache } from "@/modules/dealer/lib/dealer-profile-cache";
 
 /**
  * يملأ الـ store من الـ cookies عند التحميل (دور + ملف المستخدم).
@@ -11,13 +12,18 @@ import TokenService from "@/infrastructure/auth/token-service";
 function useSyncAuthFromCookie() {
   const setRole = useAuthStore((s) => s.setRole);
   const setUser = useAuthStore((s) => s.setUser);
+  const setDealerProfile = useAuthStore((s) => s.setDealerProfile);
 
   useEffect(() => {
     const role = TokenService.getRole();
     const user = TokenService.getAuthProfile();
     setRole(role);
     setUser(user);
-  }, [setRole, setUser]);
+    if (!useAuthStore.getState().dealerProfile) {
+      const cached = readDealerProfileCache();
+      if (cached) setDealerProfile(cached);
+    }
+  }, [setRole, setUser, setDealerProfile]);
 }
 
 /**
@@ -38,9 +44,22 @@ export function useRole() {
 }
 
 /**
- * بيانات المستخدم والمستأجر من آخر تسجيل دخول.
+ * بيانات المستخدم والمستأجر من GET /v1/dealer/me (بعد مزامنة الجلسة).
  */
 export function useAuthUser() {
   useSyncAuthFromCookie();
   return useAuthStore((s) => s.user);
+}
+
+/** معرف الوكيل (dealer.id) من GET /v1/dealer/me */
+export function useDealerId(): number | null {
+  const user = useAuthUser();
+  if (user?.tenantId != null && user.tenantId > 0) return user.tenantId;
+  return null;
+}
+
+/** الملف الكامل من GET /v1/dealer/me (subscription, usage, alerts, …) */
+export function useDealerProfile() {
+  useSyncAuthFromCookie();
+  return useAuthStore((s) => s.dealerProfile);
 }

@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getDealerStaffPage } from "@/modules/staff/services/dealer-staff.service";
 import type { DealerStaffListParams } from "@/modules/staff/schemas/dealer-staff-page.schema";
-import { useAuthUser } from "@/shared/hooks/use-can-access";
+import { useDealerId } from "@/shared/hooks/use-can-access";
 
 export function dealerStaffQueryKey(params: DealerStaffListParams) {
   return [
@@ -14,11 +14,11 @@ export function dealerStaffQueryKey(params: DealerStaffListParams) {
 }
 
 export function useDealerStaff(params: DealerStaffListParams) {
-  const user = useAuthUser();
+  const dealerId = useDealerId();
   return useQuery({
     queryKey: dealerStaffQueryKey(params),
     queryFn: () => getDealerStaffPage(params),
-    enabled: !!user,
+    enabled: dealerId != null && dealerId > 0,
     placeholderData: keepPreviousData,
   });
 }

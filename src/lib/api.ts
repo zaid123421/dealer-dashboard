@@ -90,9 +90,11 @@ api.interceptors.response.use(
 
     /**
      * 401: غالباً انتهاء أو رفض access token — نحدّث عبر refresh ثم نعيد الطلب.
-     * لا نوجّه لتسجيل الدخول إلا بعد فشل الـ refresh أو فشل إعادة المحاولة.
+     * 403: عادة «ممنوع» لصلاحيات المستخدم مع جلسة سليمة؛ تجاهل الـ refresh حتى لا نعيد
+     * محاولة ثم نخرج المستخدم من التطبيق خطأً (مثل رفض إنشاء موظف).
+     * لا نوجّه لتسجيل الدخول إلا بعد فشل الـ refresh أو فشل إعادة المحاولة بعد 401.
      */
-    const shouldTryRefresh = status === 401 || status === 403;
+    const shouldTryRefresh = status === 401;
     if (!shouldTryRefresh || !originalRequest) {
       return Promise.reject(error);
     }

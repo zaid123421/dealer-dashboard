@@ -59,7 +59,20 @@ function getAuthProfile(): AuthUser | null {
   const raw = Cookies.get(AUTH_PROFILE_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as AuthUser;
+    const parsed = JSON.parse(raw) as Partial<AuthUser>;
+    return {
+      email: parsed.email ?? "",
+      firstName: parsed.firstName ?? "",
+      lastName: parsed.lastName ?? "",
+      backendRole: parsed.backendRole ?? "",
+      accessLevel: parsed.accessLevel ?? "",
+      userActive: parsed.userActive ?? true,
+      tenantType: parsed.tenantType ?? "DEALER",
+      tenantId: typeof parsed.tenantId === "number" ? parsed.tenantId : 0,
+      tenantName: parsed.tenantName ?? "",
+      expiresInSeconds:
+        typeof parsed.expiresInSeconds === "number" ? parsed.expiresInSeconds : 900,
+    };
   } catch {
     return null;
   }
@@ -89,6 +102,17 @@ function persistSession(input: PersistSessionInput): void {
   Cookies.set(AUTH_PROFILE_KEY, JSON.stringify(input.user), COOKIE_OPTS);
   const expiresAt = Date.now() + input.expiresInSeconds * 1000;
   Cookies.set(ACCESS_EXPIRES_AT_KEY, String(expiresAt), COOKIE_OPTS);
+}
+
+export interface UpdateAuthSessionInput {
+  user: AuthUser;
+  appRole: Role;
+}
+
+function updateAuthSession(input: UpdateAuthSessionInput): void {
+  setRole(input.appRole);
+  Cookies.set(USER_EMAIL_KEY, input.user.email, COOKIE_OPTS);
+  Cookies.set(AUTH_PROFILE_KEY, JSON.stringify(input.user), COOKIE_OPTS);
 }
 
 export interface ApplyRefreshedTokensInput {
@@ -126,6 +150,7 @@ const TokenService = {
   getAuthProfile,
   getAccessExpiresAt,
   persistSession,
+  updateAuthSession,
   applyRefreshedTokens,
 };
 

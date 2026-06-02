@@ -4,17 +4,20 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useState, useCallback } from 'react'
 import { Home, ChevronRight, AlertCircle, ArrowLeft } from 'lucide-react'
+import { ErrorAlert } from '@/components/ui/error-alert'
 import { toast } from 'sonner'
 import { useTireSetDetails } from '@/modules/tire-sets/hooks/use-tire-set-details'
 import { validateUrlParams } from '@/modules/tire-sets/lib/validate-url-params'
 import { TireSetHeader } from '@/modules/tire-sets/components/tire-set-header'
 import { TireSetIndividualTiresTable } from '@/modules/tire-sets/components/tire-set-individual-tires-table'
+import { TireSetDetailsPageSkeleton } from '@/modules/tire-sets/components/tire-set-details-skeleton'
 import { deleteTireSetService } from '@/modules/tire-sets/services/tire-set.service'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useDealerCustomer } from '@/modules/customers/hooks/use-dealer-customer'
 import { useVehicleDetails } from '@/modules/vehicles/hooks/use-vehicle-details'
+import { formatVehicleLabel } from '@/lib/format-table-cell'
 import { useTranslations } from 'next-intl'
 
 export default function TireDetailsPage() {
@@ -74,64 +77,27 @@ export default function TireDetailsPage() {
   if (!validation.isValid) {
     return (
       <div className="flex flex-col gap-6">
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="flex items-start gap-4 pt-6">
-            <AlertCircle className="size-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h2 className="font-semibold text-red-900">{t('invalidPageParameters')}</h2>
-              <p className="text-sm text-red-800 mt-1">{validation.error}</p>
-              <Button variant="outline" size="sm" onClick={handleBack} className="mt-4">
-                <ArrowLeft className="size-4 mr-2" />
-                {t('tireGoBack')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <ErrorAlert message={validation.error ?? t('invalidPageParameters')} />
+        <Button variant="outline" size="sm" onClick={handleBack} className="w-fit">
+          <ArrowLeft className="size-4 mr-2" />
+          {t('tireGoBack')}
+        </Button>
       </div>
     )
   }
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col gap-6">
-        <div className="mb-6 flex animate-pulse items-center gap-2 text-sm text-muted-foreground">
-          <Skeleton className="size-4 rounded" />
-          <Skeleton className="h-4 w-48" />
-        </div>
-        <Card className="mb-6">
-          <div className="p-6 space-y-4">
-            <Skeleton className="h-8 w-64" />
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          </div>
-        </Card>
-        <Skeleton className="h-64 w-full" />
-      </div>
-    )
+    return <TireSetDetailsPageSkeleton />
   }
 
   if (error) {
     return (
       <div className="flex flex-col gap-6">
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="flex items-start gap-4 pt-6">
-            <AlertCircle className="size-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h2 className="font-semibold text-red-900">Failed to Load Tire Details</h2>
-              <p className="text-sm text-red-800 mt-1">
-                {error.message || 'An error occurred while fetching tire data'}
-              </p>
-              <Button variant="outline" size="sm" onClick={handleBack} className="mt-4">
-                <ArrowLeft className="size-4 mr-2" />
-                {t('tireGoBack')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <ErrorAlert message={error.message || 'An error occurred while fetching tire data'} />
+        <Button variant="outline" size="sm" onClick={handleBack} className="w-fit">
+          <ArrowLeft className="size-4 mr-2" />
+          {t('tireGoBack')}
+        </Button>
       </div>
     )
   }
@@ -182,7 +148,7 @@ export default function TireDetailsPage() {
             href={vehicleHref}
             className="font-medium text-primary-dark hover:text-primary underline-offset-4 hover:underline transition-colors"
           >
-            {vehicle.make} {vehicle.model} ({vehicle.year})
+            {formatVehicleLabel(vehicle.make, vehicle.model, vehicle.year)}
           </Link>
         ) : (
           <Skeleton className="h-4 w-36" />

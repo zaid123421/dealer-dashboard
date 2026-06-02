@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { ErrorAlert } from "@/components/ui/error-alert";
 
 export default function Error({
   error,
@@ -14,12 +14,12 @@ export default function Error({
       <h1 className="text-headline-lg font-bold text-foreground">
         حدث خطأ غير متوقع
       </h1>
-      <p className="text-body-md text-muted-foreground">
-        {error.message || "يرجى المحاولة مرة أخرى."}
-      </p>
-      <Button onClick={reset} variant="outline">
-        إعادة المحاولة
-      </Button>
+      <ErrorAlert
+        message={error.message || "يرجى المحاولة مرة أخرى."}
+        onRetry={reset}
+        retryLabel="إعادة المحاولة"
+        className="max-w-md"
+      />
     </div>
   );
 }

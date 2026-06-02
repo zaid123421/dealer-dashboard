@@ -1,6 +1,7 @@
 import api from "@/lib/api";
 import TokenService from "@/infrastructure/auth/token-service";
 import { useAuthStore } from "@/shared/stores/auth-store";
+import { clearDealerProfileCache } from "@/modules/dealer/lib/dealer-profile-cache";
 import { ROUTES } from "@/constants/routes";
 
 /**
@@ -16,6 +17,7 @@ export async function performClientLogout(): Promise<void> {
     /* تجاهل — نكمّل إبطال الجلسة محلياً */
   }
   TokenService.removeRefreshToken();
+  clearDealerProfileCache();
   useAuthStore.getState().clearAuth();
   if (typeof window !== "undefined") {
     window.location.href = ROUTES.AUTH.LOGIN;

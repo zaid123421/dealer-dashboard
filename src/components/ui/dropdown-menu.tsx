@@ -63,6 +63,7 @@ const DropdownMenuContent = React.forwardRef<
   <DropdownMenuPrimitive.Portal>
     <DropdownMenuPrimitive.Content
       ref={ref}
+      data-slot="dropdown-menu-content"
       sideOffset={sideOffset}
       className={cn(
         "z-50 flex max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-[10rem] flex-col gap-1.5 overflow-y-auto overflow-x-hidden rounded-lg border border-transparent bg-surface-light p-2 text-popover-foreground shadow-lg dark:bg-surface-bright",

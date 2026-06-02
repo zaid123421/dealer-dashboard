@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { TABLE_FIELD_BORDER } from "@/lib/table-border";
 
 const LOCALE_COOKIE = "NEXT_LOCALE";
 
@@ -35,7 +36,11 @@ export function LocaleSwitcher() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+          data-slot="combobox-trigger"
+          className={cn(
+            "flex items-center justify-between gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-primary-dark/90 hover:text-primary-onContainer hover:border-primary-dark",
+            TABLE_FIELD_BORDER,
+          )}
           aria-label="Language"
         >
           <span>{currentLabel}</span>
@@ -48,8 +53,8 @@ export function LocaleSwitcher() {
             key={value}
             onSelect={() => handleChange(value)}
             className={cn(
-              value === locale && "bg-primary text-primary-foreground",
-              "data-[highlighted]:bg-primary data-[highlighted]:text-primary-foreground"
+              value === locale && "bg-primary-dark text-primary-onContainer",
+              "data-[highlighted]:bg-primary-dark/90 data-[highlighted]:text-primary-onContainer"
             )}
           >
             {label}

@@ -81,6 +81,8 @@ const config: Config = {
           5: "var(--color-chart-5)",
           6: "var(--color-chart-6)",
         },
+
+        subtle: "var(--color-text-subtle)",
       },
 
       /* ───────── SPACING ───────── */
