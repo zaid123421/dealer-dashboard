@@ -7,28 +7,7 @@ import type {
   DealerMeUsage,
   DealerProfile,
 } from "@/modules/dealer/types/dealer-profile";
-
-function asRecord(v: unknown): Record<string, unknown> | null {
-  if (!v || typeof v !== "object" || Array.isArray(v)) return null;
-  return v as Record<string, unknown>;
-}
-
-function str(v: unknown): string {
-  return typeof v === "string" ? v.trim() : "";
-}
-
-function num(v: unknown): number {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string") {
-    const n = Number(v.trim());
-    if (Number.isFinite(n)) return n;
-  }
-  return 0;
-}
-
-function bool(v: unknown): boolean {
-  return v === true;
-}
+import { asRecord, str, num, bool } from "@/shared/lib/dto-utils";
 
 function strOrNull(v: unknown): string | null {
   const s = str(v);

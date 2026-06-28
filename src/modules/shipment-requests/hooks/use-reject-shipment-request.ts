@@ -7,7 +7,6 @@ export function useRejectShipmentRequest() {
   return useMutation({
     mutationFn: rejectDealerShipmentRequest,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["dealer", "inbound-emails"] });
       await queryClient.invalidateQueries({ queryKey: ["dealer", "shipment-requests-paged"] });
       await queryClient.invalidateQueries({ queryKey: ["dealer", "cart"] });
     },

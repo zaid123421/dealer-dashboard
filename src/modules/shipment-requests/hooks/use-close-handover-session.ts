@@ -1,8 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  closeHandoverSession,
-  handoverSessionIdQueryKey,
-} from "@/modules/shipment-requests/services/dealer-handover.service";
+import { closeHandoverSession } from "@/modules/shipment-requests/services/dealer-handover.service";
 
 export function useCloseHandoverSession() {
   const queryClient = useQueryClient();
@@ -17,6 +14,11 @@ export function useCloseHandoverSession() {
         if (queryClient.getQueryData<number>(key.queryKey) === variables.sessionId) {
           queryClient.removeQueries({ queryKey: key.queryKey });
         }
+      }
+      for (const key of queryClient
+        .getQueryCache()
+        .findAll({ queryKey: ["dealer", "handover-session-version"] })) {
+        queryClient.removeQueries({ queryKey: key.queryKey });
       }
     },
   });

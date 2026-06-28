@@ -7,7 +7,6 @@ export function useMoveShipmentRequestToCart() {
   return useMutation({
     mutationFn: moveDealerShipmentRequestToCart,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["dealer", "inbound-emails"] });
       await queryClient.invalidateQueries({ queryKey: ["dealer", "shipment-requests-paged"] });
       await queryClient.invalidateQueries({ queryKey: ["dealer", "cart"] });
     },

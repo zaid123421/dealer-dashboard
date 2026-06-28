@@ -6,7 +6,6 @@ import StyledTable from '@/components/ui/styled-table'
 import { cn } from '@/lib/utils'
 import type { TireDetail } from '../types'
 import {
-  getTireStatusBadgeClass,
   formatWheelPositionDisplay,
   formatTreadDepthDisplay,
   formatTireDescription,

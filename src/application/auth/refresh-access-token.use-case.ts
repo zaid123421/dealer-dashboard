@@ -1,6 +1,8 @@
 import axios from "axios";
 import publicApi from "@/lib/public-api";
 import TokenService from "@/infrastructure/auth/token-service";
+import { pickString, pickNumber, unwrapPayload } from "@/shared/lib/dto-utils";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 export class RefreshTokenError extends Error {
   constructor(
@@ -10,38 +12,6 @@ export class RefreshTokenError extends Error {
     super(message);
     this.name = "RefreshTokenError";
   }
-}
-
-function pickString(obj: Record<string, unknown>, key: string): string | undefined {
-  const v = obj[key];
-  return typeof v === "string" && v.trim() ? v : undefined;
-}
-
-function pickNumber(obj: Record<string, unknown>, key: string): number {
-  const v = obj[key];
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string") {
-    const n = Number(v);
-    if (Number.isFinite(n)) return n;
-  }
-  return 0;
-}
-
-function unwrapPayload(data: unknown): Record<string, unknown> {
-  if (!data || typeof data !== "object") return {};
-  const root = data as Record<string, unknown>;
-  const inner = root.data;
-  if (inner && typeof inner === "object" && !Array.isArray(inner)) {
-    return inner as Record<string, unknown>;
-  }
-  return root;
-}
-
-function messageFromResponseData(data: unknown): string | undefined {
-  if (!data || typeof data !== "object") return undefined;
-  const rec = data as Record<string, unknown>;
-  if (typeof rec.message === "string" && rec.message.trim()) return rec.message;
-  return undefined;
 }
 
 /**
@@ -81,7 +51,7 @@ export async function refreshAccessTokenUseCase(): Promise<string> {
     if (axios.isAxiosError(err)) {
       const status = err.response?.status;
       const msg =
-        messageFromResponseData(err.response?.data) ??
+        getApiErrorMessage(err.response?.data) ??
         err.message ??
         "Refresh failed";
       throw new RefreshTokenError(msg, status);

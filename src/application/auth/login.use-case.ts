@@ -7,6 +7,8 @@ import { syncDealerSessionFromMeApi } from "@/application/auth/sync-dealer-sessi
 import { useAuthStore } from "@/shared/stores/auth-store";
 import { clearDealerProfileCache } from "@/modules/dealer/lib/dealer-profile-cache";
 import { DealerMeError } from "@/modules/dealer/services/dealer-me.service";
+import { pickString, pickNumber, unwrapPayload } from "@/shared/lib/dto-utils";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 export interface LoginInput {
   email: string;
@@ -27,46 +29,6 @@ export class LoginError extends Error {
     super(message);
     this.name = "LoginError";
   }
-}
-
-function messageFromResponseData(data: unknown): string | undefined {
-  if (!data || typeof data !== "object") return undefined;
-  const rec = data as Record<string, unknown>;
-  if (typeof rec.message === "string" && rec.message.trim()) return rec.message;
-  const errors = rec.errors;
-  if (Array.isArray(errors) && errors.length > 0) {
-    const first = errors[0];
-    if (first && typeof first === "object" && "message" in first) {
-      const m = (first as { message?: unknown }).message;
-      if (typeof m === "string" && m.trim()) return m;
-    }
-  }
-  return undefined;
-}
-
-function pickString(obj: Record<string, unknown>, key: string): string | undefined {
-  const v = obj[key];
-  return typeof v === "string" && v.trim() ? v : undefined;
-}
-
-function pickNumber(obj: Record<string, unknown>, key: string): number {
-  const v = obj[key];
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string") {
-    const n = Number(v);
-    if (Number.isFinite(n)) return n;
-  }
-  return 0;
-}
-
-function unwrapPayload(data: unknown): Record<string, unknown> {
-  if (!data || typeof data !== "object") return {};
-  const root = data as Record<string, unknown>;
-  const inner = root.data;
-  if (inner && typeof inner === "object" && !Array.isArray(inner)) {
-    return inner as Record<string, unknown>;
-  }
-  return root;
 }
 
 function extractTokensFromPayload(payload: Record<string, unknown>): {
@@ -141,7 +103,7 @@ export async function loginUseCase(input: LoginInput): Promise<LoginResult> {
     if (axios.isAxiosError(err)) {
       const status = err.response?.status;
       const msg =
-        messageFromResponseData(err.response?.data) ??
+        getApiErrorMessage(err.response?.data) ??
         err.message ??
         "Request failed";
       throw new LoginError(msg, status);

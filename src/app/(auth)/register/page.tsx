@@ -18,7 +18,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { registerUseCase } from "@/application/auth/register.use-case";
+import { registerUseCase, RegisterError } from "@/application/auth/register.use-case";
 import { ROUTES } from "@/constants/routes";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -62,8 +62,12 @@ export default function RegisterPage() {
       await registerUseCase({ name: name.trim(), email: email.trim(), password });
       router.push(`${ROUTES.AUTH.LOGIN}?registered=1`);
       router.refresh();
-    } catch {
-      setErrors({ form: tCommon("formError") });
+    } catch (err) {
+      if (err instanceof RegisterError) {
+        setErrors({ form: err.message.trim() || tCommon("formError") });
+      } else {
+        setErrors({ form: tCommon("formError") });
+      }
     } finally {
       setIsSubmitting(false);
     }

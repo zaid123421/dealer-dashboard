@@ -10,7 +10,11 @@ const USER_EMAIL_KEY = "user-email";
 const AUTH_PROFILE_KEY = "auth-profile";
 const ACCESS_EXPIRES_AT_KEY = "access-expires-at";
 
-const COOKIE_OPTS = { path: "/", sameSite: "lax" as const };
+const COOKIE_OPTS = {
+  path: "/",
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+};
 
 function getRefreshToken() {
   return Cookies.get(REFRESH_TOKEN_KEY);

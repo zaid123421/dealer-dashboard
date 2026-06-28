@@ -22,9 +22,10 @@ export type NormalizedTireSetRow = {
   lineStatus: string;
 };
 
-/** handoverSessionId from list/detail (IN_TRANSIT orders). */
+/** handoverSessionId / handoverSessionVersion from list/detail (IN_TRANSIT orders). */
 export function parseHandoverSessionFields(raw: Record<string, unknown>): {
   handoverSessionId?: number;
+  handoverSessionVersion?: number;
 } {
   const nested = asRecord(raw.handoverSession);
   const handoverSessionId = (() => {
@@ -38,7 +39,12 @@ export function parseHandoverSessionFields(raw: Record<string, unknown>): {
     if (direct !== undefined) return direct;
     return nested ? num(nested.id ?? nested.sessionId) : undefined;
   })();
-  return { handoverSessionId };
+  const handoverSessionVersion = (() => {
+    const direct = num(raw.handoverSessionVersion);
+    if (direct !== undefined) return direct;
+    return nested ? num(nested.version ?? nested.handoverSessionVersion) : undefined;
+  })();
+  return { handoverSessionId, handoverSessionVersion };
 }
 
 export type NormalizedDeliveryOrderRow = {
@@ -47,6 +53,8 @@ export type NormalizedDeliveryOrderRow = {
   version?: number;
   /** Active handover session when status is IN_TRANSIT. */
   handoverSessionId?: number;
+  /** Optimistic lock for POST /v1/dealer/handover/{sessionId}/close (`version` in body). */
+  handoverSessionVersion?: number;
   orderLabel: string;
   direction: string;
   rawStatus: string;
@@ -216,7 +224,7 @@ export function normalizeShipmentRequestDto(rawUnknown: unknown): NormalizedDeli
   }
 
   const version = num(raw.version ?? raw.shipmentRequestVersion);
-  const { handoverSessionId } = parseHandoverSessionFields(raw);
+  const { handoverSessionId, handoverSessionVersion } = parseHandoverSessionFields(raw);
 
   const primaryCustomerName =
     pickString(raw, ["customerDisplayName", "customerName", "primaryCustomerName"]) ??
@@ -244,6 +252,7 @@ export function normalizeShipmentRequestDto(rawUnknown: unknown): NormalizedDeli
     id,
     version,
     handoverSessionId,
+    handoverSessionVersion,
     orderLabel,
     direction,
     rawStatus,

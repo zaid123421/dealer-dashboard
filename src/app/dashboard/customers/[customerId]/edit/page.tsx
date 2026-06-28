@@ -88,11 +88,9 @@ export default function EditCustomerPage() {
   }, [customer, reset]);
 
   function onSubmit(data: CreateDealerCustomerFormValues) {
-    console.log("[edit customer] form (raw RHF)", data);
     const idNum = customerIdParam != null ? Number(customerIdParam) : NaN;
     if (!Number.isFinite(idNum) || customer == null) return;
     const payload = mapDealerCustomerFormToRequest(data);
-    console.log("[edit customer] body for PUT /v1/dealerCustomers/:id", payload);
     updateCustomer.mutate(
       { customerId: idNum, payload },
       {

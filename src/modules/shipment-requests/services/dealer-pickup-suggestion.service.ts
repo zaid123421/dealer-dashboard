@@ -4,11 +4,6 @@ import {
   normalizePickupSuggestionResponse,
   type NormalizedPickupSuggestionResult,
 } from "@/modules/shipment-requests/lib/pickup-suggestion-dto";
-import {
-  USE_MOCK_PICKUP_SUGGESTIONS,
-  getMockPickupSuggestionResult,
-  mockCombinePickup,
-} from "@/modules/shipment-requests/lib/pickup-suggestion-mock";
 
 /** Temporary fallback when delivery `version` is not available yet. */
 export const COMBINE_PICKUP_DELIVERY_VERSION_FALLBACK = 2;
@@ -47,9 +42,6 @@ function toPickupSuggestionError(err: unknown): PickupSuggestionError {
 export async function getPickupSuggestions(
   deliveryRequestId: number,
 ): Promise<NormalizedPickupSuggestionResult> {
-  if (USE_MOCK_PICKUP_SUGGESTIONS) {
-    return getMockPickupSuggestionResult(deliveryRequestId);
-  }
   try {
     const { data } = await api.get<unknown>(
       `/v1/dealer/shipment-requests/${deliveryRequestId}/pickup-suggestion`,
@@ -72,9 +64,6 @@ export async function combinePickup(
   deliveryRequestId: number,
   payload: CombinePickupPayload,
 ): Promise<void> {
-  if (USE_MOCK_PICKUP_SUGGESTIONS) {
-    return mockCombinePickup(deliveryRequestId, payload);
-  }
   try {
     await api.post(`/v1/dealer/shipment-requests/${deliveryRequestId}/combine-pickup`, {
       setIds: payload.setIds,

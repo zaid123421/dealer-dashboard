@@ -3,37 +3,14 @@
 import { useTranslations } from 'next-intl'
 import { ArrowLeft, CalendarDays, Cloud, Hash, Loader2, Package, Ruler, Snowflake, Sun, Tags, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import type { TireSetDetail } from '@/modules/tire-sets/types'
-import { cn } from '@/lib/utils'
 
 interface TireSetHeaderProps {
   tireSet: TireSetDetail
   onBack: () => void
   onDelete?: () => void
   isDeleting?: boolean
-}
-
-const seasonBadge: Record<TireSetDetail['seasonType'], string> = {
-  Summer:
-    'bg-yellow-50 text-yellow-900 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-100 dark:border-yellow-800',
-  Winter:
-    'bg-blue-100 text-blue-900 border-blue-200 dark:bg-blue-950/50 dark:text-blue-100 dark:border-blue-800',
-  'All-Season':
-    'bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600',
-}
-
-function SeasonIcon({ season, className }: { season: TireSetDetail['seasonType']; className?: string }) {
-  const iconClass = `size-3 sm:size-4 ${className || ''}`
-  switch (season) {
-    case 'Winter':
-      return <Snowflake className={cn(iconClass, 'text-blue-500')} aria-hidden />
-    case 'Summer':
-      return <Sun className={cn(iconClass, 'text-orange-500')} aria-hidden />
-    default:
-      return <Cloud className={cn(iconClass, 'text-gray-500')} aria-hidden />
-  }
 }
 
 function formatDate(dateString: string): string {
@@ -51,7 +28,6 @@ function formatDate(dateString: string): string {
 const statItems = (
   tireSet: TireSetDetail,
   t: ReturnType<typeof useTranslations<'customers'>>,
-  badgeClass: string,
 ) => [
   {
     icon: <Ruler className="size-3 sm:size-4 text-white" aria-hidden />,
@@ -109,10 +85,7 @@ export function TireSetHeader({
       ? tireSet.displayLabel.trim()
       : t('tireSetDetailTitleFallback', { id: tireSet.id })
 
-  const badgeClass =
-    seasonBadge[tireSet.seasonType] ?? 'bg-muted text-muted-foreground border-border'
-
-  const items = statItems(tireSet, t, badgeClass)
+  const items = statItems(tireSet, t)
 
   return (
     <Card className="border-0 bg-surface-container rounded-lg">

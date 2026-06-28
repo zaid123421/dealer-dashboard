@@ -2,8 +2,7 @@ import { getRequestConfig } from 'next-intl/server';
 import { cookies } from 'next/headers';
 
 const LOCALE_COOKIE = 'NEXT_LOCALE';
-const SUPPORTED_LOCALES = ['ar', 'en'] as const;
-type Locale = (typeof SUPPORTED_LOCALES)[number];
+type Locale = 'ar' | 'en';
 
 function isValidLocale(value: string | undefined): value is Locale {
   return value === 'ar' || value === 'en';

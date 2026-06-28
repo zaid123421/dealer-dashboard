@@ -165,7 +165,6 @@ function QuotaRoleRow({
   resource: QuotaResource;
   blockMessage: string | null;
 }) {
-  const t = useTranslations("quota");
   const sev = getSeverity(resource);
   const styles = severityStyles[sev];
   const pct = Math.min(100, Math.round(resource.usagePercentage));

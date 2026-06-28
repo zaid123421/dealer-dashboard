@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
 import { Sun, Moon, Monitor } from "lucide-react";
@@ -10,9 +10,11 @@ type ThemeValue = "light" | "dark" | "system";
 export function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
   const t = useTranslations("theme");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const options: { value: ThemeValue; icon: React.ReactNode }[] = [
     { value: "light", icon: <Sun className="size-4" /> },

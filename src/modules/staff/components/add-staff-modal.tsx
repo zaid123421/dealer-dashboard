@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { Controller, useForm, type Resolver } from "react-hook-form";
+import { Controller, useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { UserCog } from "lucide-react";
@@ -79,7 +79,6 @@ export function AddStaffModal({ open, onOpenChange, staffToEdit = null }: AddSta
   const {
     register,
     control,
-    watch,
     handleSubmit,
     reset,
     formState: { errors },
@@ -109,7 +108,7 @@ export function AddStaffModal({ open, onOpenChange, staffToEdit = null }: AddSta
     }
   }, [open, staffToEdit, detailQuery.isSuccess, detailQuery.data, reset]);
 
-  const selectedRole = watch("role");
+  const selectedRole = useWatch({ control, name: "role" });
   const roleOptions = useMemo(() => {
     const fromApi = rolesQuery.data ?? [];
     const fromProfile = profile?.availableRoles ?? [];

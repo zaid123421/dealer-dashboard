@@ -52,6 +52,7 @@ import {
   apiErrorMessageFromUnknown,
   handoverDirectionFromShipmentDirection,
   handoverSessionIdQueryKey,
+  handoverSessionVersionQueryKey,
   isHandoverCloseConflictError,
   prepareCloseHandoverSession,
 } from "@/modules/shipment-requests/services/dealer-handover.service";
@@ -514,22 +515,17 @@ export function ShipmentRequestsOrdersStylePage({
     const toastId = toast.loading(td("handoverClosing"));
 
     try {
-      let active = deliveryRows.find((r) => r.id === order.id) ?? order;
-      if (
-        active.uiStatus === "handover" &&
-        (active.handoverSessionId == null || active.version == null)
-      ) {
-        const refreshed = await refetch();
-        active = refreshed.data?.rows.find((r) => r.id === order.id) ?? active;
-      }
-
+      const active = deliveryRows.find((r) => r.id === order.id) ?? order;
       const cachedSessionId = queryClient.getQueryData<number>(
         handoverSessionIdQueryKey(active.id),
       );
+      const cachedHandoverSessionVersion = queryClient.getQueryData<number>(
+        handoverSessionVersionQueryKey(active.id),
+      );
       const prepared = await prepareCloseHandoverSession({
         id: active.id,
-        version: active.version,
         handoverSessionId: active.handoverSessionId ?? cachedSessionId,
+        handoverSessionVersion: active.handoverSessionVersion ?? cachedHandoverSessionVersion,
       });
       if (!prepared.ok) {
         if (prepared.reason === "missing_version") {

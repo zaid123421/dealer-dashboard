@@ -12,6 +12,7 @@ export type OpenHandoverSessionPayload = {
 
 export type OpenHandoverSessionResult = {
   sessionId?: number;
+  handoverSessionVersion?: number;
 };
 
 export type CloseHandoverSessionPayload = {
@@ -36,9 +37,13 @@ export function isHandoverCloseConflictError(err: unknown): boolean {
 }
 
 const HANDOVER_SESSION_CACHE_KEY = "dealer-handover-session-by-shipment";
+const HANDOVER_SESSION_VERSION_CACHE_KEY = "dealer-handover-session-version-by-shipment";
 
 export const handoverSessionIdQueryKey = (shipmentRequestId: number) =>
   ["dealer", "handover-session-id", shipmentRequestId] as const;
+
+export const handoverSessionVersionQueryKey = (shipmentRequestId: number) =>
+  ["dealer", "handover-session-version", shipmentRequestId] as const;
 
 function messageFromResponseData(data: unknown): string | undefined {
   if (typeof data === "string" && data.trim()) return data.trim();
@@ -119,14 +124,49 @@ function writeHandoverSessionCache(map: Record<string, number>): void {
   }
 }
 
+function readHandoverSessionVersionCache(): Record<string, number> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = sessionStorage.getItem(HANDOVER_SESSION_VERSION_CACHE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return parsed as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
+
+function writeHandoverSessionVersionCache(map: Record<string, number>): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(HANDOVER_SESSION_VERSION_CACHE_KEY, JSON.stringify(map));
+  } catch {
+    // ignore
+  }
+}
+
 export function cacheHandoverSessionId(shipmentRequestId: number, sessionId: number): void {
   const map = readHandoverSessionCache();
   map[String(shipmentRequestId)] = sessionId;
   writeHandoverSessionCache(map);
 }
 
+export function cacheHandoverSessionVersion(
+  shipmentRequestId: number,
+  handoverSessionVersion: number,
+): void {
+  const map = readHandoverSessionVersionCache();
+  map[String(shipmentRequestId)] = handoverSessionVersion;
+  writeHandoverSessionVersionCache(map);
+}
+
 function readCachedHandoverSessionId(shipmentRequestId: number): number | undefined {
   return readHandoverSessionCache()[String(shipmentRequestId)];
+}
+
+function readCachedHandoverSessionVersion(shipmentRequestId: number): number | undefined {
+  return readHandoverSessionVersionCache()[String(shipmentRequestId)];
 }
 
 function parseOpenHandoverResponse(data: unknown): OpenHandoverSessionResult {
@@ -134,7 +174,11 @@ function parseOpenHandoverResponse(data: unknown): OpenHandoverSessionResult {
   if (!rec) return {};
   const sessionId =
     extractHandoverSessionIdFromRecord(rec) ?? num(rec.sessionId ?? rec.id);
-  return sessionId !== undefined ? { sessionId } : {};
+  const handoverSessionVersion = num(rec.handoverSessionVersion ?? rec.version);
+  return {
+    ...(sessionId !== undefined ? { sessionId } : {}),
+    ...(handoverSessionVersion !== undefined ? { handoverSessionVersion } : {}),
+  };
 }
 
 function extractHandoverSessionIdFromRecord(raw: Record<string, unknown>): number | undefined {
@@ -187,6 +231,9 @@ export async function findHandoverSessionIdForShipmentRequest(
       cacheHandoverSessionId(shipmentRequestId, detail.handoverSessionId);
       return detail.handoverSessionId;
     }
+    if (detail.handoverSessionVersion != null) {
+      cacheHandoverSessionVersion(shipmentRequestId, detail.handoverSessionVersion);
+    }
   } catch {
     // detail unavailable — fall through
   }
@@ -194,12 +241,23 @@ export async function findHandoverSessionIdForShipmentRequest(
   return undefined;
 }
 
-/** Optimistic-lock `version` from GET /v1/dealer/shipment-requests list row. */
-export function shipmentRequestVersionFromListRow(
-  row: Pick<NormalizedDeliveryOrderRow, "version">,
+/** Optimistic-lock `version` for close from list row `handoverSessionVersion`. */
+export function handoverSessionVersionFromListRow(
+  row: Pick<NormalizedDeliveryOrderRow, "handoverSessionVersion">,
 ): number | undefined {
-  const v = row.version;
+  const v = row.handoverSessionVersion;
   return typeof v === "number" && Number.isFinite(v) ? v : undefined;
+}
+
+export function resolveHandoverSessionVersionForClose(
+  shipmentRequestId: number,
+  fromRow?: number,
+): number | undefined {
+  if (fromRow != null && Number.isFinite(fromRow)) {
+    cacheHandoverSessionVersion(shipmentRequestId, fromRow);
+    return fromRow;
+  }
+  return readCachedHandoverSessionVersion(shipmentRequestId);
 }
 
 export type PrepareCloseHandoverFailure = "missing_session" | "missing_version";
@@ -209,12 +267,17 @@ export type PrepareCloseHandoverResult =
   | { ok: false; reason: PrepareCloseHandoverFailure };
 
 export async function prepareCloseHandoverSession(
-  order: Pick<NormalizedDeliveryOrderRow, "id" | "version" | "handoverSessionId">,
+  order: Pick<
+    NormalizedDeliveryOrderRow,
+    "id" | "handoverSessionId" | "handoverSessionVersion"
+  >,
 ): Promise<PrepareCloseHandoverResult> {
   const sessionId = await findHandoverSessionIdForShipmentRequest(order.id, order.handoverSessionId);
   if (sessionId == null) return { ok: false, reason: "missing_session" };
 
-  const version = shipmentRequestVersionFromListRow(order);
+  const version =
+    handoverSessionVersionFromListRow(order) ??
+    resolveHandoverSessionVersionForClose(order.id, order.handoverSessionVersion);
   if (version == null) return { ok: false, reason: "missing_version" };
 
   return {
@@ -233,6 +296,9 @@ export async function openHandoverSession(
     if (result.sessionId != null) {
       for (const shipmentRequestId of payload.shipmentRequestIds) {
         cacheHandoverSessionId(shipmentRequestId, result.sessionId);
+        if (result.handoverSessionVersion != null) {
+          cacheHandoverSessionVersion(shipmentRequestId, result.handoverSessionVersion);
+        }
       }
     }
     return result;
@@ -254,7 +320,7 @@ export function handoverDirectionFromShipmentDirection(
 
 /**
  * POST /v1/dealer/handover/{sessionId}/close
- * Body.version = shipment-request `version` from GET /v1/dealer/shipment-requests list row.
+ * Body.version = `handoverSessionVersion` from shipment-request list/detail (not shipment-request version).
  */
 export async function closeHandoverSession(
   payload: CloseHandoverSessionPayload,

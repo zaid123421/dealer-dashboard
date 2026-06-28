@@ -207,7 +207,7 @@ export function PickupSuggestionsStep({
   const { data, isPending, isError, isFetching, refetch } = usePickupSuggestions(deliveryId);
   const combineMutation = useCombinePickupMutation(deliveryId);
 
-  const candidates = data?.candidates ?? [];
+  const candidates = useMemo(() => data?.candidates ?? [], [data?.candidates]);
   const loading = isPending || (isFetching && candidates.length === 0);
   const resolvedDeliveryVersion =
     deliveryVersion ?? COMBINE_PICKUP_DELIVERY_VERSION_FALLBACK;

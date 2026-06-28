@@ -8,14 +8,19 @@ function messageFromResponseData(data: unknown): string | undefined {
   return undefined;
 }
 
-/** Temporary until inbound-emails API returns `version` on each email log. */
-const REJECT_SHIPMENT_REQUEST_VERSION = 2;
+export type ShipmentRequestActionInput = {
+  shipmentRequestId: number;
+  version: number;
+};
 
 /** POST /v1/dealer/shipment-requests/{id}/reject */
-export async function rejectDealerShipmentRequest(shipmentRequestId: number): Promise<void> {
+export async function rejectDealerShipmentRequest({
+  shipmentRequestId,
+  version,
+}: ShipmentRequestActionInput): Promise<void> {
   try {
     await api.post(`/v1/dealer/shipment-requests/${shipmentRequestId}/reject`, {
-      version: REJECT_SHIPMENT_REQUEST_VERSION,
+      version,
     });
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {

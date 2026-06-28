@@ -1,5 +1,6 @@
 import axios from "axios";
 import api from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 export interface ChangePasswordInput {
   currentPassword: string;
@@ -26,21 +27,6 @@ function isWrongCurrentPasswordPayload(data: unknown): boolean {
   return lower.includes("current password") && lower.includes("incorrect");
 }
 
-function messageFromResponseData(data: unknown): string | undefined {
-  if (!data || typeof data !== "object") return undefined;
-  const rec = data as Record<string, unknown>;
-  if (typeof rec.message === "string" && rec.message.trim()) return rec.message;
-  const errors = rec.errors;
-  if (Array.isArray(errors) && errors.length > 0) {
-    const first = errors[0];
-    if (first && typeof first === "object" && "message" in first) {
-      const m = (first as { message?: unknown }).message;
-      if (typeof m === "string" && m.trim()) return m;
-    }
-  }
-  return undefined;
-}
-
 export async function changePasswordUseCase(input: ChangePasswordInput): Promise<void> {
   try {
     await api.post("/v1/auth/change-password", {
@@ -54,7 +40,7 @@ export async function changePasswordUseCase(input: ChangePasswordInput): Promise
       const data = e.response?.data;
       const wrongCurrent = status === 401 && isWrongCurrentPasswordPayload(data);
       const msg =
-        messageFromResponseData(data) ??
+        getApiErrorMessage(data) ??
         (typeof e.message === "string" && e.message.trim() ? e.message : undefined) ??
         "Change password failed";
       throw new ChangePasswordError(

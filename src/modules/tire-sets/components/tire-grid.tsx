@@ -25,7 +25,7 @@ export function TireGrid({
               No tires found for this set
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              This tire set doesn't contain any tires yet.
+              This tire set doesn&apos;t contain any tires yet.
             </p>
           </div>
         </CardContent>

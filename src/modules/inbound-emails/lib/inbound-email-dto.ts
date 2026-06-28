@@ -1,11 +1,11 @@
-export type ParseStatus = "matched" | "window_too_short" | "parse_failed" | "no_tires_stored";
+export type InboundStatusTone = "success" | "warning" | "error" | "info";
 
 export type EmailSuggestion = {
   id: string;
   from: string;
   subject: string;
   receivedAt: string;
-  status: ParseStatus;
+  status: string;
   customerName: string;
   appointmentDate: string;
   email: string;
@@ -48,41 +48,70 @@ function num(v: unknown): number | undefined {
   return undefined;
 }
 
-function stringArray(v: unknown): string[] {
-  if (!Array.isArray(v)) return [];
-  return v.map((item) => str(item)).filter((item): item is string => Boolean(item));
+function parseToAddresses(v: unknown): string[] {
+  if (Array.isArray(v)) {
+    return v.map((item) => str(item)).filter((item): item is string => Boolean(item));
+  }
+  const asText = str(v);
+  if (!asText) return [];
+  return asText
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
-export function mapInboundStatusToParseStatus(raw: string): ParseStatus {
+const INBOUND_STATUS_TONE_MAP: Record<string, InboundStatusTone> = {
+  PROCESSED: "success",
+  MATCHED: "success",
+  PARSED: "success",
+  PARSE_SUCCESS: "success",
+  APPROVED: "success",
+  WINDOW_TOO_SHORT: "warning",
+  NO_TIRES_STORED: "info",
+  PARSE_FAILED: "error",
+  FAILED: "error",
+  REJECTED: "error",
+  ERROR: "error",
+};
+
+export function getInboundStatusTone(raw: string): InboundStatusTone {
   const normalized = raw.trim().toUpperCase().replace(/[\s-]+/g, "_");
+  const exact = INBOUND_STATUS_TONE_MAP[normalized];
+  if (exact) return exact;
 
   if (
     normalized.includes("WINDOW") &&
     (normalized.includes("SHORT") || normalized.includes("TOO"))
   ) {
-    return "window_too_short";
+    return "warning";
   }
   if (normalized.includes("NO_TIRE") || normalized.includes("NOT_STORED")) {
-    return "no_tires_stored";
+    return "info";
   }
   if (
     normalized.includes("PARSE_FAIL") ||
-    normalized.includes("FAILED") ||
+    normalized === "FAILED" ||
+    normalized.endsWith("_FAILED") ||
     normalized.includes("ERROR") ||
     normalized.includes("REJECT")
   ) {
-    return "parse_failed";
+    return "error";
   }
   if (
+    normalized.includes("PROCESSED") ||
     normalized.includes("MATCH") ||
     normalized.includes("SUCCESS") ||
     normalized.includes("PARSED") ||
     normalized.includes("APPROVED")
   ) {
-    return "matched";
+    return "success";
   }
 
-  return "parse_failed";
+  return "error";
+}
+
+export function isInboundStatusFailed(raw: string): boolean {
+  return getInboundStatusTone(raw) === "error";
 }
 
 export function formatReceivedAt(iso: string | null, locale: string): string {
@@ -113,7 +142,7 @@ export function normalizeInboundEmailDto(raw: unknown): NormalizedInboundEmail |
     id: String(id),
     messageId: str(obj.messageId) ?? null,
     fromAddress: str(obj.fromAddress) ?? "—",
-    toAddresses: stringArray(obj.toAddresses),
+    toAddresses: parseToAddresses(obj.toAddresses),
     subject: str(obj.subject) ?? "",
     receivedAt: str(obj.receivedAt) ?? null,
     rawStatus: str(obj.status) ?? "UNKNOWN",
@@ -126,7 +155,6 @@ export function inboundEmailToSuggestion(
   row: NormalizedInboundEmail,
   locale: string,
 ): EmailSuggestion {
-  const status = mapInboundStatusToParseStatus(row.rawStatus);
   const preview =
     row.failureReason?.trim() ||
     (row.shipmentRequestId != null
@@ -138,14 +166,14 @@ export function inboundEmailToSuggestion(
     from: row.fromAddress,
     subject: row.subject.trim() || "(No subject)",
     receivedAt: formatReceivedAt(row.receivedAt, locale),
-    status,
+    status: row.rawStatus,
     customerName: "—",
     appointmentDate: "—",
     email: row.fromAddress,
     tireSet: "—",
     vehicle: "—",
     timeWindow: "—",
-    windowOk: status !== "window_too_short",
+    windowOk: getInboundStatusTone(row.rawStatus) !== "warning",
     preview,
     shipmentRequestId: row.shipmentRequestId,
   };

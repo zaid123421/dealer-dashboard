@@ -31,6 +31,7 @@ export type NormalizedShipmentRequestDetail = {
   notes: string;
   version?: number;
   handoverSessionId?: number;
+  handoverSessionVersion?: number;
   createdAt?: string | null;
   sets: NormalizedShipmentRequestDetailSetRow[];
 };
@@ -116,8 +117,8 @@ export function normalizeShipmentRequestDetailDto(rawUnknown: unknown): Normaliz
     notes: pickString(raw, ["notes"]) ?? "",
     version: num(raw.version),
     ...(() => {
-      const { handoverSessionId } = parseHandoverSessionFields(raw);
-      return { handoverSessionId };
+      const { handoverSessionId, handoverSessionVersion } = parseHandoverSessionFields(raw);
+      return { handoverSessionId, handoverSessionVersion };
     })(),
     createdAt: pickString(raw, ["createdAt"]) ?? null,
     sets,
