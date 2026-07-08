@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useDealerId } from "@/shared/hooks/use-can-access";
 import { useDealerMe } from "@/modules/dealer/hooks/use-dealer-me";
 import Link from "next/link";
@@ -22,13 +22,21 @@ import {
   Building2,
   Home,
   CheckCircle2,
-  type LucideIcon,
+  Loader2,
 } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog } from "@/components/ui/dialog";
+import {
+  ConfirmDialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/app-dialog";
+import { StatTile, StatTileSkeleton } from "@/components/ui/stat-tile";
 import { Skeleton } from "@/components/ui/skeleton";
 import StyledTable from "@/components/ui/styled-table";
 import { toast } from "sonner";
@@ -75,41 +83,6 @@ const INITIAL_COLORS = [
   "bg-info-main text-white",
 ];
 
-function CustomerDetailTile({
-  icon: Icon,
-  label,
-  value,
-  className,
-  valueClassName,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: ReactNode;
-  className?: string;
-  valueClassName?: string;
-}) {
-  return (
-    <div className={cn("group min-w-0", className)}>
-      <div className="mb-2 flex min-w-0 items-center gap-2">
-        <Icon className="size-3 text-primary-dark sm:size-4" />
-        <span className="min-w-0 truncate whitespace-nowrap text-xs font-medium text-secondary-on-surface sm:text-sm">
-          {label}
-        </span>
-      </div>
-      <div className="min-w-0 rounded-lg border-2 border-surface-high bg-surface-bright p-2 transition-all group-hover:border-primary-dark group-hover:shadow-md sm:p-3">
-        <div
-          className={cn(
-            "min-w-0 truncate whitespace-nowrap text-sm font-semibold text-onSurface sm:text-base",
-            valueClassName,
-          )}
-        >
-          {value}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function CustomerListItemSkeleton() {
   return (
     <div
@@ -126,21 +99,9 @@ function CustomerListItemSkeleton() {
   );
 }
 
-function CustomerDetailTileSkeleton() {
-  return (
-    <div className="min-w-0">
-      <div className="mb-2 flex min-w-0 items-center gap-2">
-        <Skeleton className="size-3 rounded-sm sm:size-4" />
-        <Skeleton className="h-3 w-24" />
-      </div>
-      <Skeleton className="h-10 w-full rounded-lg border-2 border-transparent sm:h-12" />
-    </div>
-  );
-}
-
 function CustomerDetailCardSkeleton() {
   return (
-    <Card className="rounded-lg border-0 bg-surface-container">
+    <Card>
       <CardContent className="p-4 sm:p-6">
         <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-start">
           <Skeleton className="mx-auto size-12 shrink-0 rounded-full sm:size-16 lg:mx-0" />
@@ -151,7 +112,7 @@ function CustomerDetailCardSkeleton() {
             </div>
             <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(180px,1fr))] sm:gap-4">
               {Array.from({ length: 10 }).map((_, i) => (
-                <CustomerDetailTileSkeleton key={i} />
+                <StatTileSkeleton key={i} />
               ))}
             </div>
           </div>
@@ -170,8 +131,7 @@ function CustomerVehiclesTableSkeleton() {
   return (
     <div
       className={cn(
-        "w-full overflow-x-auto rounded-lg border-2 bg-card",
-        TABLE_BORDER,
+        "w-full overflow-x-auto rounded-lg border-0 bg-surface-lightContainer dark:bg-surface-container",
       )}
     >
       <div className="min-w-[640px]">
@@ -231,7 +191,7 @@ function CustomersPageSkeleton() {
         <Skeleton className="h-10 w-full rounded-md sm:w-44" />
       </div>
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(280px,1fr)_minmax(400px,2fr)]">
-        <div className="flex min-h-[200px] flex-col gap-2 overflow-hidden rounded-lg bg-card p-2 sm:min-h-0">
+        <div className="flex min-h-[200px] flex-col gap-2 overflow-hidden rounded-lg bg-muted/40 p-2 dark:bg-surface-container sm:min-h-0">
           <div className="space-y-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <CustomerListItemSkeleton key={i} />
@@ -249,6 +209,7 @@ function CustomersPageSkeleton() {
 
 function CustomersPageContent() {
   const t = useTranslations("customers");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const searchParams = useSearchParams();
   const dealerId = useDealerId();
@@ -275,6 +236,9 @@ function CustomersPageContent() {
 
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
   const [vehicleToEdit, setVehicleToEdit] = useState<VehicleToEdit | null>(null);
+  const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
+  const [deleteCustomerConfirmOpen, setDeleteCustomerConfirmOpen] = useState(false);
+  const [deleteVehicleId, setDeleteVehicleId] = useState<number | null>(null);
 
   useEffect(() => {
     const id = searchParams.get("openVehicleModal");
@@ -345,26 +309,29 @@ function CustomersPageContent() {
     }
   }, [isPending, visibleCustomers, selectedCustomerId]);
 
-  function handleDeleteVehicle(vehicleId: number) {
+  function confirmDeleteVehicle() {
     const cid = selectedCustomer?.id;
-    if (cid == null) return;
-    if (typeof window !== "undefined" && !window.confirm(t("deleteVehicleConfirm"))) return;
+    if (cid == null || deleteVehicleId == null) return;
     deleteVehicle.mutate(
-      { dealerCustomerId: cid, vehicleId },
+      { dealerCustomerId: cid, vehicleId: deleteVehicleId },
       {
-        onSuccess: () => toast.success(t("deleteVehicleSuccess")),
+        onSuccess: () => {
+          toast.success(t("deleteVehicleSuccess"));
+          setDeleteVehicleId(null);
+        },
         onError: (err) =>
           toast.error(err instanceof Error ? err.message : t("deleteVehicleError")),
       },
     );
   }
 
-  function handleArchiveCustomer() {
+  function confirmArchiveCustomer() {
     const id = selectedCustomer?.id;
     if (id == null || selectedCustomer?.archived) return;
     archiveCustomer.mutate(id, {
       onSuccess: () => {
         toast.success(t("archiveSuccess"));
+        setArchiveConfirmOpen(false);
       },
       onError: (err) => {
         toast.error(err instanceof Error ? err.message : t("archiveError"));
@@ -372,14 +339,14 @@ function CustomersPageContent() {
     });
   }
 
-  function handleDeleteCustomer() {
+  function confirmDeleteCustomer() {
     const id = selectedCustomer?.id;
     if (id == null) return;
-    if (typeof window !== "undefined" && !window.confirm(t("deleteConfirm"))) return;
     deleteCustomer.mutate(id, {
       onSuccess: () => {
         toast.success(t("deleteSuccess"));
         setSelectedCustomerId(null);
+        setDeleteCustomerConfirmOpen(false);
       },
       onError: (err) => {
         toast.error(err instanceof Error ? err.message : t("deleteError"));
@@ -416,7 +383,7 @@ function CustomersPageContent() {
             inputMode="tel"
             autoComplete="tel"
             placeholder={t("searchByPhonePlaceholder")}
-            className="h-10 w-full ps-9"
+            className="w-full ps-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             disabled={dealerId == null}
@@ -460,7 +427,7 @@ function CustomersPageContent() {
       ) : null}
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-auto lg:grid-cols-[minmax(280px,1fr)_minmax(400px,2fr)]">
-        <div className="flex min-h-[200px] flex-col gap-2 overflow-hidden rounded-lg bg-card p-2 sm:min-h-0">
+        <div className="flex min-h-[200px] flex-col gap-2 overflow-hidden rounded-lg bg-muted/40 p-2 dark:bg-surface-container sm:min-h-0">
           <div className="scrollbar-custom overflow-auto space-y-3">
             {isPending ? (
               <div className="space-y-3" aria-busy="true">
@@ -533,7 +500,7 @@ function CustomersPageContent() {
             </>
           ) : selectedCustomer ? (
             <>
-              <Card className="rounded-lg border-0 bg-surface-container">
+              <Card>
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-start">
                     <div
@@ -545,20 +512,17 @@ function CustomersPageContent() {
                       {customerInitials(selectedCustomer)}
                     </div>
                     <div className="min-w-0 flex-1 text-center lg:text-left">
-                      <h2 className="mb-2 truncate whitespace-nowrap text-lg font-bold text-onSurface sm:text-xl md:text-headline-sm">
+                      <h2 className="mb-4 truncate whitespace-nowrap text-lg font-bold text-foreground sm:text-xl md:text-headline-sm">
                         {selectedCustomer.firstName} {selectedCustomer.lastName}
                       </h2>
-                      <p className="mb-4 truncate whitespace-nowrap px-2 font-mono text-sm text-secondary-on-surface lg:px-0">
-                        {t("uniqueCustomerId")}: {selectedCustomer.dealerCustomerUniqueId}
-                      </p>
                       <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(180px,1fr))] sm:gap-4">
-                        <CustomerDetailTile
+                        <StatTile
                           icon={Mail}
                           label={t("emailAddress")}
                           value={selectedCustomer.email.toLowerCase()}
                           valueClassName="truncate"
                         />
-                        <CustomerDetailTile
+                        <StatTile
                           icon={Phone}
                           label={t("phoneNumber")}
                           value={formatPhoneDisplay(selectedCustomer.phoneNumber)}
@@ -566,7 +530,7 @@ function CustomersPageContent() {
                         <div className="min-w-0">
                           <div className="mb-2 flex min-w-0 items-center gap-2">
                             <CheckCircle2 className="size-3 text-primary-dark sm:size-4" />
-                            <span className="min-w-0 truncate whitespace-nowrap text-xs font-medium text-secondary-on-surface sm:text-sm">
+                            <span className="min-w-0 truncate whitespace-nowrap text-xs font-medium text-muted-foreground sm:text-sm">
                               {t("status")}
                             </span>
                           </div>
@@ -583,48 +547,42 @@ function CustomersPageContent() {
                             </Badge>
                           </div>
                         </div>
-                        <CustomerDetailTile
-                          icon={Hash}
-                          label={t("uniqueCustomerId")}
-                          value={selectedCustomer.dealerCustomerUniqueId}
-                          valueClassName="font-mono"
-                        />
-                        <CustomerDetailTile
+                        <StatTile
                           icon={MapPin}
                           label={t("streetName")}
                           value={selectedCustomer.address?.streetName || "—"}
                         />
-                        <CustomerDetailTile
+                        <StatTile
                           icon={Building2}
                           label={t("streetNumber")}
                           value={selectedCustomer.address?.streetNumber || "—"}
                         />
-                        <CustomerDetailTile
+                        <StatTile
                           icon={Home}
                           label={t("unitNumber")}
                           value={selectedCustomer.address?.unitNumber ?? "—"}
                         />
-                        <CustomerDetailTile
+                        <StatTile
                           icon={MapPin}
                           label={t("city")}
                           value={selectedCustomer.address?.city || "—"}
                         />
-                        <CustomerDetailTile
+                        <StatTile
                           icon={MapPin}
                           label={t("province")}
                           value={selectedCustomer.address?.province || "—"}
                         />
-                        <CustomerDetailTile
+                        <StatTile
                           icon={MapPin}
                           label={t("country")}
                           value={selectedCustomer.address?.country || "—"}
                         />
-                        <CustomerDetailTile
+                        <StatTile
                           icon={Hash}
                           label={t("postalCode")}
                           value={selectedCustomer.address?.postalCode || "—"}
                         />
-                        <CustomerDetailTile
+                        <StatTile
                           icon={User}
                           label={t("specialInstructions")}
                           value={selectedCustomer.address?.specialInstructions?.trim() || "—"}
@@ -653,7 +611,7 @@ function CustomersPageContent() {
                           hover:bg-[var(--color-warning-main-dark)] hover:text-white hover:border-[var(--color-warning-main-dark)] 
                           transition-all duration-[var(--duration-normal)] sm:flex-initial"
                         disabled={selectedCustomer.archived || customerMutationPending}
-                        onClick={handleArchiveCustomer}
+                        onClick={() => setArchiveConfirmOpen(true)}
                       >
                         {archiveCustomer.isPending ? t("loading") : t("archive")}
                       </Button>
@@ -665,7 +623,7 @@ function CustomersPageContent() {
                           hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
                           transition-all duration-[var(--duration-normal)] sm:flex-initial"
                         disabled={customerMutationPending}
-                        onClick={handleDeleteCustomer}
+                        onClick={() => setDeleteCustomerConfirmOpen(true)}
                       >
                         <Trash2 className="size-4 shrink-0" />
                         {deleteCustomer.isPending ? t("loading") : t("delete")}
@@ -806,7 +764,7 @@ function CustomersPageContent() {
                                         transition-all duration-[var(--duration-normal)]"
                               disabled={selectedCustomer.archived || customerMutationPending}
                               aria-label={t("delete")}
-                              onClick={() => handleDeleteVehicle(v.id)}
+                              onClick={() => setDeleteVehicleId(v.id)}
                             >
                               <Trash2 className="size-4" />
                             </Button>
@@ -843,6 +801,121 @@ function CustomersPageContent() {
           vehicleToEdit={vehicleToEdit}
         />
       ) : null}
+
+      <Dialog open={archiveConfirmOpen} onOpenChange={setArchiveConfirmOpen}>
+        <ConfirmDialogContent>
+          <div className="space-y-2 text-start">
+            <DialogTitle className="text-lg font-semibold leading-tight text-foreground">
+              {t("archiveCustomer")}
+            </DialogTitle>
+            <DialogDescription className="text-body-sm leading-relaxed text-muted-foreground">
+              {t("archiveConfirmSubtitle")}
+            </DialogDescription>
+            <p className="text-body-sm text-muted-foreground">{t("archiveWarning")}</p>
+          </div>
+          <DialogFooter className="mt-6 flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setArchiveConfirmOpen(false)}
+              disabled={archiveCustomer.isPending}
+            >
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="brand"
+              disabled={archiveCustomer.isPending}
+              onClick={confirmArchiveCustomer}
+            >
+              {archiveCustomer.isPending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {t("loading")}
+                </span>
+              ) : (
+                t("archive")
+              )}
+            </Button>
+          </DialogFooter>
+        </ConfirmDialogContent>
+      </Dialog>
+
+      <Dialog open={deleteCustomerConfirmOpen} onOpenChange={setDeleteCustomerConfirmOpen}>
+        <ConfirmDialogContent>
+          <div className="space-y-2 text-start">
+            <DialogTitle className="text-lg font-semibold leading-tight text-foreground">
+              {t("delete")}
+            </DialogTitle>
+            <DialogDescription className="text-body-sm leading-relaxed text-muted-foreground">
+              {t("deleteConfirm")}
+            </DialogDescription>
+          </div>
+          <DialogFooter className="mt-6 flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteCustomerConfirmOpen(false)}
+              disabled={deleteCustomer.isPending}
+            >
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              type="button"
+              className="border-0 bg-[var(--color-error-main)] font-semibold text-white shadow-none hover:bg-[var(--color-error-main)]/90"
+              disabled={deleteCustomer.isPending}
+              onClick={confirmDeleteCustomer}
+            >
+              {deleteCustomer.isPending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {t("loading")}
+                </span>
+              ) : (
+                t("delete")
+              )}
+            </Button>
+          </DialogFooter>
+        </ConfirmDialogContent>
+      </Dialog>
+
+      <Dialog open={deleteVehicleId != null} onOpenChange={(open) => !open && setDeleteVehicleId(null)}>
+        <ConfirmDialogContent>
+          <div className="space-y-2 text-start">
+            <DialogTitle className="text-lg font-semibold leading-tight text-foreground">
+              {t("delete")}
+            </DialogTitle>
+            <DialogDescription className="text-body-sm leading-relaxed text-muted-foreground">
+              {t("deleteVehicleConfirm")}
+            </DialogDescription>
+          </div>
+          <DialogFooter className="mt-6 flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteVehicleId(null)}
+              disabled={deleteVehicle.isPending}
+            >
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              type="button"
+              className="border-0 bg-[var(--color-error-main)] font-semibold text-white shadow-none hover:bg-[var(--color-error-main)]/90"
+              disabled={deleteVehicle.isPending}
+              onClick={confirmDeleteVehicle}
+            >
+              {deleteVehicle.isPending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {t("loading")}
+                </span>
+              ) : (
+                t("delete")
+              )}
+            </Button>
+          </DialogFooter>
+        </ConfirmDialogContent>
+      </Dialog>
     </div>
   );
 }

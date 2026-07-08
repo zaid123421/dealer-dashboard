@@ -33,7 +33,7 @@ export function VehicleDetailsBreadcrumbSkeleton() {
 
 export function VehicleDetailsCardSkeleton() {
   return (
-    <Card className="rounded-lg border-0 bg-surface-container">
+    <Card>
       <CardContent className="p-6">
         <div className="flex flex-col gap-4 sm:gap-6 md:flex-row md:items-start">
           <Skeleton className="mx-auto size-12 shrink-0 rounded-full sm:size-16 md:mx-0" />

@@ -22,7 +22,7 @@ const SelectTrigger = React.forwardRef<
     ref={ref}
     data-slot="select-trigger"
     className={cn(
-      "flex h-10 w-full items-center justify-between whitespace-nowrap rounded-md px-3 py-2 text-body-md shadow-xs data-[placeholder]:text-muted-foreground data-[state=open]:border-[var(--color-primary-main-light)] data-[state=open]:ring-0 dark:data-[state=open]:border-[var(--color-primary-main-dark)] focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      "flex h-12 w-full items-center justify-between whitespace-nowrap rounded-md px-3 py-2 text-body-lg shadow-xs data-[placeholder]:text-muted-foreground data-[state=open]:border-[var(--color-primary-main-light)] data-[state=open]:ring-0 dark:data-[state=open]:border-[var(--color-primary-main-dark)] focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
       TABLE_FIELD_BORDER,
       FIELD_INVALID_BORDER_CLASS,
       className

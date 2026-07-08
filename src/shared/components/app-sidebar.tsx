@@ -87,7 +87,7 @@ function NavSubItem({
 function SidebarHeader() {
   const tAuth = useTranslations("auth");
   return (
-    <header className="flex h-16 shrink-0 items-center justify-center border-b border-surface-container px-4">
+    <header className="flex h-16 shrink-0 items-center justify-center px-4">
       <Link
         href="/dashboard"
         className="flex items-center hover:opacity-90 transition-opacity"
@@ -158,7 +158,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   className={`cursor-pointer flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${
                     cartGroupActive
                       ? "border-primary-dark bg-primary-dark/10 text-primary-dark dark:bg-primary-dark/15"
-                      : "border-transparent text-muted-foreground hover:bg-gray-200 hover:text-foreground dark:hover:bg-surface-container dark:hover:text-foreground"
+                      : "border-transparent text-muted-foreground hover:bg-black/[0.05] hover:text-foreground dark:hover:bg-surface-container"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -214,7 +214,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   className={`cursor-pointer flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${
                     ordersGroupActive
                       ? "border-primary-dark bg-primary-dark/10 text-primary-dark dark:bg-primary-dark/15"
-                      : "border-transparent text-muted-foreground hover:bg-gray-200 hover:text-foreground dark:hover:bg-surface-container dark:hover:text-foreground"
+                      : "border-transparent text-muted-foreground hover:bg-black/[0.05] hover:text-foreground dark:hover:bg-surface-container"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -267,7 +267,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
                   ? "border-primary-dark bg-primary-dark/10 text-primary-dark dark:bg-primary-dark/15"
-                  : "border-transparent text-muted-foreground hover:bg-gray-200 hover:text-foreground dark:hover:bg-surface-container dark:hover:text-foreground"
+                  : "border-transparent text-muted-foreground hover:bg-black/[0.05] hover:text-foreground dark:hover:bg-surface-container"
               }`}
             >
               <div className="flex items-center gap-3">
@@ -284,8 +284,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </nav>
 
-      <div className="mt-auto shrink-0 space-y-3 border-t border-surface-container p-3">
-        <div className="rounded-lg border border-border bg-surface-container/50 p-3">
+      <div className="mt-auto shrink-0 space-y-3 p-3">
+        <div className="rounded-lg bg-muted/40 p-3 dark:bg-surface-container/50">
           <div className="flex items-center gap-3">
             <div
               className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-dark/20 text-xs font-bold uppercase tracking-tight text-primary-dark"
@@ -301,7 +301,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 {displayName}
               </p>
               {planName ? (
-                <span className="mt-1 inline-block max-w-full truncate rounded-full bg-primary-dark px-2 py-0.5 text-[10px] font-medium text-primary-on-container">
+                <span className="mt-1 inline-block max-w-full truncate rounded-full bg-primary-dark px-2 py-0.5 text-[10px] font-medium text-primary-onContainer">
                   {planName}
                 </span>
               ) : null}
@@ -312,7 +312,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <button
           type="button"
           onClick={handleLogout}
-          className="flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-gray-200 hover:text-foreground dark:hover:bg-surface-container dark:hover:text-foreground"
+          className="flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-black/[0.05] hover:text-foreground dark:hover:bg-surface-container"
         >
           {t("logout")}
         </button>
@@ -331,12 +331,12 @@ export function AppSidebar() {
   return (
     <>
       {/* Mobile header — visible below sm */}
-      <header className="flex sm:hidden h-14 items-center gap-2 border-b border-surface-container bg-surface-light dark:bg-surface-default px-3">
+      <header className="flex sm:hidden h-14 items-center gap-2 bg-surface-light dark:bg-surface-default px-3">
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Menu"
-          className="flex items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-gray-200 hover:text-foreground dark:hover:bg-surface-container dark:hover:text-foreground"
+          className="flex items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-black/[0.05] hover:text-foreground dark:hover:bg-surface-container"
         >
           <Menu className="size-5" />
         </button>
@@ -359,7 +359,7 @@ export function AppSidebar() {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side={sheetSide}
-          className="flex w-[260px] max-w-[85vw] flex-col gap-0 p-0 bg-surface-light dark:bg-surface-default"
+          className="flex w-[260px] max-w-[85vw] flex-col gap-0 border-0 p-0 bg-surface-light dark:bg-surface-default"
           aria-describedby={undefined}
         >
           <SheetTitle className="sr-only">{t("appName")} Menu</SheetTitle>
@@ -371,7 +371,7 @@ export function AppSidebar() {
       </Sheet>
 
       {/* Desktop sidebar — hidden below sm */}
-      <aside className="hidden sm:flex h-full w-[260px] shrink-0 flex-col border-e border-surface-container bg-surface-light dark:bg-surface-default text-foreground">
+      <aside className="hidden sm:flex h-full w-[260px] shrink-0 flex-col bg-surface-light dark:bg-surface-default text-foreground">
         <SidebarHeader />
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <SidebarContent />

@@ -1,10 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Ban, Pencil, Plus, Trash2 } from "lucide-react";
+import { Ban, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
+import {
+  ConfirmDialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/app-dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PRIMARY_BUTTON_RESPONSIVE } from "@/lib/primary-button-styles";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { toast } from "sonner";
@@ -21,6 +36,9 @@ const PAGE_SIZE = 10;
 const DEFAULT_SORT = "createdAt" as const;
 const DEFAULT_DIRECTION = "desc" as const;
 
+type StatusFilter = "all" | string;
+type RoleFilter = "all" | string;
+
 function staffFullName(row: DealerStaffMember): string {
   const parts = [row.firstName?.trim(), row.lastName?.trim()].filter(Boolean);
   return parts.length > 0 ? parts.join(" ") : "—";
@@ -28,10 +46,16 @@ function staffFullName(row: DealerStaffMember): string {
 
 export default function StaffPage() {
   const t = useTranslations("staff");
+  const tCommon = useTranslations("common");
   const { canAddStaff } = useDealerQuota();
   const [page, setPage] = useState(0);
   const [staffModalOpen, setStaffModalOpen] = useState(false);
   const [staffToEdit, setStaffToEdit] = useState<DealerStaffMember | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [disableTarget, setDisableTarget] = useState<DealerStaffMember | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DealerStaffMember | null>(null);
 
   const disableStaff = useDisableDealerStaff();
   const deleteStaff = useDeleteDealerStaff();
@@ -43,17 +67,58 @@ export default function StaffPage() {
     direction: DEFAULT_DIRECTION,
   });
 
+  const rows = useMemo(() => data?.content ?? [], [data?.content]);
+
+  const roleOptions = useMemo(() => {
+    const roles = new Set<string>();
+    for (const row of rows) {
+      if (row.role?.trim()) roles.add(row.role.trim());
+    }
+    return Array.from(roles).sort();
+  }, [rows]);
+
+  const statusOptions = useMemo(() => {
+    const statuses = new Set<string>();
+    for (const row of rows) {
+      if (row.status?.trim()) statuses.add(row.status.trim());
+    }
+    return Array.from(statuses).sort();
+  }, [rows]);
+
+  const filteredRows = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return rows.filter((row) => {
+      if (statusFilter !== "all" && row.status !== statusFilter) return false;
+      if (roleFilter !== "all" && row.role !== roleFilter) return false;
+      if (!q) return true;
+      const hay = [
+        staffFullName(row),
+        row.email,
+        row.username,
+        row.position,
+        row.role,
+        row.accessLevel,
+        row.status,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [rows, searchQuery, statusFilter, roleFilter]);
+
   const totalPages = data?.totalPages ?? 0;
   const canPrev = page > 0 && !isPending;
   const canNext =
     data != null && !data.last && page < totalPages - 1 && !isPending;
   const canAddNewStaff = canAddStaff();
 
-  function handleDisable(row: DealerStaffMember) {
-    if (typeof window !== "undefined" && !window.confirm(t("disableConfirm"))) return;
-    disableStaff.mutate(row.id, {
+  function confirmDisable() {
+    if (!disableTarget) return;
+    disableStaff.mutate(disableTarget.id, {
       onSuccess: () => {
         toast.success(t("disableStaffSuccess"));
+        setDisableTarget(null);
       },
       onError: (err) => {
         toast.error(err instanceof Error ? err.message : t("disableStaffError"));
@@ -61,11 +126,12 @@ export default function StaffPage() {
     });
   }
 
-  function handleDelete(row: DealerStaffMember) {
-    if (typeof window !== "undefined" && !window.confirm(t("deleteConfirm"))) return;
-    deleteStaff.mutate(row.id, {
+  function confirmDelete() {
+    if (!deleteTarget) return;
+    deleteStaff.mutate(deleteTarget.id, {
       onSuccess: () => {
         toast.success(t("deleteStaffSuccess"));
+        setDeleteTarget(null);
       },
       onError: (err) => {
         toast.error(err instanceof Error ? err.message : t("deleteStaffError"));
@@ -97,6 +163,59 @@ export default function StaffPage() {
 
       <DealerQuotaPanel filter="staff" showRoles variant="full" />
 
+      <div className="flex shrink-0 flex-col gap-3 py-1 sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="relative min-w-0 flex-1 sm:min-w-[220px]">
+          <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder={t("searchPlaceholder")}
+            className="w-full ps-9"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label={t("searchPlaceholder")}
+          />
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <span className="text-label-sm font-medium text-muted-foreground sm:me-1">
+            {t("status")}
+          </span>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v)}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("filterAllStatus")}</SelectItem>
+              {statusOptions.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <span className="text-label-sm font-medium text-muted-foreground sm:me-1">
+            {t("role")}
+          </span>
+          <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v)}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("filterAllRoles")}</SelectItem>
+              {roleOptions.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {r}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <p className="w-full text-end text-body-md text-muted-foreground sm:ms-auto sm:w-auto">
+          {t("showingCount", { count: filteredRows.length })}
+        </p>
+      </div>
+
       <AddStaffModal
         open={staffModalOpen}
         onOpenChange={(open) => {
@@ -117,7 +236,7 @@ export default function StaffPage() {
 
       <StyledTable
         isLoading={isPlaceholderData}
-        rows={data?.content ?? []}
+        rows={filteredRows}
         keyProp={(r) => r.id}
         emptyText={t("noStaff")}
         columns={[
@@ -129,7 +248,7 @@ export default function StaffPage() {
             header: t("email"),
             render: (row: DealerStaffMember) => (
               <span className="max-w-[140px] truncate font-mono text-sm" title={row.email ?? undefined}>
-                {row.username ?? "—"}
+                {row.email ?? row.username ?? "—"}
               </span>
             ),
           },
@@ -149,7 +268,6 @@ export default function StaffPage() {
             className: "min-w-[220px]",
             render: (row: DealerStaffMember) => (
               <div className="flex justify-center gap-2">
-                {/* زر التعديل - أزرق لوجستي (Tertiary) */}
                 <Button
                   type="button"
                   variant="ghost"
@@ -166,7 +284,6 @@ export default function StaffPage() {
                   <Pencil className="size-4" />
                 </Button>
 
-                {/* زر التعطيل - برتقالي (Warning) */}
                 <Button
                   type="button"
                   variant="ghost"
@@ -176,12 +293,11 @@ export default function StaffPage() {
                             transition-all duration-[var(--duration-normal)]"
                   aria-label={t("disable")}
                   disabled={disableStaff.isPending && disableStaff.variables === row.id}
-                  onClick={() => handleDisable(row)}
+                  onClick={() => setDisableTarget(row)}
                 >
                   <Ban className="size-4" />
                 </Button>
 
-                {/* زر الحذف - أحمر (Error) */}
                 <Button
                   type="button"
                   variant="ghost"
@@ -191,7 +307,7 @@ export default function StaffPage() {
                             transition-all duration-[var(--duration-normal)]"
                   aria-label={t("delete")}
                   disabled={deleteStaff.isPending && deleteStaff.variables === row.id}
-                  onClick={() => handleDelete(row)}
+                  onClick={() => setDeleteTarget(row)}
                 >
                   <Trash2 className="size-4" />
                 </Button>
@@ -213,6 +329,82 @@ export default function StaffPage() {
           onNext={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
         />
       ) : null}
+
+      <Dialog open={disableTarget != null} onOpenChange={(open) => !open && setDisableTarget(null)}>
+        <ConfirmDialogContent>
+          <div className="space-y-2 text-start">
+            <DialogTitle className="text-lg font-semibold leading-tight text-foreground">
+              {t("disable")}
+            </DialogTitle>
+            <DialogDescription className="text-body-sm leading-relaxed text-muted-foreground">
+              {t("disableConfirm")}
+            </DialogDescription>
+          </div>
+          <DialogFooter className="mt-6 flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDisableTarget(null)}
+              disabled={disableStaff.isPending}
+            >
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="brand"
+              disabled={disableStaff.isPending}
+              onClick={confirmDisable}
+            >
+              {disableStaff.isPending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {t("loading")}
+                </span>
+              ) : (
+                t("disable")
+              )}
+            </Button>
+          </DialogFooter>
+        </ConfirmDialogContent>
+      </Dialog>
+
+      <Dialog open={deleteTarget != null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <ConfirmDialogContent>
+          <div className="space-y-2 text-start">
+            <DialogTitle className="text-lg font-semibold leading-tight text-foreground">
+              {t("delete")}
+            </DialogTitle>
+            <DialogDescription className="text-body-sm leading-relaxed text-muted-foreground">
+              {t("deleteConfirm")}
+            </DialogDescription>
+          </div>
+          <DialogFooter className="mt-6 flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleteStaff.isPending}
+            >
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              type="button"
+              className="border-0 bg-[var(--color-error-main)] font-semibold text-white shadow-none hover:bg-[var(--color-error-main)]/90"
+              disabled={deleteStaff.isPending}
+              onClick={confirmDelete}
+            >
+              {deleteStaff.isPending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {t("loading")}
+                </span>
+              ) : (
+                t("delete")
+              )}
+            </Button>
+          </DialogFooter>
+        </ConfirmDialogContent>
+      </Dialog>
     </div>
   );
 }

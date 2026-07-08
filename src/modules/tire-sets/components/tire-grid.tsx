@@ -18,7 +18,7 @@ export function TireGrid({
   // Handle empty tire set case
   if (tires.length === 0) {
     return (
-      <Card className="border-dashed">
+      <Card variant="dashed">
         <CardContent className="flex items-center justify-center py-12">
           <div className="text-center">
             <p className="text-lg font-medium text-muted-foreground">

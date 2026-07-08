@@ -1,25 +1,25 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Calendar, Car, CircleX, Clock, Layers, Loader2, Mail, User, X } from "lucide-react";
+import { AlertTriangle, Calendar, Car, CircleX, Clock, Layers, Loader2, Mail, Search, User, X } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { StatTile, StatTileBox } from "@/components/ui/stat-tile";
+import { Dialog } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
+  ConfirmDialogContent,
   DialogDescription,
   DialogFooter,
-  DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/app-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { DIALOG_SHELL_CLASS } from "@/lib/radius";
 import { useDealerInboundEmails } from "@/modules/inbound-emails/hooks/use-dealer-inbound-emails";
 import { useInboundEmailDraft } from "@/modules/inbound-emails/hooks/use-inbound-email-draft";
 import {
@@ -37,42 +37,6 @@ import { removeInboundEmailFromListCache } from "@/modules/inbound-emails/lib/in
 import type { DealerInboundEmailsQuery } from "@/modules/inbound-emails/services/dealer-inbound-emails.service";
 import { useRejectShipmentRequest } from "@/modules/shipment-requests/hooks/use-reject-shipment-request";
 import { useMoveShipmentRequestToCart } from "@/modules/shipment-requests/hooks/use-move-shipment-request-to-cart";
-import type { LucideIcon } from "lucide-react";
-
-function EmailDetailTile({
-  icon: Icon,
-  label,
-  value,
-  className,
-  valueClassName,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: ReactNode;
-  className?: string;
-  valueClassName?: string;
-}) {
-  return (
-    <div className={cn("group min-w-0", className)}>
-      <div className="mb-2 flex min-w-0 items-center gap-2">
-        <Icon className="size-3 text-primary-dark sm:size-4" />
-        <span className="min-w-0 truncate whitespace-nowrap text-xs font-medium text-secondary-on-surface sm:text-sm">
-          {label}
-        </span>
-      </div>
-      <div className="min-w-0 rounded-lg border-2 border-surface-high bg-surface-bright p-2 transition-all group-hover:border-primary-dark group-hover:shadow-md sm:p-3">
-        <div
-          className={cn(
-            "min-w-0 break-words text-sm font-semibold text-onSurface sm:text-base",
-            valueClassName,
-          )}
-        >
-          {value}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function EmailListItemSkeleton() {
   return (
@@ -92,7 +56,7 @@ function EmailListItemSkeleton() {
 
 function EmailDetailCardSkeleton() {
   return (
-    <Card className="rounded-lg border-0 bg-surface-container">
+    <Card>
       <CardContent className="p-4 sm:p-6">
         <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-start">
           <Skeleton className="mx-auto size-12 shrink-0 rounded-full sm:size-16 lg:mx-0" />
@@ -154,9 +118,21 @@ export default function EmailInboxPage() {
 
   const suggestions = useMemo(() => data?.rows ?? [], [data?.rows]);
   const [dismissedEmailIds, setDismissedEmailIds] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const visibleSuggestions = useMemo(
-    () => suggestions.filter((row) => !dismissedEmailIds.includes(row.id)),
-    [dismissedEmailIds, suggestions],
+    () => {
+      const base = suggestions.filter((row) => !dismissedEmailIds.includes(row.id));
+      const q = searchQuery.trim().toLowerCase();
+      if (!q) return base;
+      return base.filter((row) => {
+        const hay = [row.from, row.subject, row.status, row.receivedAt, row.email, row.preview]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(q);
+      });
+    },
+    [dismissedEmailIds, suggestions, searchQuery],
   );
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -264,8 +240,8 @@ export default function EmailInboxPage() {
       {isError ? <ErrorAlert message={t("emailInboxLoadError")} className="shrink-0" /> : null}
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-auto lg:grid-cols-[minmax(280px,1fr)_minmax(400px,2fr)]">
-        <div className="flex min-h-[200px] flex-col gap-2 overflow-hidden rounded-lg bg-card p-2 sm:min-h-0 lg:max-h-[min(680px,calc(100dvh-13rem))]">
-          <div className="shrink-0 px-2 pt-1">
+        <div className="flex min-h-[200px] flex-col gap-2 overflow-hidden rounded-lg bg-muted/40 p-2 dark:bg-surface-container sm:min-h-0 lg:max-h-[min(680px,calc(100dvh-13rem))]">
+          <div className="shrink-0 space-y-3 px-2 pt-1">
             <h2 className="text-title-md font-semibold text-foreground">{t("emailInboxParsedEmails")}</h2>
             <div className="text-body-md text-muted-foreground">
               {isLoading ? (
@@ -273,6 +249,17 @@ export default function EmailInboxPage() {
               ) : (
                 t("emailInboxLastSynced", { time: lastSyncedTime })
               )}
+            </div>
+            <div className="relative">
+              <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder={t("emailInboxSearchPlaceholder")}
+                className="w-full ps-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label={t("emailInboxSearchPlaceholder")}
+              />
             </div>
           </div>
           <div className="scrollbar-custom min-h-0 flex-1 overflow-auto space-y-3">
@@ -334,42 +321,42 @@ export default function EmailInboxPage() {
           ) : isDraftError ? (
             <ErrorAlert message={t("emailInboxDraftLoadError")} />
           ) : selected && draft ? (
-            <Card className="rounded-lg border-0 bg-surface-container">
+            <Card>
               <CardContent className="p-4 sm:p-6">
                 <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-start">
                   <div className="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-primary-dark/10 text-primary-dark transition-all duration-200 hover:scale-105 sm:size-16 lg:mx-0">
                     <Mail className="size-6 sm:size-7" strokeWidth={2} />
                   </div>
                   <div className="min-w-0 flex-1 text-center lg:text-left">
-                    <h2 className="mb-2 line-clamp-2 text-lg font-bold text-onSurface sm:text-xl md:text-headline-sm">
+                    <h2 className="mb-2 line-clamp-2 text-lg font-bold text-foreground sm:text-xl md:text-headline-sm">
                       {selected.subject}
                     </h2>
-                    <p className="mb-4 truncate px-2 text-sm text-secondary-on-surface lg:px-0">
+                    <p className="mb-4 truncate px-2 text-sm text-muted-foreground lg:px-0">
                       {selected.from}
                     </p>
                     <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(180px,1fr))] sm:gap-4">
-                      <EmailDetailTile
+                      <StatTile
                         icon={User}
                         label={t("emailInboxCustomerName")}
                         value={draft.customerDisplayName}
                       />
-                      <EmailDetailTile
+                      <StatTile
                         icon={Calendar}
                         label={t("emailInboxAppointmentDate")}
                         value={formatDraftAppointment(draft.swapAppointment, locale)}
                       />
-                      <EmailDetailTile
+                      <StatTile
                         icon={Mail}
                         label={t("emailInboxEmailAddress")}
                         value={selected.email}
                         valueClassName="break-all"
                       />
-                      <EmailDetailTile
+                      <StatTile
                         icon={Layers}
                         label={t("emailInboxTireSet")}
                         value={formatDraftTireSets(draft.sets)}
                       />
-                      <EmailDetailTile
+                      <StatTile
                         icon={Car}
                         label={t("emailInboxVehicle")}
                         value={formatDraftVehicle(draft.vehiclePlate, draft.vehicleVin)}
@@ -377,12 +364,12 @@ export default function EmailInboxPage() {
                       <div className="min-w-0">
                         <div className="mb-2 flex min-w-0 items-center gap-2">
                           <Clock className="size-3 text-primary-dark sm:size-4" />
-                          <span className="min-w-0 truncate whitespace-nowrap text-xs font-medium text-secondary-on-surface sm:text-sm">
+                          <span className="min-w-0 truncate whitespace-nowrap text-xs font-medium text-muted-foreground sm:text-sm">
                             {t("emailInboxTimeWindow")}
                           </span>
                         </div>
-                        <div className="flex min-h-10 flex-wrap items-center gap-2 rounded-lg border-2 border-surface-high bg-surface-bright p-2 sm:min-h-12 sm:p-3">
-                          <span className="text-sm font-semibold text-onSurface sm:text-base">
+                        <StatTileBox className="flex min-h-10 flex-wrap items-center gap-2 p-2 sm:min-h-12 sm:p-3">
+                          <span className="text-sm font-semibold text-foreground sm:text-base">
                             {formatDraftTimeWindow(draft.swapAppointment, locale)}
                           </span>
                           {draft.swapAppointment ? (
@@ -390,16 +377,18 @@ export default function EmailInboxPage() {
                               {t("emailInboxWindowOk")}
                             </Badge>
                           ) : null}
-                        </div>
+                        </StatTileBox>
                       </div>
                     </div>
                     <div className="mt-4 flex flex-col gap-2 text-start">
-                      <p className="text-xs font-medium text-secondary-on-surface sm:text-sm">
+                      <p className="text-xs font-medium text-muted-foreground sm:text-sm">
                         {t("emailInboxParsedPreview")}
                       </p>
-                      <pre className="max-h-48 overflow-auto rounded-lg border-2 border-surface-high bg-surface-bright p-3 font-mono text-label-md leading-relaxed whitespace-pre-wrap text-foreground">
-                        {selected.preview}
-                      </pre>
+                      <StatTileBox className="max-h-48 overflow-auto p-3">
+                        <pre className="font-mono text-label-md leading-relaxed whitespace-pre-wrap text-foreground">
+                          {selected.preview}
+                        </pre>
+                      </StatTileBox>
                     </div>
                   </div>
                   <div className="flex w-full shrink-0 flex-wrap justify-center gap-2 lg:w-auto lg:flex-col lg:items-stretch">
@@ -447,13 +436,13 @@ export default function EmailInboxPage() {
       </div>
 
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
-        <DialogContent className={cn("max-w-md", DIALOG_SHELL_CLASS)}>
-          <DialogHeader className="flex flex-row items-center gap-2 space-y-0 pe-10 text-start">
+        <ConfirmDialogContent>
+          <div className="flex flex-row items-center gap-2 pe-10 text-start">
             <CircleX className="size-5 shrink-0 text-destructive" aria-hidden />
             <DialogTitle className="text-lg font-semibold leading-tight text-foreground">
               {t("emailInboxRejectModalTitle")}
             </DialogTitle>
-          </DialogHeader>
+          </div>
 
           <div className="mt-6 flex flex-col items-center gap-4 pb-6 text-center">
             <span
@@ -511,7 +500,7 @@ export default function EmailInboxPage() {
               )}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </ConfirmDialogContent>
       </Dialog>
     </div>
   );

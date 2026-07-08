@@ -39,11 +39,7 @@ export function mapStaffFormToRequest(
     notes: (values.notes ?? "").trim(),
   };
   if (forEdit) {
-    return {
-      ...base,
-      username: (values.username ?? "").trim(),
-      accessLevel: (values.accessLevel ?? "").trim(),
-    };
+    return base;
   }
   return base;
 }

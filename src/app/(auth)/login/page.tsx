@@ -6,11 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { useAuthStore } from "@/shared/stores/auth-store";
 import { ROUTES } from "@/constants/routes";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
 import { AUTH_PRIMARY_BUTTON_CLASS } from "@/lib/primary-button-styles";
 import { loginUseCase, LoginError } from "@/application/auth/login.use-case";
 
@@ -22,7 +23,6 @@ export default function LoginPage() {
   const [showRegisteredMessage, setShowRegisteredMessage] = useState(false);
   const [showActivatedMessage, setShowActivatedMessage] = useState(false);
   const [showResetLinkSentMessage, setShowResetLinkSentMessage] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const isRegisteredSuccess = useMemo(
     () => searchParams.get("registered") === "1",
     [searchParams],
@@ -183,26 +183,15 @@ export default function LoginPage() {
                 <Label htmlFor="password" className="text-start text-label-lg text-foreground">
                   {t("passwordLabel")}
                 </Label>
-                <div className="relative">
-                  <Lock className="absolute start-4 top-1/2 size-5 -translate-y-1/2 text-gray-400" />
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="********"
-                    autoComplete="current-password"
-                    className="ps-12 pe-12"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute end-4 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 transition-colors hover:text-primary-dark"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
-                  </button>
-                </div>
+                <PasswordInput
+                  id="password"
+                  name="password"
+                  placeholder="********"
+                  autoComplete="current-password"
+                  startIcon={<Lock className="size-5" />}
+                  className="ps-12"
+                  required
+                />
               </div>
 
               {/* Forgot password */}

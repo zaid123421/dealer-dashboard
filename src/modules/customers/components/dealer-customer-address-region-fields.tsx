@@ -25,16 +25,38 @@ type Props = {
   control: Control<CreateDealerCustomerFormValues>;
   setValue: UseFormSetValue<CreateDealerCustomerFormValues>;
   errors?: AddressErrors;
+  /** Labels from GET customer (used on edit when options are still loading). */
+  savedRegionLabels?: {
+    country?: string;
+    province?: string;
+    city?: string;
+  };
 };
 
 const selectValue = (v: string) => (v && v.length > 0 ? v : undefined);
 
+function withSelectedOption(
+  options: { value: string; label: string }[],
+  value: string | undefined,
+  label: string | undefined,
+) {
+  if (!value || !/^\d+$/.test(value) || !label?.trim()) return options;
+  if (options.some((option) => option.value === value)) return options;
+  return [{ value, label: label.trim() }, ...options];
+}
+
 /** Cascading country / province / city with search; stores numeric ids as strings for the API mapper. */
-export function DealerCustomerAddressRegionFields({ control, setValue, errors }: Props) {
+export function DealerCustomerAddressRegionFields({
+  control,
+  setValue,
+  errors,
+  savedRegionLabels,
+}: Props) {
   const t = useTranslations("customers");
 
   const countryId = useWatch({ control, name: "address.countryId" });
   const provinceId = useWatch({ control, name: "address.stateId" });
+  const cityId = useWatch({ control, name: "address.cityId" });
 
   const countriesQ = useAddressCountries();
   const provincesQ = useAddressProvinces(countryId);
@@ -42,29 +64,41 @@ export function DealerCustomerAddressRegionFields({ control, setValue, errors }:
 
   const countryOptions = useMemo(
     () =>
-      (countriesQ.data ?? []).map((c) => ({
-        value: String(c.id),
-        label: c.name,
-      })),
-    [countriesQ.data],
+      withSelectedOption(
+        (countriesQ.data ?? []).map((c) => ({
+          value: String(c.id),
+          label: c.name,
+        })),
+        selectValue(countryId ?? ""),
+        savedRegionLabels?.country,
+      ),
+    [countriesQ.data, countryId, savedRegionLabels?.country],
   );
 
   const provinceOptions = useMemo(
     () =>
-      (provincesQ.data ?? []).map((p) => ({
-        value: String(p.id),
-        label: p.name,
-      })),
-    [provincesQ.data],
+      withSelectedOption(
+        (provincesQ.data ?? []).map((p) => ({
+          value: String(p.id),
+          label: p.name,
+        })),
+        selectValue(provinceId ?? ""),
+        savedRegionLabels?.province,
+      ),
+    [provincesQ.data, provinceId, savedRegionLabels?.province],
   );
 
   const cityOptions = useMemo(
     () =>
-      (citiesQ.data ?? []).map((c) => ({
-        value: String(c.id),
-        label: c.name,
-      })),
-    [citiesQ.data],
+      withSelectedOption(
+        (citiesQ.data ?? []).map((c) => ({
+          value: String(c.id),
+          label: c.name,
+        })),
+        selectValue(cityId ?? ""),
+        savedRegionLabels?.city,
+      ),
+    [citiesQ.data, cityId, savedRegionLabels?.city],
   );
 
   return (
@@ -86,10 +120,11 @@ export function DealerCustomerAddressRegionFields({ control, setValue, errors }:
                 setValue("address.cityId", "", { shouldDirty: true });
               }}
               options={countryOptions}
+              selectedLabel={savedRegionLabels?.country}
               placeholder={t("addressSelectCountry")}
               searchPlaceholder={t("addressSearchPlaceholder")}
               emptyText={t("addressNoResults")}
-              disabled={countriesQ.isPending}
+              disabled={countriesQ.isPending && !field.value}
               aria-invalid={!!errors?.countryId}
             />
           )}
@@ -116,6 +151,7 @@ export function DealerCustomerAddressRegionFields({ control, setValue, errors }:
                 setValue("address.cityId", "", { shouldDirty: true });
               }}
               options={provinceOptions}
+              selectedLabel={savedRegionLabels?.province}
               placeholder={
                 !countryId || !/^\d+$/.test(countryId.trim())
                   ? t("addressSelectCountryFirst")
@@ -126,7 +162,7 @@ export function DealerCustomerAddressRegionFields({ control, setValue, errors }:
               disabled={
                 !countryId ||
                 !/^\d+$/.test(countryId.trim()) ||
-                provincesQ.isPending
+                (provincesQ.isPending && !field.value)
               }
               aria-invalid={!!errors?.stateId}
             />
@@ -151,6 +187,7 @@ export function DealerCustomerAddressRegionFields({ control, setValue, errors }:
               value={selectValue(field.value)}
               onValueChange={field.onChange}
               options={cityOptions}
+              selectedLabel={savedRegionLabels?.city}
               placeholder={
                 !provinceId || !/^\d+$/.test(provinceId.trim())
                   ? t("addressSelectProvinceFirst")
@@ -161,7 +198,7 @@ export function DealerCustomerAddressRegionFields({ control, setValue, errors }:
               disabled={
                 !provinceId ||
                 !/^\d+$/.test(provinceId.trim()) ||
-                citiesQ.isPending
+                (citiesQ.isPending && !field.value)
               }
               aria-invalid={!!errors?.cityId}
             />

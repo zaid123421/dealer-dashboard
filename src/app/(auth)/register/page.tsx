@@ -75,7 +75,7 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-2 sm:p-4">
-      <Card className="w-full max-w-md shadow-lg">
+      <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-headline-sm font-bold text-foreground">
             {t("title")}

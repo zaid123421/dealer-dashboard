@@ -1,3 +1,8 @@
+import {
+  fetchAddressCities,
+  fetchAddressCountries,
+  fetchAddressProvinces,
+} from "@/modules/addresses/services/address-base.service";
 import type {
   CreateDealerCustomerFormValues,
   DealerCustomer,
@@ -24,6 +29,67 @@ export function splitPhoneNumberForForm(raw: string): { countryCode: string; pho
   return { countryCode: "+966", phoneLocal: digitsOnly };
 }
 
+function normalizeRegionName(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/[^\p{L}\p{N}]/gu, "");
+}
+
+function findRegionByName<T extends { id: number; name: string }>(
+  items: T[],
+  name: string | undefined,
+): T | undefined {
+  if (!name?.trim()) return undefined;
+  const target = normalizeRegionName(name);
+  if (!target) return undefined;
+  return (
+    items.find((item) => normalizeRegionName(item.name) === target) ??
+    items.find((item) => {
+      const candidate = normalizeRegionName(item.name);
+      return candidate.includes(target) || target.includes(candidate);
+    })
+  );
+}
+
+async function resolveAddressRegionIds(
+  address: NonNullable<DealerCustomer["address"]>,
+  current: CreateDealerCustomerFormValues["address"],
+): Promise<CreateDealerCustomerFormValues["address"]> {
+  const next = { ...current };
+  const hasAllIds =
+    /^\d+$/.test(next.countryId) && /^\d+$/.test(next.stateId) && /^\d+$/.test(next.cityId);
+  if (hasAllIds) return next;
+
+  try {
+    const countries = await fetchAddressCountries();
+    const country =
+      findRegionByName(countries, address.country) ??
+      (next.countryId ? countries.find((c) => String(c.id) === next.countryId) : undefined);
+    if (!country) return next;
+    next.countryId = String(country.id);
+
+    const provinces = await fetchAddressProvinces(String(country.id));
+    const province =
+      findRegionByName(provinces, address.province) ??
+      (next.stateId ? provinces.find((p) => String(p.id) === next.stateId) : undefined);
+    if (!province) return next;
+    next.stateId = String(province.id);
+
+    const cities = await fetchAddressCities(String(province.id));
+    const city =
+      findRegionByName(cities, address.city) ??
+      (next.cityId ? cities.find((c) => String(c.id) === next.cityId) : undefined);
+    if (city) next.cityId = String(city.id);
+  } catch {
+    // Keep street fields even if lookups fail.
+  }
+
+  return next;
+}
+
 export function dealerCustomerToFormValues(c: DealerCustomer): CreateDealerCustomerFormValues {
   const { countryCode, phoneLocal } = splitPhoneNumberForForm(c.phoneNumber);
   const address = c.address;
@@ -43,5 +109,17 @@ export function dealerCustomerToFormValues(c: DealerCustomer): CreateDealerCusto
       unitNumber: address?.unitNumber ?? "",
       specialInstructions: address?.specialInstructions ?? "",
     },
+  };
+}
+
+/** Resolves country/province/city ids from API name fields when ids are missing. */
+export async function dealerCustomerToFormValuesAsync(
+  c: DealerCustomer,
+): Promise<CreateDealerCustomerFormValues> {
+  const base = dealerCustomerToFormValues(c);
+  if (!c.address) return base;
+  return {
+    ...base,
+    address: await resolveAddressRegionIds(c.address, base.address),
   };
 }

@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   Loader2,
   Plus,
+  Search,
   Send,
 } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/error-alert";
@@ -14,15 +15,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AddDeliveryItemModal } from "@/modules/shipment-requests/components/add-delivery-item-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
+  ConfirmDialogContent,
   DialogDescription,
   DialogFooter,
-  DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/app-dialog";
 import { PaginationControls } from "@/components/ui/pagination-controls";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useDealerShipmentRequestsPaged } from "@/modules/shipment-requests/hooks/use-dealer-shipment-requests-paged";
 import {
   useSubmitAllShipmentRequests,
@@ -32,7 +40,7 @@ import { SUBMIT_SHIPMENT_REQUEST_VERSION_FALLBACK } from "@/modules/shipment-req
 import type { DealerShipmentRequestsPagedQuery } from "@/modules/shipment-requests/services/dealer-shipment-requests-paged.service";
 import type { NormalizedDeliveryOrderRow } from "@/modules/shipment-requests/lib/shipment-request-dto";
 import { cn } from "@/lib/utils";
-import { DIALOG_SHELL_CLASS } from "@/lib/radius";
+import { formatLocaleDate } from "@/lib/format-locale";
 import { PRIMARY_BUTTON_PILL_CLASS } from "@/lib/primary-button-styles";
 
 /* ─────────────────────────── Window status ─────────────────────────── */
@@ -99,6 +107,8 @@ export type DeliveryCartPageProps = {
   baseQuery: Omit<DealerShipmentRequestsPagedQuery, "page">;
 };
 
+type WindowFilter = "all" | WindowStatus;
+
 export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
   const tc = useTranslations("deliveryCart");
   const ts = useTranslations("staff");
@@ -107,6 +117,8 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [submitAllOpen, setSubmitAllOpen] = useState(false);
   const [submittingRowId, setSubmittingRowId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [windowFilter, setWindowFilter] = useState<WindowFilter>("all");
 
   const submitMutation = useSubmitShipmentRequest();
   const submitAllMutation = useSubmitAllShipmentRequests();
@@ -121,20 +133,40 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
   const rows = useMemo(() => data?.rows ?? [], [data?.rows]);
   const meta = data?.meta;
 
-  const counts = useMemo(() => buildCounts(rows), [rows]);
+  const filteredRows = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return rows.filter((row) => {
+      const ws = getWindowStatus(row.appointmentDate);
+      if (windowFilter !== "all" && ws !== windowFilter) return false;
+      if (!q) return true;
+      const tireSetLabel =
+        row.sets.length > 0
+          ? row.sets[0].label
+          : row.setCount > 0
+            ? `${row.setCount} set(s)`
+            : "";
+      const hay = [
+        row.primaryCustomerName,
+        ...row.customerNames,
+        row.vehicleLabel,
+        row.vehiclePlate,
+        tireSetLabel,
+        row.notes,
+        row.address,
+        formatLocaleDate(row.appointmentDate, locale),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [rows, searchQuery, windowFilter, locale]);
+
+  const counts = useMemo(() => buildCounts(filteredRows), [filteredRows]);
   const loading = isPending || (isFetching && !data);
 
   const borderColor =
     "border-[var(--color-surface-light-container)] dark:border-[var(--color-surface-container-high)]";
-
-  function formatDate(d: Date | null) {
-    if (!d) return "—";
-    try {
-      return d.toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
-    } catch {
-      return "—";
-    }
-  }
 
   function onAddItem() {
     setAddItemOpen(true);
@@ -221,6 +253,39 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
         />
       ) : null}
 
+      <div className="flex shrink-0 flex-col gap-3 py-1 sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="relative min-w-0 flex-1 sm:min-w-[220px]">
+          <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder={tc("searchPlaceholder")}
+            className="w-full ps-9"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label={tc("searchPlaceholder")}
+          />
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <span className="text-label-sm font-medium text-muted-foreground sm:me-1">
+            {tc("filterWindowLabel")}
+          </span>
+          <Select value={windowFilter} onValueChange={(v) => setWindowFilter(v as WindowFilter)}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{tc("filterAllWindows")}</SelectItem>
+              <SelectItem value="ok">{tc("filterWindowOk")}</SelectItem>
+              <SelectItem value="approaching">{tc("filterWindowApproaching")}</SelectItem>
+              <SelectItem value="expired">{tc("filterWindowExpired")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <p className="w-full text-end text-body-md text-muted-foreground sm:ms-auto sm:w-auto">
+          {tc("showingCount", { count: filteredRows.length })}
+        </p>
+      </div>
+
       {/* ── Table ── */}
       <div
         className={cn(
@@ -240,7 +305,6 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
               {[
                 tc("colCustomer"),
                 tc("colTireSet"),
-                tc("colAddress"),
                 tc("colApptDate"),
                 tc("colNotes"),
                 tc("colStatus"),
@@ -276,7 +340,6 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
                         <Skeleton className="h-3 w-[55%]" />
                       </td>
                       <td className={cn(cellCls, "text-center")}><Skeleton className="mx-auto h-4 w-[60%]" /></td>
-                      <td className={cn(cellCls, "text-center")}><Skeleton className="mx-auto h-4 w-[50%]" /></td>
                       <td className={cn(cellCls, "text-center")}><Skeleton className="mx-auto h-4 w-[55%]" /></td>
                       <td className={cn(cellCls, "text-center")}><Skeleton className="mx-auto h-4 w-[40%]" /></td>
                       <td className={cn(cellCls, "text-center")}><Skeleton className="mx-auto h-6 w-20 rounded-full" /></td>
@@ -287,15 +350,15 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
                   );
                 })}
               </>
-            ) : rows.length === 0 ? (
+            ) : filteredRows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="h-32 text-center text-body-md text-muted-foreground">
+                <td colSpan={6} className="h-32 text-center text-body-md text-muted-foreground">
                   {tc("empty")}
                 </td>
               </tr>
             ) : (
-              rows.map((row, idx) => {
-                const isLast = idx === rows.length - 1;
+              filteredRows.map((row, idx) => {
+                const isLast = idx === filteredRows.length - 1;
                 const ws = getWindowStatus(row.appointmentDate);
 
                 /* vehicle subtitle: "Toyota Camry — ABC-1234" */
@@ -336,14 +399,9 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
                       {tireSetLabel}
                     </td>
 
-                    {/* Address */}
-                    <td className={cn(cellBase, "text-center text-muted-foreground")}>
-                      {row.address || "—"}
-                    </td>
-
                     {/* Appointment date */}
                     <td className={cn(cellBase, "text-center whitespace-nowrap font-medium")}>
-                      {formatDate(row.appointmentDate)}
+                      {formatLocaleDate(row.appointmentDate, locale)}
                     </td>
 
                     {/* Notes */}
@@ -395,10 +453,10 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
           </tbody>
 
           {/* Footer */}
-          {!loading && rows.length > 0 ? (
+          {!loading && filteredRows.length > 0 ? (
             <tfoot className={cn("border-t-2 bg-[var(--color-surface-light-container)]/80 dark:bg-[var(--color-surface-container-high)]/40 font-medium", borderColor)}>
               <tr>
-                <td colSpan={7} className="px-4 py-3">
+                <td colSpan={6} className="px-4 py-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     {/* Counts */}
                     <div className="flex flex-wrap items-center gap-0 divide-x divide-border/70 text-body-sm">
@@ -468,15 +526,15 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
       />
 
       <Dialog open={submitAllOpen} onOpenChange={setSubmitAllOpen}>
-        <DialogContent className={cn("max-w-md", DIALOG_SHELL_CLASS)}>
-          <DialogHeader className="space-y-2 text-start">
+        <ConfirmDialogContent>
+          <div className="space-y-2 text-start">
             <DialogTitle className="text-lg font-semibold leading-tight text-foreground">
               {tc("submitAllConfirmTitle")}
             </DialogTitle>
             <DialogDescription className="text-body-sm leading-relaxed text-muted-foreground">
               {tc("submitAllConfirmDescription", { count: counts.ready })}
             </DialogDescription>
-          </DialogHeader>
+          </div>
           <DialogFooter className="mt-6 flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
             <Button type="button" variant="outline" onClick={() => setSubmitAllOpen(false)}>
               {tc("submitAllCancel")}
@@ -498,7 +556,7 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
               )}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </ConfirmDialogContent>
       </Dialog>
     </div>
   );

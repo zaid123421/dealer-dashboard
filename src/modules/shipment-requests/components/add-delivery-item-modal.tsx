@@ -7,12 +7,8 @@ import { toast } from "sonner";
 import { CalendarIcon, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
+import { DialogTitle, FormDialogContent, FormDialogHeader } from "@/components/ui/app-dialog";
 import { FieldHint, Label, OptionalMark, RequiredMark } from "@/components/ui/label";
 import {
   Select,
@@ -27,8 +23,7 @@ import {
   type SearchableComboboxOption,
 } from "@/components/ui/searchable-combobox";
 import { cn } from "@/lib/utils";
-import { CART_MODAL_CONTENT_CLASS } from "@/lib/cart-modal-styles";
-import { PRIMARY_BUTTON_RESPONSIVE } from "@/lib/primary-button-styles";
+import { CART_MODAL_SUBMIT_RESPONSIVE } from "@/lib/dialog-styles";
 import { useDealerId } from "@/shared/hooks/use-can-access";
 import { useDealerCustomersInfinite } from "@/modules/customers/hooks/use-my-dealer-customers";
 import { useCustomerVehicles } from "@/modules/vehicles/hooks/use-customer-vehicles";
@@ -307,12 +302,9 @@ export function AddDeliveryItemModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={cn(
-          "flex w-[calc(100%-1rem)] max-h-[min(100dvh-0.75rem,920px)] max-w-[calc(100vw-1rem)] flex-col overflow-hidden border-0 p-0 sm:w-full",
-          CART_MODAL_CONTENT_CLASS,
-          isSuggestionsStep ? "sm:max-w-2xl" : "sm:max-w-lg",
-        )}
+      <FormDialogContent
+        size={isSuggestionsStep ? "lg" : "md"}
+        className="flex max-h-[min(100dvh-0.75rem,920px)] w-[calc(100%-1rem)] max-w-[calc(100vw-1rem)] flex-col sm:w-full"
       >
         {isSuggestionsStep && createdDeliveryId != null ? (
           <div className="flex min-h-0 flex-1 flex-col">
@@ -327,11 +319,11 @@ export function AddDeliveryItemModal({
         ) : (
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="shrink-0 space-y-3 px-4 pb-4 pt-4 pe-12 sm:px-6 sm:pt-6">
-              <DialogHeader>
+              <FormDialogHeader className="p-0">
                 <DialogTitle className="text-start text-base leading-snug sm:text-lg">
                   {tc("addDeliveryItem")}
                 </DialogTitle>
-              </DialogHeader>
+              </FormDialogHeader>
 
               <MiniStepperHeader active={1} tc={tStep} />
             </div>
@@ -499,7 +491,7 @@ export function AddDeliveryItemModal({
             </div>
             </div>
 
-            <div className="flex shrink-0 flex-col-reverse gap-2 bg-card px-4 py-3 sm:flex-row sm:justify-end sm:px-6">
+            <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-[var(--border)] bg-surface-container px-4 py-3 sm:flex-row sm:justify-end sm:px-6">
               <Button
                 type="button"
                 variant="outline"
@@ -512,7 +504,7 @@ export function AddDeliveryItemModal({
               <Button
                 type="button"
                 variant="brand"
-                className={PRIMARY_BUTTON_RESPONSIVE}
+                className={CART_MODAL_SUBMIT_RESPONSIVE}
                 onClick={() => void handleSubmit()}
                 disabled={isSubmitting}
               >
@@ -521,7 +513,7 @@ export function AddDeliveryItemModal({
             </div>
           </div>
         )}
-      </DialogContent>
+      </FormDialogContent>
     </Dialog>
   );
 }

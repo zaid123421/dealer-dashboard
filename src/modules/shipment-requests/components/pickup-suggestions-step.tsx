@@ -97,7 +97,7 @@ function StepperHeader({
 
 function CardSkeleton() {
   return (
-    <div className="rounded-lg border-2 border-border/60 bg-card p-3 shadow-sm sm:p-4">
+    <div className="rounded-lg border-0 bg-surface-lightContainer dark:bg-surface-container p-3 sm:p-4">
       <div className="flex items-start gap-3">
         <Skeleton className="size-9 rounded-lg" />
         <div className="flex-1 space-y-2">
@@ -130,7 +130,7 @@ function CandidateCard({
       aria-checked={selected}
       onClick={onToggle}
       className={cn(
-        "group relative w-full overflow-hidden rounded-lg border-2 bg-card p-3 text-start shadow-sm sm:p-4",
+        "group relative w-full overflow-hidden rounded-lg border-0 bg-surface-lightContainer dark:bg-surface-container p-3 text-start sm:p-4",
         "transition-all duration-[var(--duration-normal)]",
         "hover:border-amber-400/80 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60",
         selected

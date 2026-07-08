@@ -15,10 +15,10 @@
     --secondary: var(--color-secondary-main);
     --secondary-foreground: var(--color-secondary-on-surface);
 
-    --muted: var(--color-surface-container);
-    --muted-foreground: var(--color-secondary-container);
+    --muted: #ebe8e3;
+    --muted-foreground: var(--color-text-subtle);
 
-    --accent: var(--color-surface-container);
+    --accent: #e3dfd9;
     --accent-foreground: var(--color-secondary-main);
 
     --destructive: var(--color-error-main);
@@ -102,6 +102,17 @@
     font-size: var(--font-size-body-md);
     transition-duration: var(--duration-normal);
     transition-timing-function: var(--easing-standard);
+  }
+
+  /* Hide browser-native password reveal (avoids double eye icons) */
+  [data-slot="input"][type="password"]::-ms-reveal,
+  [data-slot="input"][type="password"]::-ms-clear {
+    display: none;
+  }
+
+  [data-slot="input"][type="password"]::-webkit-credentials-auto-fill-button,
+  [data-slot="input"][type="password"]::-webkit-strong-password-auto-fill-button {
+    display: none !important;
   }
 
   [data-slot="card"] {

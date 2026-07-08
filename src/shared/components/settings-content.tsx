@@ -14,29 +14,38 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Dialog } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+  FormDialogContent,
+  FormDialogFooter,
+  FormDialogHeader,
+  SuccessDialogContent,
+} from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeSwitcher } from "./theme-switcher";
 import { LocaleSwitcher } from "./locale-switcher";
-import { TABLE_BORDER } from "@/lib/table-border";
 import { cn } from "@/lib/utils";
-import { DIALOG_SHELL_CLASS } from "@/lib/radius";
 import { useDealerAccount } from "@/shared/hooks/use-dealer-account";
 import { DealerQuotaPanel } from "@/modules/dealer/components/dealer-quota-panel";
+import { RenewSubscriptionButton } from "@/modules/dealer/components/renew-subscription-actions";
+import { useSubscriptionRenewalContext } from "@/modules/dealer/hooks/use-subscription-renewal-context";
 import {
   changePasswordUseCase,
   ChangePasswordError,
 } from "@/application/auth/change-password.use-case";
 
 const MIN_PASSWORD_LENGTH = 8;
+
+/** Mobile-only card header: stack title + action vertically */
+const MOBILE_CARD_HEADER = cn(
+  "max-sm:grid-cols-1 max-sm:has-data-[slot=card-action]:grid-cols-1 max-sm:gap-3 max-sm:px-4 max-sm:pb-4",
+);
+const MOBILE_CARD_ACTION = cn(
+  "max-sm:col-start-1 max-sm:row-start-auto max-sm:w-full max-sm:justify-self-stretch max-sm:pt-0.5",
+);
 
 export function SettingsContent() {
   const t = useTranslations("settings");
@@ -63,6 +72,7 @@ export function SettingsContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [passwordSuccessOpen, setPasswordSuccessOpen] = useState(false);
+  const renewalContext = useSubscriptionRenewalContext();
 
   function resetChangePasswordForm() {
     setCurrentPassword("");
@@ -119,37 +129,39 @@ export function SettingsContent() {
 
   return (
     <>
-      <div className="space-y-6 break-words">
+      <div className="min-w-0 space-y-6 break-words max-sm:space-y-4">
         <div>
-          <h1 className="text-headline-sm font-bold text-foreground">
+          <h1 className="text-headline-sm font-bold text-foreground max-sm:text-title-lg">
             {t("title")}
           </h1>
-          <p className="mt-2 text-body-md text-subtle">
+          <p className="mt-2 text-body-md text-subtle max-sm:mt-1.5 max-sm:text-body-sm">
             {t("subtitle")}
           </p>
         </div>
 
-        <div className="space-y-6">
-          <Card className={cn("rounded-lg bg-card shadow-none", TABLE_BORDER)}>
-            <CardHeader>
+        <div className="space-y-6 max-sm:space-y-4">
+          <Card className="max-sm:gap-4 max-sm:py-4">
+            <CardHeader className="max-sm:px-4">
               <CardTitle className="text-title-lg font-semibold text-foreground">{t("accountSection")}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="max-sm:px-4">
               <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
                 <div
-                  className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary-dark/20 text-sm font-bold uppercase tracking-tight text-primary-dark"
+                  className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary-dark/20 text-sm font-bold uppercase tracking-tight text-primary-dark max-sm:size-12"
                   aria-hidden
                 >
                   {avatarInitials}
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">{roleDisplay}</p>
-                  <p className="text-title-md font-semibold text-foreground leading-tight">{displayName}</p>
+                  <p className="text-title-md font-semibold leading-tight text-foreground">{displayName}</p>
                   {user?.email ? (
-                    <p className="mt-1 truncate text-body-sm text-muted-foreground">{user.email}</p>
+                    <p className="mt-1 truncate text-body-sm text-muted-foreground max-sm:break-all max-sm:whitespace-normal">
+                      {user.email}
+                    </p>
                   ) : null}
                   {user?.tenantName ? (
-                    <p className="mt-0.5 truncate text-body-sm text-muted-foreground">
+                    <p className="mt-0.5 truncate text-body-sm text-muted-foreground max-sm:whitespace-normal">
                       {user.tenantName}
                       {dealerUniqueId ? (
                         <span className="text-muted-foreground/80"> · {dealerUniqueId}</span>
@@ -172,28 +184,60 @@ export function SettingsContent() {
             </CardContent>
           </Card>
 
-          <Card className={cn("rounded-lg bg-card shadow-none", TABLE_BORDER)}>
-            <CardHeader>
+          <Card className="max-sm:gap-4 max-sm:py-4">
+            <CardHeader
+              className={cn(
+                "border-b border-[var(--color-surface-light-container)] pb-6 dark:border-[var(--color-surface-container-high)]",
+                MOBILE_CARD_HEADER,
+              )}
+            >
               <CardTitle className="text-title-lg font-semibold text-foreground">
                 {t("subscriptionSection")}
               </CardTitle>
+              {renewalContext.showRenewInSettings ? (
+                <CardAction className={MOBILE_CARD_ACTION}>
+                  <RenewSubscriptionButton
+                    urgency={
+                      renewalContext.showRenewPrimary
+                        ? "inactive"
+                        : renewalContext.showRenewOutline
+                          ? "expiring"
+                          : "default"
+                    }
+                    variant={
+                      renewalContext.showRenewPrimary ? "brand" : "outline"
+                    }
+                    className="max-sm:w-full"
+                  />
+                </CardAction>
+              ) : null}
             </CardHeader>
-            <CardContent>
+            <CardContent className="max-sm:px-4">
               <DealerQuotaPanel showRoles variant="full" />
             </CardContent>
           </Card>
 
-          <Card className={cn("rounded-lg bg-card shadow-none", TABLE_BORDER)}>
-            <CardHeader className="border-b border-[var(--color-surface-light-container)] pb-6 dark:border-[var(--color-surface-container-high)]">
+          <Card className="max-sm:gap-4 max-sm:py-4">
+            <CardHeader
+              className={cn(
+                "border-b border-[var(--color-surface-light-container)] pb-6 dark:border-[var(--color-surface-container-high)]",
+                MOBILE_CARD_HEADER,
+              )}
+            >
               <CardTitle className="text-title-lg font-semibold text-foreground">{t("securitySection")}</CardTitle>
               <CardDescription className="text-body-md text-muted-foreground">
                 {t("securitySectionHint")}
               </CardDescription>
-              <CardAction>
+              <CardAction className={MOBILE_CARD_ACTION}>
                 <Button
                   type="button"
                   variant="outline"
-                  className="gap-2 border-border shrink-0 w-full sm:w-auto"
+                  className={cn(
+                    "h-10 shrink-0 font-semibold shadow-none max-sm:w-full",
+                    "border-primary-dark/25 bg-card text-primary-dark hover:border-primary-dark/40 hover:bg-primary-dark/5",
+                    "dark:border-primary-dark/35 dark:hover:bg-primary-dark/10",
+                    "sm:w-auto",
+                  )}
                   onClick={() => setChangePasswordOpen(true)}
                 >
                   <Lock className="size-4 shrink-0" aria-hidden />
@@ -203,11 +247,11 @@ export function SettingsContent() {
             </CardHeader>
           </Card>
 
-          <Card className={cn("rounded-lg bg-card shadow-none", TABLE_BORDER)}>
-            <CardHeader>
+          <Card className="max-sm:gap-4 max-sm:py-4">
+            <CardHeader className="max-sm:px-4">
               <CardTitle className="text-title-lg font-semibold text-foreground">{t("appearanceSection")}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="max-sm:px-4">
               <div className="flex flex-col gap-6 sm:flex-row sm:flex-wrap sm:items-start sm:gap-8">
                 <div className="flex min-w-0 flex-col gap-2">
                   <span className="text-label-md font-medium text-foreground">{t("themeLabel")}</span>
@@ -224,16 +268,19 @@ export function SettingsContent() {
       </div>
 
       <Dialog open={changePasswordOpen} onOpenChange={onChangePasswordOpenChange}>
-        <DialogContent className={cn("max-w-md gap-0 overflow-hidden p-0")}>
-          <DialogHeader className="p-6 pb-4 text-start">
+        <FormDialogContent
+          size="md"
+          className="max-sm:w-[calc(100%-1.5rem)] max-sm:max-h-[min(92vh,640px)]"
+        >
+          <FormDialogHeader>
             <DialogTitle>{t("changePasswordModalTitle")}</DialogTitle>
             <DialogDescription>{t("changePasswordModalDescription")}</DialogDescription>
-          </DialogHeader>
+          </FormDialogHeader>
 
           <form
             id="settings-change-password-form"
             onSubmit={handleChangePassword}
-            className="space-y-4 p-6 pt-4"
+            className="space-y-4 px-6 py-4 max-sm:px-4"
           >
             <div className="space-y-2">
               <Label htmlFor="settings-current-password" className="text-label-md">
@@ -326,7 +373,7 @@ export function SettingsContent() {
             </div>
           </form>
 
-          <DialogFooter className="gap-2 p-6 pt-4 sm:space-x-0">
+          <FormDialogFooter>
             <Button
               type="button"
               variant="outline"
@@ -345,27 +392,22 @@ export function SettingsContent() {
             >
               {t("updatePasswordButton")}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </FormDialogFooter>
+        </FormDialogContent>
       </Dialog>
 
       <Dialog open={passwordSuccessOpen} onOpenChange={setPasswordSuccessOpen}>
-        <DialogContent
-          className={cn(
-            "max-w-[calc(100%-2rem)] sm:max-w-sm [&>button.absolute]:hidden",
-            DIALOG_SHELL_CLASS,
-          )}
-        >
+        <SuccessDialogContent>
           <div className="flex flex-col items-center gap-3 pb-1 pt-1 text-center">
             <div className="flex size-12 items-center justify-center rounded-full bg-primary/15 text-primary">
               <CheckCircle2 className="size-7 stroke-[2]" aria-hidden />
             </div>
-            <DialogHeader className="space-y-2 text-center sm:text-center">
+            <div className="space-y-2 text-center">
               <DialogTitle className="text-title-md">{t("passwordChangeSuccessTitle")}</DialogTitle>
               <DialogDescription className="text-body-sm text-muted-foreground">
                 {t("passwordChangeSuccess")}
               </DialogDescription>
-            </DialogHeader>
+            </div>
             <Button
               type="button"
               variant="brand"
@@ -375,7 +417,7 @@ export function SettingsContent() {
               {tCommon("ok")}
             </Button>
           </div>
-        </DialogContent>
+        </SuccessDialogContent>
       </Dialog>
     </>
   );

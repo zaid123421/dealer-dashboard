@@ -31,7 +31,7 @@ export function PaginationControls({
       className={cn("flex items-center justify-center", className)}
       aria-label={pageLabel}
     >
-      <div className="inline-flex h-12 items-center gap-4 rounded-full bg-secondary-main p-1 shadow-md dark:bg-surface-high">
+      <div className="inline-flex h-12 items-center gap-4 rounded-full bg-muted p-1 shadow-md dark:bg-surface-high">
         <Button
           type="button"
           size="icon"
@@ -43,7 +43,7 @@ export function PaginationControls({
           <ChevronLeft className="size-5" />
         </Button>
 
-        <span className="min-w-16 text-center text-body-sm font-semibold text-secondary-onSurface">
+        <span className="min-w-16 text-center text-body-sm font-semibold text-foreground dark:text-secondary-onSurface">
           {pageText}
         </span>
 

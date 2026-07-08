@@ -4,6 +4,11 @@ import { Ban } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import type { QuotaResource } from "@/modules/dealer/lib/dealer-quota";
+import {
+  RenewSubscriptionButton,
+  SubscriptionRenewalContactHint,
+} from "@/modules/dealer/components/renew-subscription-actions";
+import { useSubscriptionRenewalContext } from "@/modules/dealer/hooks/use-subscription-renewal-context";
 
 export type DealerQuotaNoticeVariant =
   | "subscription"
@@ -32,6 +37,7 @@ export function DealerQuotaNotice({
   requestedTireCount,
 }: DealerQuotaNoticeProps) {
   const t = useTranslations("quota");
+  const renewalContext = useSubscriptionRenewalContext();
 
   const message = (() => {
     switch (variant) {
@@ -69,7 +75,16 @@ export function DealerQuotaNotice({
       role="alert"
     >
       <Ban className="mt-px size-4 shrink-0" aria-hidden />
-      <p className="text-sm leading-snug">{message}</p>
+      <div className="space-y-1.5">
+        <p className="text-sm leading-snug">{message}</p>
+        {variant === "subscription" ? (
+          renewalContext.showRenewPrimary ? (
+            <RenewSubscriptionButton urgency="inactive" variant="link" />
+          ) : renewalContext.showContactAdmin ? (
+            <SubscriptionRenewalContactHint className="text-[var(--color-error-main)]/75" />
+          ) : null
+        ) : null}
+      </div>
     </div>
   );
 }

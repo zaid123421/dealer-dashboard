@@ -109,7 +109,7 @@ export default function AddCustomerPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <Card className="border-0 bg-[var(--card)] shadow-xs">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-foreground">
               <User className="size-5 text-primary-dark" />
@@ -179,7 +179,7 @@ export default function AddCustomerPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-[var(--card)] shadow-xs">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-foreground">
               <MapPin className="size-5 text-primary-dark" />

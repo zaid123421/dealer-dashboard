@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
@@ -24,11 +25,15 @@ import {
   mapDealerCustomerFormToRequest,
   type CreateDealerCustomerFormValues,
 } from "@/modules/customers/schemas/create-dealer-customer.schema";
-import { dealerCustomerToFormValues } from "@/modules/customers/lib/customer-form-mapper";
-import { useDealerCustomer } from "@/modules/customers/hooks/use-dealer-customer";
+import { dealerCustomerToFormValuesAsync } from "@/modules/customers/lib/customer-form-mapper";
+import { useDealerCustomer, dealerCustomerDetailQueryKey } from "@/modules/customers/hooks/use-dealer-customer";
 import { useUpdateDealerCustomer } from "@/modules/customers/hooks/use-update-dealer-customer";
 import { DealerCustomerAddressRegionFields } from "@/modules/customers/components/dealer-customer-address-region-fields";
 import { PhoneWithCountryCodeField } from "@/modules/customers/components/phone-with-country-code-field";
+import {
+  addressLookupKeys,
+} from "@/modules/addresses/hooks/use-address-lookups";
+import { fetchAddressCountries } from "@/modules/addresses/services/address-base.service";
 
 const emptyFormValues: CreateDealerCustomerFormValues = {
   firstName: "",
@@ -58,6 +63,29 @@ export default function EditCustomerPage() {
 
   const { data: customer, isPending, isError, error } = useDealerCustomer(customerIdParam);
   const updateCustomer = useUpdateDealerCustomer();
+  const queryClient = useQueryClient();
+
+  const savedRegionLabels = customer?.address
+    ? {
+        country: customer.address.country,
+        province: customer.address.province,
+        city: customer.address.city,
+      }
+    : undefined;
+
+  const { data: resolvedFormValues, isPending: isResolvingForm } = useQuery({
+    queryKey: [...dealerCustomerDetailQueryKey(customerIdParam), "form-values"] as const,
+    queryFn: () => dealerCustomerToFormValuesAsync(customer!),
+    enabled: customer != null,
+    staleTime: 0,
+  });
+
+  useEffect(() => {
+    void queryClient.prefetchQuery({
+      queryKey: addressLookupKeys.countries(),
+      queryFn: fetchAddressCountries,
+    });
+  }, [queryClient]);
 
   const formSchema = useMemo(
     () =>
@@ -82,10 +110,10 @@ export default function EditCustomerPage() {
   });
 
   useEffect(() => {
-    if (customer) {
-      reset(dealerCustomerToFormValues(customer));
+    if (resolvedFormValues) {
+      reset(resolvedFormValues);
     }
-  }, [customer, reset]);
+  }, [resolvedFormValues, reset]);
 
   function onSubmit(data: CreateDealerCustomerFormValues) {
     const idNum = customerIdParam != null ? Number(customerIdParam) : NaN;
@@ -108,7 +136,7 @@ export default function EditCustomerPage() {
   const addrErr = errors.address;
   const phoneFieldInvalid = !!errors.phoneLocal;
 
-  if (isPending) {
+  if (isPending || isResolvingForm || !resolvedFormValues) {
     return (
       <div className="flex min-h-[200px] items-center justify-center">
         <div className="text-body-md text-muted-foreground">{t("loading")}</div>
@@ -234,6 +262,7 @@ export default function EditCustomerPage() {
               control={control}
               setValue={setValue}
               errors={addrErr}
+              savedRegionLabels={savedRegionLabels}
             />
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">

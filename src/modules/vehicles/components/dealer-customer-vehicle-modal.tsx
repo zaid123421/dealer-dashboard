@@ -7,14 +7,14 @@ import { useTranslations } from "next-intl";
 import { Car, Info, User } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+  FormDialogContent,
+  FormDialogFooter,
+  FormDialogHeader,
+} from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
 import { FieldError, Label, RequiredMark } from "@/components/ui/label";
 import {
@@ -138,19 +138,16 @@ export function DealerCustomerVehicleModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-h-[min(90vh,720px)] w-full max-w-2xl overflow-y-auto gap-0 overflow-hidden p-0"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
+      <FormDialogContent size="lg" onOpenAutoFocus={(e) => e.preventDefault()}>
         <div className="px-6 pb-4 pt-6">
-          <DialogHeader>
+          <FormDialogHeader className="p-0">
             <DialogTitle>
               {isEdit ? t("editVehicleTitle") : t("addVehicleTitle")}
             </DialogTitle>
             <DialogDescription className="sr-only">
               {isEdit ? t("editVehicleSubtitle") : t("addVehicleSubtitle")}
             </DialogDescription>
-          </DialogHeader>
+          </FormDialogHeader>
           <div className="mt-4 flex min-w-0 items-center gap-3 rounded-lg border border-border bg-muted/20 p-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-dark/15 text-primary-dark">
               <User className="size-5" />
@@ -273,7 +270,7 @@ export function DealerCustomerVehicleModal({
           </div>
         </form>
 
-        <DialogFooter className="px-6 py-4 gap-2 sm:justify-end sm:gap-0">
+        <FormDialogFooter>
           <Button
             type="button"
             variant="outline"
@@ -292,8 +289,8 @@ export function DealerCustomerVehicleModal({
           >
             {mutationPending ? t("loading") : isEdit ? t("saveVehicleChanges") : t("saveVehicle")}
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </FormDialogFooter>
+      </FormDialogContent>
     </Dialog>
   );
 }

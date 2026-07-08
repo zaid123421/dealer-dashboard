@@ -14,7 +14,6 @@ import { TireSetDetailsPageSkeleton } from '@/modules/tire-sets/components/tire-
 import { deleteTireSetService } from '@/modules/tire-sets/services/tire-set.service'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { useDealerCustomer } from '@/modules/customers/hooks/use-dealer-customer'
 import { useVehicleDetails } from '@/modules/vehicles/hooks/use-vehicle-details'
 import { formatVehicleLabel } from '@/lib/format-table-cell'
@@ -105,18 +104,19 @@ export default function TireDetailsPage() {
   if (!tireSet) {
     return (
       <div className="flex flex-col gap-6">
-        <Card className="border-yellow-200 bg-yellow-50">
-          <CardContent className="flex items-start gap-4 pt-6">
-            <AlertCircle className="size-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h2 className="font-semibold text-yellow-900">Tire Set Not Found</h2>
-              <Button variant="outline" size="sm" onClick={handleBack} className="mt-4">
-                <ArrowLeft className="size-4 mr-2" />
-                {t('tireGoBack')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div
+          role="alert"
+          className="flex items-start gap-4 rounded-lg border border-yellow-200 bg-yellow-50 p-6 dark:border-yellow-800 dark:bg-yellow-950/30"
+        >
+          <AlertCircle className="size-5 text-yellow-600 flex-shrink-0 mt-0.5 dark:text-yellow-500" />
+          <div className="flex-1">
+            <h2 className="font-semibold text-yellow-900 dark:text-yellow-100">Tire Set Not Found</h2>
+            <Button variant="outline" size="sm" onClick={handleBack} className="mt-4">
+              <ArrowLeft className="size-4 mr-2" />
+              {t('tireGoBack')}
+            </Button>
+          </div>
+        </div>
       </div>
     )
   }

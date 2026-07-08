@@ -23,7 +23,10 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
-      <body className={locale === "ar" ? "font-arabic" : "font-english"}>
+      <body
+        className={locale === "ar" ? "font-arabic" : "font-english"}
+        suppressHydrationWarning
+      >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <NextIntlClientProvider messages={messages}>
             <QueryProvider>

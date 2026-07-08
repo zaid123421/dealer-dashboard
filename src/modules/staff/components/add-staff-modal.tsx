@@ -8,14 +8,14 @@ import { UserCog } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+  FormDialogContent,
+  FormDialogFooter,
+  FormDialogHeader,
+} from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 import {
   createStaffFormSchema,
   dealerStaffMemberToFormValues,
@@ -186,12 +185,12 @@ export function AddStaffModal({ open, onOpenChange, staffToEdit = null }: AddSta
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-h-[min(90vh,720px)] w-full max-w-2xl overflow-y-auto gap-0 overflow-hidden p-0"
+      <FormDialogContent
+        size="lg"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="px-6 pb-4 pt-6">
-          <DialogHeader>
+          <FormDialogHeader className="p-0">
             <DialogTitle>{isEdit ? t("editStaffTitle") : t("addStaffTitle")}</DialogTitle>
             <DialogDescription
               className={isEdit ? "text-label-sm text-muted-foreground" : "sr-only"}
@@ -201,7 +200,7 @@ export function AddStaffModal({ open, onOpenChange, staffToEdit = null }: AddSta
             {isEdit && detailQuery.isPending ? (
               <p className="mt-2 text-body-sm text-muted-foreground">{t("loadingStaffDetails")}</p>
             ) : null}
-          </DialogHeader>
+          </FormDialogHeader>
           <div className="mt-4 flex min-w-0 items-center gap-3 rounded-lg border border-border bg-muted/20 p-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-dark/15 text-primary-dark">
               <UserCog className="size-5" />
@@ -253,31 +252,14 @@ export function AddStaffModal({ open, onOpenChange, staffToEdit = null }: AddSta
                 type="email"
                 autoComplete="email"
                 placeholder={t("emailPlaceholder")}
-                className={cn(errors.email && "border-destructive")}
+                aria-invalid={!!errors.email}
                 disabled={formLocked}
                 {...register("email")}
               />
               {errors.email ? (
-                <p className="text-label-sm text-error-main">{errors.email.message}</p>
+                <p className="text-sm text-error-main">{errors.email.message}</p>
               ) : null}
             </div>
-
-            {isEdit ? (
-              <div className="space-y-2">
-                <Label htmlFor="staff-username">{t("username")}</Label>
-                <Input
-                  id="staff-username"
-                  autoComplete="username"
-                  placeholder={t("usernamePlaceholder")}
-                  className={cn(errors.username && "border-destructive")}
-                  disabled={formLocked}
-                  {...register("username")}
-                />
-                {errors.username ? (
-                  <p className="text-label-sm text-error-main">{errors.username.message}</p>
-                ) : null}
-              </div>
-            ) : null}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -286,12 +268,12 @@ export function AddStaffModal({ open, onOpenChange, staffToEdit = null }: AddSta
                   id="staff-firstName"
                   autoComplete="given-name"
                   placeholder={t("firstNamePlaceholder")}
-                  className={cn(errors.firstName && "border-destructive")}
+                  aria-invalid={!!errors.firstName}
                   disabled={formLocked}
                   {...register("firstName")}
                 />
                 {errors.firstName ? (
-                  <p className="text-label-sm text-error-main">{errors.firstName.message}</p>
+                  <p className="text-sm text-error-main">{errors.firstName.message}</p>
                 ) : null}
               </div>
               <div className="space-y-2">
@@ -300,28 +282,28 @@ export function AddStaffModal({ open, onOpenChange, staffToEdit = null }: AddSta
                   id="staff-lastName"
                   autoComplete="family-name"
                   placeholder={t("lastNamePlaceholder")}
-                  className={cn(errors.lastName && "border-destructive")}
+                  aria-invalid={!!errors.lastName}
                   disabled={formLocked}
                   {...register("lastName")}
                 />
                 {errors.lastName ? (
-                  <p className="text-label-sm text-error-main">{errors.lastName.message}</p>
+                  <p className="text-sm text-error-main">{errors.lastName.message}</p>
                 ) : null}
               </div>
             </div>
 
-            <div className={cn("grid gap-4", isEdit ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="staff-position">{t("position")}</Label>
                 <Input
                   id="staff-position"
                   placeholder={t("positionPlaceholder")}
-                  className={cn(errors.position && "border-destructive")}
+                  aria-invalid={!!errors.position}
                   disabled={formLocked}
                   {...register("position")}
                 />
                 {errors.position ? (
-                  <p className="text-label-sm text-error-main">{errors.position.message}</p>
+                  <p className="text-sm text-error-main">{errors.position.message}</p>
                 ) : null}
               </div>
               <div className="space-y-2">
@@ -337,8 +319,7 @@ export function AddStaffModal({ open, onOpenChange, staffToEdit = null }: AddSta
                     >
                       <SelectTrigger
                         id="staff-role"
-                        className={cn(errors.role && "border-destructive")}
-                        aria-invalid={errors.role ? true : undefined}
+                        aria-invalid={!!errors.role}
                       >
                         <SelectValue placeholder={t("selectRolePlaceholder")} />
                       </SelectTrigger>
@@ -368,24 +349,9 @@ export function AddStaffModal({ open, onOpenChange, staffToEdit = null }: AddSta
                   <ErrorAlert message={t("rolesLoadError")} className="px-3 py-2" />
                 ) : null}
                 {errors.role ? (
-                  <p className="text-label-sm text-error-main">{errors.role.message}</p>
+                  <p className="text-sm text-error-main">{errors.role.message}</p>
                 ) : null}
               </div>
-              {isEdit ? (
-                <div className="space-y-2">
-                  <Label htmlFor="staff-accessLevel">{t("accessLevel")}</Label>
-                  <Input
-                    id="staff-accessLevel"
-                    placeholder={t("accessLevelPlaceholder")}
-                    className={cn(errors.accessLevel && "border-destructive")}
-                    disabled={formLocked}
-                    {...register("accessLevel")}
-                  />
-                  {errors.accessLevel ? (
-                    <p className="text-label-sm text-error-main">{errors.accessLevel.message}</p>
-                  ) : null}
-                </div>
-              ) : null}
             </div>
 
             <div className="space-y-2">
@@ -395,14 +361,14 @@ export function AddStaffModal({ open, onOpenChange, staffToEdit = null }: AddSta
                 rows={3}
                 placeholder={t("notesPlaceholder")}
                 disabled={formLocked}
-                className={cn(errors.notes && "border-destructive")}
+                aria-invalid={!!errors.notes}
                 {...register("notes")}
               />
             </div>
           </div>
         </form>
 
-        <DialogFooter className="px-6 py-4 gap-2 sm:justify-end sm:gap-0">
+        <FormDialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={formLocked} className="w-full sm:w-auto">
             {tCommon("cancel")}
           </Button>
@@ -415,8 +381,8 @@ export function AddStaffModal({ open, onOpenChange, staffToEdit = null }: AddSta
           >
             {pending ? t("savingStaff") : isEdit ? t("saveStaffChanges") : t("saveStaff")}
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </FormDialogFooter>
+      </FormDialogContent>
     </Dialog>
   );
 }

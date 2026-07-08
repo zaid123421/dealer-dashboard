@@ -1,6 +1,8 @@
 'use client'
 
+import { useLocale } from 'next-intl'
 import { TireDetail } from '../types'
+import { formatLocaleNumber } from '@/lib/format-locale'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,6 +14,7 @@ interface TireCardProps {
 }
 
 export function TireCard({ tire, onSelect }: TireCardProps) {
+  const locale = useLocale()
   const handleClick = () => {
     onSelect?.(tire)
   }
@@ -24,7 +27,7 @@ export function TireCard({ tire, onSelect }: TireCardProps) {
       className="h-auto p-0 justify-start"
       onClick={handleClick}
     >
-      <Card className="w-full cursor-pointer hover:shadow-md transition-shadow">
+      <Card variant="interactive" className="w-full">
         <CardContent className="pt-6">
           <div className="space-y-4">
             {/* Header with position and status */}
@@ -51,7 +54,7 @@ export function TireCard({ tire, onSelect }: TireCardProps) {
                   Mileage
                 </p>
                 <p className="text-base">
-                  {tire.mileage ? `${tire.mileage.toLocaleString()} km` : '—'}
+                  {tire.mileage ? `${formatLocaleNumber(tire.mileage, locale)} km` : '—'}
                 </p>
               </div>
               <div>

@@ -10,13 +10,13 @@ const WHEEL_LABELS: Record<string, string> = {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  CREATED: 'bg-gray-100 text-gray-800 border-gray-200',
-  GOOD: 'bg-green-100 text-green-800 border-green-200',
-  FAIR: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  POOR: 'bg-orange-100 text-orange-800 border-orange-200',
-  CRITICAL: 'bg-red-100 text-red-800 border-red-200',
-  STORED: 'bg-blue-100 text-blue-900 border-blue-200',
-  SHIPPED: 'bg-orange-100 text-orange-900 border-orange-200',
+  CREATED: 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-500/15 dark:text-gray-300 dark:border-gray-500/30',
+  GOOD: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-500/15 dark:text-green-300 dark:border-green-500/30',
+  FAIR: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-300 dark:border-yellow-500/30',
+  POOR: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-500/15 dark:text-orange-300 dark:border-orange-500/30',
+  CRITICAL: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30',
+  STORED: 'bg-blue-100 text-blue-900 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30',
+  SHIPPED: 'bg-orange-100 text-orange-900 border-orange-200 dark:bg-orange-500/15 dark:text-orange-300 dark:border-orange-500/30',
 }
 
 export function getTireStatusBadgeClass(status: string): string {

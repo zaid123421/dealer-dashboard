@@ -5,13 +5,10 @@ import { useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { FieldHint, Label, OptionalMark, RequiredMark } from "@/components/ui/label";
+import { Dialog } from "@/components/ui/dialog";
+import { DialogTitle, FormDialogContent, FormDialogHeader } from "@/components/ui/app-dialog";
+import { FormField } from "@/components/ui/form-field";
+import { FieldHint } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -28,9 +25,7 @@ import { useDealerId } from "@/shared/hooks/use-can-access";
 import { useDealerCustomersInfinite } from "@/modules/customers/hooks/use-my-dealer-customers";
 import { useCustomerVehicles } from "@/modules/vehicles/hooks/use-customer-vehicles";
 import { useVehicleTireSets } from "@/modules/tire-sets/hooks/use-vehicle-tire-sets";
-import { CART_MODAL_CONTENT_CLASS } from "@/lib/cart-modal-styles";
-import { PRIMARY_BUTTON_RESPONSIVE } from "@/lib/primary-button-styles";
-import { cn } from "@/lib/utils";
+import { CART_MODAL_SUBMIT_RESPONSIVE } from "@/lib/dialog-styles";
 import { createPickupRequest } from "@/modules/shipment-requests/services/dealer-cart.service";
 
 const WEEK_DAYS = [
@@ -185,17 +180,15 @@ export function AddPickupItemModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("max-w-lg", CART_MODAL_CONTENT_CLASS)}>
-        <DialogHeader>
+      <FormDialogContent size="md">
+        <FormDialogHeader>
           <DialogTitle>{tp("addPickupItem")}</DialogTitle>
-        </DialogHeader>
+        </FormDialogHeader>
 
-        <div className="flex flex-col gap-4 py-1">
-          <div className="space-y-1.5">
-            <Label className="text-label-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {tc("fieldCustomer")} <RequiredMark />
-            </Label>
+        <div className="flex flex-col gap-4 px-6 py-4">
+          <FormField id="pickup-customer" label={tc("fieldCustomer")} required>
             <SearchableCombobox
+              id="pickup-customer"
               value={customerId}
               onValueChange={handleCustomerChange}
               options={customerOptions}
@@ -204,13 +197,11 @@ export function AddPickupItemModal({
               emptyText={tc("noCustomers")}
               disabled={dealerId == null}
             />
-          </div>
+          </FormField>
 
-          <div className="space-y-1.5">
-            <Label className="text-label-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {tc("fieldVehicle")} <RequiredMark />
-            </Label>
+          <FormField id="pickup-vehicle" label={tc("fieldVehicle")} required>
             <SearchableCombobox
+              id="pickup-vehicle"
               value={vehicleId}
               onValueChange={handleVehicleChange}
               options={vehicleOptions}
@@ -219,18 +210,16 @@ export function AddPickupItemModal({
               emptyText={tc("noVehiclesFound")}
               disabled={!customerId}
             />
-          </div>
+          </FormField>
 
-          <div className="space-y-1.5">
-            <Label className="text-label-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {tc("fieldTireSet")} <RequiredMark />
-            </Label>
+          <FormField id="pickup-tire-set" label={tc("fieldTireSet")} required>
             {!vehicleId ? (
               <FieldHint>{tc("tireSetsHintSelectVehicle")}</FieldHint>
             ) : tireSets.length === 0 ? (
               <FieldHint>{tc("noTireSets")}</FieldHint>
             ) : (
               <SearchableCombobox
+                id="pickup-tire-set"
                 value={tireSetId}
                 onValueChange={setTireSetId}
                 options={tireSetOptions}
@@ -240,20 +229,20 @@ export function AddPickupItemModal({
                 disabled={!vehicleId}
               />
             )}
-          </div>
+          </FormField>
 
-          <div className="space-y-1.5">
-            <Label className="text-label-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {tp("fieldPreferredDispatchDay")}{" "}
-              <OptionalMark>({tc("optional")})</OptionalMark>
-            </Label>
+          <FormField
+            id="pickup-preferred-day"
+            label={tp("fieldPreferredDispatchDay")}
+            optional={`(${tc("optional")})`}
+          >
             <Select
               value={preferredDaySelectValue}
               onValueChange={(v) =>
                 setPreferredDispatchDay(v === PREFERRED_DAY_NONE ? "" : v)
               }
             >
-              <SelectTrigger>
+              <SelectTrigger id="pickup-preferred-day">
                 <SelectValue placeholder={tc("preferredDayNone")} />
               </SelectTrigger>
               <SelectContent>
@@ -267,24 +256,25 @@ export function AddPickupItemModal({
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </FormField>
 
-          <div className="space-y-1.5">
-            <Label className="text-label-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {tc("fieldNotesModal")}{" "}
-              <OptionalMark>({tc("optional")})</OptionalMark>
-            </Label>
+          <FormField
+            id="pickup-notes"
+            label={tc("fieldNotesModal")}
+            optional={`(${tc("optional")})`}
+          >
             <Textarea
+              id="pickup-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={tc("notesPlaceholder")}
               rows={3}
               className="resize-none"
             />
-          </div>
+          </FormField>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex justify-end gap-2 border-t border-[var(--border)] px-6 py-4">
           <Button
             type="button"
             variant="outline"
@@ -296,14 +286,14 @@ export function AddPickupItemModal({
           <Button
             type="button"
             variant="brand"
-            className={PRIMARY_BUTTON_RESPONSIVE}
+            className={CART_MODAL_SUBMIT_RESPONSIVE}
             onClick={() => void handleSubmit()}
             disabled={isSubmitting}
           >
             {isSubmitting ? tc("addingToCart") : tc("addToCart")}
           </Button>
         </div>
-      </DialogContent>
+      </FormDialogContent>
     </Dialog>
   );
 }

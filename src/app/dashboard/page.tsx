@@ -12,7 +12,7 @@ export default async function DashboardPage() {
         </h1>
         <p className="mt-1 text-body-md text-subtle">{t("intro")}</p>
       </div>
-      <Card className="border-0 bg-surface-container">
+      <Card>
         <CardHeader>
           <CardTitle className="text-title-lg text-foreground">
             {t("title")}

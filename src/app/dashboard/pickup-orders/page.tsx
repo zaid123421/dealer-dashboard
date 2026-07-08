@@ -25,6 +25,7 @@ export default function PickupOrdersPage() {
       baseQuery={baseQuery}
       emptyText={tp("emptyOrders")}
       loadShipmentDetailsOnExpand
+      orderBookType="pickup"
     />
   );
 }

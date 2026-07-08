@@ -2,6 +2,7 @@
 
 import { AppSidebar } from "@/shared/components/app-sidebar";
 import { AuthBootstrap } from "@/shared/components/auth-bootstrap";
+import { RenewSubscriptionDialogProvider } from "@/modules/dealer/components/renew-subscription-dialog-provider";
 
 export default function DashboardLayout({
   children,
@@ -9,12 +10,14 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background sm:flex-row">
-      <AuthBootstrap />
-      <AppSidebar />
-      <main className="min-w-0 flex-1 overflow-auto p-3 sm:p-6">
-        {children}
-      </main>
-    </div>
+    <RenewSubscriptionDialogProvider>
+      <div className="flex h-screen flex-col overflow-hidden bg-background sm:flex-row">
+        <AuthBootstrap />
+        <AppSidebar />
+        <main className="min-w-0 flex-1 overflow-auto p-3 sm:p-6">
+          {children}
+        </main>
+      </div>
+    </RenewSubscriptionDialogProvider>
   );
 }

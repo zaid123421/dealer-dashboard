@@ -1,10 +1,14 @@
 "use client";
 
-import { Ban, Users, Layers } from "lucide-react";
+import { Ban, CalendarClock, Users, Layers } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
-import { TABLE_BORDER } from "@/lib/table-border";
 import { useDealerQuota } from "@/modules/dealer/hooks/use-dealer-quota";
+import { useSubscriptionRenewalContext } from "@/modules/dealer/hooks/use-subscription-renewal-context";
+import {
+  RenewSubscriptionButton,
+  SubscriptionRenewalContactHint,
+} from "@/modules/dealer/components/renew-subscription-actions";
 import type { QuotaResource } from "@/modules/dealer/lib/dealer-quota";
 import type { LucideIcon } from "lucide-react";
 
@@ -105,14 +109,14 @@ function QuotaCard({
   const pct = Math.min(100, Math.round(resource.usagePercentage));
 
   return (
-    <div className={cn("rounded-lg bg-card p-4 space-y-3", TABLE_BORDER)}>
+    <div className="rounded-lg border-0 bg-surface-lightContainer dark:bg-surface-container space-y-3 p-4 max-sm:p-3">
       {/* Header row */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
           <div className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg", styles.badge, "border")}>
             <Icon className="size-3.5" aria-hidden />
           </div>
-          <span className="text-sm font-semibold text-foreground truncate">{title}</span>
+          <span className="truncate text-sm font-semibold text-foreground">{title}</span>
         </div>
         {/* percentage badge */}
         <span
@@ -127,7 +131,7 @@ function QuotaCard({
 
       {/* Numbers */}
       <div className="flex items-baseline gap-1">
-        <span className={cn("text-2xl font-extrabold tabular-nums leading-none", styles.value)}>
+        <span className={cn("text-2xl font-extrabold tabular-nums leading-none max-sm:text-xl", styles.value)}>
           {resource.current}
         </span>
         <span className="text-sm font-medium text-muted-foreground">
@@ -147,7 +151,7 @@ function QuotaCard({
       {!resource.canAdd && blockMessage ? (
         <div className={cn("flex items-start gap-1.5", styles.value)}>
           <Ban className="mt-px size-3.5 shrink-0" aria-hidden />
-          <p className="text-xs leading-snug">{blockMessage}</p>
+          <p className="text-xs leading-snug max-sm:break-words">{blockMessage}</p>
         </div>
       ) : resource.remaining > 0 ? (
         <p className="text-xs text-muted-foreground">
@@ -208,6 +212,7 @@ export function DealerQuotaPanel({
   const t = useTranslations("quota");
   const tSettings = useTranslations("settings");
   const { snapshot, profile } = useDealerQuota();
+  const renewalContext = useSubscriptionRenewalContext();
 
   if (!snapshot.isLoaded) return null;
 
@@ -284,7 +289,7 @@ export function DealerQuotaPanel({
               {snapshot.subscriptionStatus}
             </span>
           ) : null}
-          {showSubscriptionExpiry ? (
+          {showSubscriptionExpiry && !renewalContext.showRenewOutline ? (
             <span className="text-xs text-muted-foreground">
               {tSettings("subscriptionExpiryDays", {
                 count: daysToExpiry,
@@ -296,9 +301,47 @@ export function DealerQuotaPanel({
 
       {/* No active subscription banner */}
       {!snapshot.hasActiveSubscription ? (
-        <div className="flex items-start gap-2 rounded-lg border border-[var(--color-error-main)]/30 bg-red-50/60 px-3 py-2.5 text-[var(--color-error-main)] dark:bg-red-950/15">
-          <Ban className="mt-px size-4 shrink-0" aria-hidden />
-          <p className="text-sm leading-snug">{t("blockedSubscription")}</p>
+        <div className="flex flex-col gap-4 rounded-xl border border-[var(--color-error-main)]/25 bg-gradient-to-br from-red-50/90 to-red-50/40 px-4 py-4 text-[var(--color-error-main)] dark:from-red-950/25 dark:to-red-950/10 sm:flex-row sm:items-center sm:justify-between max-sm:gap-3 max-sm:px-3 max-sm:py-3.5">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-error-main)]/10">
+              <Ban className="size-4" aria-hidden />
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium leading-snug">{t("blockedSubscription")}</p>
+              {renewalContext.showContactAdmin ? (
+                <SubscriptionRenewalContactHint className="text-[var(--color-error-main)]/75" />
+              ) : null}
+            </div>
+          </div>
+          {renewalContext.showRenewPrimary ? (
+            <RenewSubscriptionButton
+              urgency="inactive"
+              variant="brand"
+              size="sm"
+              onBanner
+              className="w-full shrink-0 sm:w-auto max-sm:w-full"
+            />
+          ) : null}
+        </div>
+      ) : renewalContext.showRenewOutline ? (
+        <div className="flex flex-col gap-4 rounded-xl border border-amber-400/35 bg-gradient-to-br from-amber-50/90 to-amber-50/30 px-4 py-4 text-amber-900 dark:border-amber-500/25 dark:from-amber-950/30 dark:to-amber-950/10 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between max-sm:gap-3 max-sm:px-3 max-sm:py-3.5">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300">
+              <CalendarClock className="size-4" aria-hidden />
+            </div>
+            <p className="text-sm font-medium leading-snug">
+              {tSettings("subscriptionExpiryDays", {
+                count: renewalContext.daysToExpiry ?? 0,
+              })}
+            </p>
+          </div>
+          <RenewSubscriptionButton
+            urgency="expiring"
+            variant="outline"
+            size="sm"
+            onBanner
+            className="w-full shrink-0 sm:w-auto"
+          />
         </div>
       ) : null}
 
@@ -328,7 +371,7 @@ export function DealerQuotaPanel({
 
       {/* Per-role breakdown */}
       {showRoles && snapshot.roles.length > 0 ? (
-        <div className={cn("rounded-lg bg-card p-4 space-y-3", TABLE_BORDER)}>
+        <div className="space-y-3 rounded-lg border-0 bg-surface-lightContainer dark:bg-surface-container p-4 max-sm:p-3">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             {t("rolesLabel")}
           </p>
@@ -340,7 +383,7 @@ export function DealerQuotaPanel({
           {showRoleBlockSummary ? (
             <div className="flex items-start gap-2 rounded-lg border border-[var(--color-error-main)]/30 bg-red-50/60 px-3 py-2.5 text-[var(--color-error-main)] dark:bg-red-950/15">
               <Ban className="mt-px size-3.5 shrink-0" aria-hidden />
-              <p className="text-xs leading-snug">
+              <p className="text-xs leading-snug max-sm:break-words">
                 {t("blockedRole", { role: blockedRoleNames })}
               </p>
             </div>
@@ -357,7 +400,7 @@ export function DealerQuotaPanel({
               className="flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-50/70 px-3 py-2 text-amber-700 dark:border-amber-500/25 dark:bg-amber-950/15 dark:text-amber-300"
             >
               <span className="mt-0.5 text-xs leading-none">⚠</span>
-              <p className="text-xs leading-snug">{alert}</p>
+              <p className="text-xs leading-snug max-sm:break-words">{alert}</p>
             </li>
           ))}
         </ul>

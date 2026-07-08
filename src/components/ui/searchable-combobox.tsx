@@ -22,6 +22,8 @@ export type SearchableComboboxProps = {
   placeholder: string;
   searchPlaceholder: string;
   emptyText: string;
+  /** Shown when value is set but matching option is not loaded yet (e.g. edit forms). */
+  selectedLabel?: string;
   disabled?: boolean;
   "aria-invalid"?: boolean;
   className?: string;
@@ -35,6 +37,7 @@ export function SearchableCombobox({
   placeholder,
   searchPlaceholder,
   emptyText,
+  selectedLabel,
   disabled,
   "aria-invalid": ariaInvalid,
   className,
@@ -58,6 +61,8 @@ export function SearchableCombobox({
     [options, value],
   );
 
+  const displayLabel = selected?.label ?? (value ? selectedLabel : undefined);
+
   const filtered = React.useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return options;
@@ -77,16 +82,16 @@ export function SearchableCombobox({
           aria-invalid={ariaInvalid}
           disabled={disabled}
           className={cn(
-            "flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-md px-3 py-2 text-body-md font-normal shadow-xs hover:bg-card disabled:cursor-not-allowed disabled:opacity-50",
+            "flex h-12 w-full min-w-0 items-center justify-between gap-2 rounded-md px-3 py-2 text-body-lg font-normal shadow-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50",
             TABLE_FIELD_BORDER,
             open && "border-[var(--color-primary-main-light)] dark:border-[var(--color-primary-main-dark)]",
-            !selected && "text-muted-foreground",
+            !displayLabel && "text-muted-foreground",
             ariaInvalid && cn(FIELD_INVALID_BORDER_CLASS, "border-error-main"),
             className,
           )}
         >
-          <span className="min-w-0 flex-1 truncate text-start text-body-md">
-            {selected ? selected.label : placeholder}
+          <span className="min-w-0 flex-1 truncate text-start text-body-lg">
+            {displayLabel ?? placeholder}
           </span>
           <ChevronDown className="size-4 shrink-0 opacity-50" aria-hidden />
         </Button>

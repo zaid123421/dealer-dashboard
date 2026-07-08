@@ -1,6 +1,8 @@
 'use client'
 
+import { useLocale } from 'next-intl'
 import { TireDetail } from '../types'
+import { formatLocaleDate, formatLocaleDateTime, formatLocaleNumber } from '@/lib/format-locale'
 import {
   Dialog,
   DialogContent,
@@ -18,37 +20,12 @@ interface TireDetailsModalProps {
   onClose: () => void
 }
 
-function formatDate(dateString: string): string {
-  try {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-  } catch {
-    return dateString
-  }
-}
-
-function formatDateTime(dateString: string): string {
-  try {
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch {
-    return dateString
-  }
-}
-
 export function TireDetailsModal({
   tire,
   isOpen,
   onClose,
 }: TireDetailsModalProps) {
+  const locale = useLocale()
   if (!tire) return null
 
   const statusColor = getTireStatusBadgeClass(tire.status)
@@ -176,7 +153,7 @@ export function TireDetailsModal({
                   <p className="text-sm font-medium text-muted-foreground">
                     Mileage
                   </p>
-                  <p className="text-sm">{tire.mileage ? `${tire.mileage.toLocaleString()} km` : '—'}</p>
+                  <p className="text-sm">{tire.mileage ? `${formatLocaleNumber(tire.mileage, locale)} km` : '—'}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
@@ -207,25 +184,25 @@ export function TireDetailsModal({
                   <p className="text-sm font-medium text-muted-foreground">
                     Added Date
                   </p>
-                  <p className="text-sm">{formatDate(tire.addedDate)}</p>
+                  <p className="text-sm">{formatLocaleDate(tire.addedDate, locale, { month: 'long' })}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
                     Updated Date
                   </p>
-                  <p className="text-sm">{tire.updatedDate ? formatDate(tire.updatedDate) : '—'}</p>
+                  <p className="text-sm">{tire.updatedDate ? formatLocaleDate(tire.updatedDate, locale, { month: 'long' }) : '—'}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
                     Created At
                   </p>
-                  <p className="text-sm">{formatDateTime(tire.createdAt)}</p>
+                  <p className="text-sm">{formatLocaleDateTime(tire.createdAt, locale, { month: 'long' })}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
                     Updated At
                   </p>
-                  <p className="text-sm">{formatDateTime(tire.updatedAt)}</p>
+                  <p className="text-sm">{formatLocaleDateTime(tire.updatedAt, locale, { month: 'long' })}</p>
                 </div>
               </div>
             </CardContent>

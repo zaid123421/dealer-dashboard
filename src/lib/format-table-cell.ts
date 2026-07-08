@@ -1,3 +1,5 @@
+import { formatLocaleNumber } from "@/lib/format-locale";
+
 /** Placeholder for empty / null table cells — matches the rest of the app. */
 export const TABLE_EMPTY_VALUE = "—";
 
@@ -7,9 +9,12 @@ export function formatTableCell(value: string | number | null | undefined): stri
   return String(value);
 }
 
-export function formatOdometer(km: number | null | undefined): string {
+export function formatOdometer(
+  km: number | null | undefined,
+  locale: string,
+): string {
   if (km == null) return TABLE_EMPTY_VALUE;
-  return `${km.toLocaleString()} km`;
+  return `${formatLocaleNumber(km, locale)} km`;
 }
 
 export function formatVehicleLabel(

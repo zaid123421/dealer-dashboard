@@ -7,16 +7,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+  FormDialogContent,
+  FormDialogFooter,
+  FormDialogHeader,
+} from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import {
   Select,
   SelectContent,
@@ -145,68 +145,70 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId, onC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <FormDialogContent size="md">
+        <FormDialogHeader>
           <DialogTitle>{tCustomers("addTireSet")}</DialogTitle>
           <DialogDescription>{tCustomers("addTireSetModalDescription")}</DialogDescription>
-        </DialogHeader>
+        </FormDialogHeader>
 
-        {open ? (
-          <div className="space-y-3 px-6">
-            {tireQuota ? (
-              <p className="text-body-sm text-muted-foreground">
-                {tiresAllowed
-                  ? tQuota("remainingSlots", {
-                      remaining: tireQuota.remaining,
-                      max: tireQuota.max,
-                    })
-                  : tQuota("limitFull", { max: tireQuota.max })}
-              </p>
+        <form id="add-tire-set-form" onSubmit={handleSubmit(onSubmit)} className="px-6 py-4">
+          <div className="grid gap-4">
+            {open ? (
+              <div className="space-y-3">
+                {tireQuota ? (
+                  <p className="text-body-sm text-muted-foreground">
+                    {tiresAllowed
+                      ? tQuota("remainingSlots", {
+                          remaining: tireQuota.remaining,
+                          max: tireQuota.max,
+                        })
+                      : tQuota("limitFull", { max: tireQuota.max })}
+                  </p>
+                ) : null}
+                {!snapshot.hasActiveSubscription ? (
+                  <DealerQuotaNotice variant="subscription" />
+                ) : null}
+                {tireQuota && !tireQuota.canAdd ? (
+                  <DealerQuotaNotice variant="tires" tireQuota={tireQuota} />
+                ) : null}
+                {tireQuota?.canAdd && !tiresAllowed ? (
+                  <DealerQuotaNotice
+                    variant="tiresInsufficient"
+                    tireQuota={tireQuota}
+                    requestedTireCount={tireCount}
+                  />
+                ) : null}
+              </div>
             ) : null}
-            {!snapshot.hasActiveSubscription ? (
-              <DealerQuotaNotice variant="subscription" />
-            ) : null}
-            {tireQuota && !tireQuota.canAdd ? (
-              <DealerQuotaNotice variant="tires" tireQuota={tireQuota} />
-            ) : null}
-            {tireQuota?.canAdd && !tiresAllowed ? (
-              <DealerQuotaNotice
-                variant="tiresInsufficient"
-                tireQuota={tireQuota}
-                requestedTireCount={tireCount}
-              />
-            ) : null}
-          </div>
-        ) : null}
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="tireCount">{tCustomers("numberOfTires")}</Label>
+            <FormField
+              id="tireCount"
+              label={tCustomers("numberOfTires")}
+              required
+              error={errors.tireCount?.message}
+            >
               <Input
                 id="tireCount"
                 type="number"
                 min="1"
                 max="8"
+                aria-invalid={!!errors.tireCount}
                 {...register("tireCount", { valueAsNumber: true })}
-                className={errors.tireCount ? "border-red-500" : ""}
               />
-              {errors.tireCount && (
-                <p className="text-sm text-red-500">{errors.tireCount.message}</p>
-              )}
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <Label htmlFor="seasonType">{tCustomers("seasonType")}</Label>
+            <FormField
+              id="seasonType"
+              label={tCustomers("seasonType")}
+              required
+              error={errors.seasonType?.message}
+            >
               <Controller
                 name="seasonType"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger className={errors.seasonType ? "border-red-500" : ""}>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="seasonType" aria-invalid={!!errors.seasonType}>
                       <SelectValue placeholder={tCustomers("tireSetSeasonPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -217,71 +219,71 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId, onC
                   </Select>
                 )}
               />
-              {errors.seasonType && (
-                <p className="text-sm text-red-500">{errors.seasonType.message}</p>
-              )}
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <Label htmlFor="brand">{tCustomers("tireBrand")}</Label>
+            <FormField
+              id="brand"
+              label={tCustomers("tireBrand")}
+              required
+              error={errors.brand?.message}
+            >
               <Input
                 id="brand"
                 placeholder={tCustomers("tireBrandPlaceholder")}
+                aria-invalid={!!errors.brand}
                 {...register("brand")}
-                className={errors.brand ? "border-red-500" : ""}
               />
-              {errors.brand && (
-                <p className="text-sm text-red-500">{errors.brand.message}</p>
-              )}
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <Label htmlFor="size">{tCustomers("tireSize")}</Label>
+            <FormField
+              id="size"
+              label={tCustomers("tireSize")}
+              required
+              error={errors.size?.message}
+            >
               <Input
                 id="size"
                 placeholder={tCustomers("tireSizePlaceholder")}
+                aria-invalid={!!errors.size}
                 {...register("size")}
-                className={errors.size ? "border-red-500" : ""}
               />
-              {errors.size && (
-                <p className="text-sm text-red-500">{errors.size.message}</p>
-              )}
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <Label htmlFor="displayLabel">{tCustomers("tireDisplayLabelOptional")}</Label>
+            <FormField
+              id="displayLabel"
+              label={tCustomers("tireDisplayLabelOptional")}
+              error={errors.displayLabel?.message}
+            >
               <Input
                 id="displayLabel"
                 placeholder={tCustomers("tireDisplayLabelPlaceholder")}
+                aria-invalid={!!errors.displayLabel}
                 {...register("displayLabel")}
-                className={errors.displayLabel ? "border-red-500" : ""}
               />
-              {errors.displayLabel && (
-                <p className="text-sm text-red-500">{errors.displayLabel.message}</p>
-              )}
-            </div>
+            </FormField>
           </div>
-
-          <DialogFooter className="px-6 py-4 gap-2 sm:justify-end sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="w-full sm:w-auto"
-            >
-              {t("cancel")}
-            </Button>
-            <Button
-              type="submit"
-              variant="brand"
-              className="w-full sm:w-auto"
-              disabled={!tiresAllowed}
-            >
-              {tCustomers("addTireSet")}
-            </Button>
-          </DialogFooter>
         </form>
-      </DialogContent>
+
+        <FormDialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="w-full sm:w-auto"
+          >
+            {t("cancel")}
+          </Button>
+          <Button
+            type="submit"
+            form="add-tire-set-form"
+            variant="brand"
+            className="w-full sm:w-auto"
+            disabled={!tiresAllowed}
+          >
+            {tCustomers("addTireSet")}
+          </Button>
+        </FormDialogFooter>
+      </FormDialogContent>
     </Dialog>
   );
 }

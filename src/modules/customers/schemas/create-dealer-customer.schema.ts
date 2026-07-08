@@ -100,21 +100,84 @@ export function mapDealerCustomerFormToRequest(
   });
 }
 
-export const dealerCustomerAddressResponseSchema = z.object({
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function pickNumber(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && /^\d+$/.test(value.trim())) return Number(value);
+  return undefined;
+}
+
+function pickRegionFromApi(
+  raw: Record<string, unknown>,
+  nameKey: string,
+  idKeys: string[],
+): { name: string; id?: number } {
+  const direct = raw[nameKey];
+  if (typeof direct === "string") return { name: direct };
+  const nested = asRecord(direct);
+  if (!nested) return { name: "" };
+
+  const name = typeof nested.name === "string" ? nested.name : "";
+  let id: number | undefined;
+  for (const key of ["id", ...idKeys]) {
+    const candidate = pickNumber(nested[key]);
+    if (candidate != null) {
+      id = candidate;
+      break;
+    }
+  }
+  return { name, id };
+}
+
+function normalizeDealerCustomerAddress(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const rec = raw as Record<string, unknown>;
+
+  const country = pickRegionFromApi(rec, "country", ["countryId"]);
+  const province = pickRegionFromApi(rec, "province", ["stateId", "provinceId"]);
+  const state = pickRegionFromApi(rec, "state", ["stateId", "provinceId"]);
+  const city = pickRegionFromApi(rec, "city", ["cityId"]);
+
+  const provinceName =
+    province.name || state.name || (typeof rec.province === "string" ? rec.province : "");
+  const countryName =
+    country.name || (typeof rec.country === "string" ? rec.country : "");
+  const cityName = city.name || (typeof rec.city === "string" ? rec.city : "");
+
+  return {
+    ...rec,
+    country: countryName,
+    province: provinceName,
+    city: cityName,
+    countryId: pickNumber(rec.countryId) ?? country.id,
+    stateId: pickNumber(rec.stateId) ?? pickNumber(rec.provinceId) ?? province.id ?? state.id,
+    cityId: pickNumber(rec.cityId) ?? city.id,
+  };
+}
+
+export const dealerCustomerAddressResponseSchema = z.preprocess(
+  normalizeDealerCustomerAddress,
+  z.object({
   id: z.number(),
-  streetName: z.string(),
-  streetNumber: z.string(),
-  postalCode: z.string(),
-  unitNumber: z.string().nullish(),
-  city: z.string(),
-  province: z.string(),
-  country: z.string(),
-  specialInstructions: z.string().nullish(),
+  streetName: z.union([z.string(), z.null(), z.undefined()]).transform((v) => v ?? ""),
+  streetNumber: z.union([z.string(), z.null(), z.undefined()]).transform((v) => v ?? ""),
+  postalCode: z.union([z.string(), z.null(), z.undefined()]).transform((v) => v ?? ""),
+  unitNumber: z.union([z.string(), z.null(), z.undefined()]).transform((v) => v ?? ""),
+  city: z.union([z.string(), z.null(), z.undefined()]).transform((v) => v ?? ""),
+  province: z.union([z.string(), z.null(), z.undefined()]).transform((v) => v ?? ""),
+  country: z.union([z.string(), z.null(), z.undefined()]).transform((v) => v ?? ""),
+  specialInstructions: z.union([z.string(), z.null(), z.undefined()]).transform((v) => v ?? ""),
   /** قد تُعاد من GET للعميل لتعبئة التعديل */
   cityId: z.number().optional(),
   countryId: z.number().optional(),
   stateId: z.number().optional(),
-});
+  }),
+);
 
 export const dealerCustomerResponseSchema = z.object({
   id: z.number(),

@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
 import { Sun, Moon, Monitor } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type ThemeValue = "light" | "dark" | "system";
 
@@ -22,14 +23,27 @@ export function ThemeSwitcher() {
     { value: "system", icon: <Monitor className="size-4" /> },
   ];
 
+  const shellClass = cn(
+    "flex gap-1 rounded-md border border-input p-1",
+    "max-sm:w-full",
+  );
+
+  const buttonClass = (active: boolean) =>
+    cn(
+      "rounded p-1.5 transition-colors max-sm:flex-1 max-sm:p-2",
+      active
+        ? "bg-primary-dark text-primary-onContainer"
+        : "text-muted-foreground hover:bg-primary-dark/90 hover:text-primary-onContainer",
+    );
+
   if (!mounted) {
     return (
-      <div className="flex gap-1 rounded-md border border-input p-1">
+      <div className={shellClass}>
         {options.map(({ value, icon }) => (
           <button
             key={value}
             type="button"
-            className="rounded p-1.5 transition-colors"
+            className="rounded p-1.5 transition-colors max-sm:flex-1 max-sm:p-2"
             aria-label={t(value)}
           >
             {icon}
@@ -40,18 +54,14 @@ export function ThemeSwitcher() {
   }
 
   return (
-    <div className="flex gap-1 rounded-md border border-input p-1">
+    <div className={shellClass}>
       {options.map(({ value, icon }) => (
         <button
           key={value}
           type="button"
           onClick={() => setTheme(value)}
           title={t(value)}
-          className={`rounded p-1.5 transition-colors ${
-            theme === value
-              ? "bg-primary-dark text-primary-onContainer"
-              : "text-muted-foreground hover:bg-primary-dark/90 hover:text-primary-onContainer"
-          }`}
+          className={buttonClass(theme === value)}
           aria-label={t(value)}
         >
           {icon}

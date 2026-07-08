@@ -23,7 +23,7 @@ export function fieldGroupWrapperClass(invalid: boolean) {
 }
 
 export const FIELD_GROUP_INNER_SELECT_CLASS =
-  "h-10 w-[90px] shrink-0 rounded-none border-0 border-e-2 border-inherit bg-card shadow-none ring-0 focus:ring-0 focus-visible:ring-0 data-[state=open]:border-inherit data-[state=open]:ring-0 dark:data-[state=open]:border-inherit [&>span]:text-primary-dark";
+  "h-12 w-[90px] shrink-0 rounded-none border-0 border-e-2 border-inherit bg-card shadow-none ring-0 focus:ring-0 focus-visible:ring-0 data-[state=open]:border-inherit data-[state=open]:ring-0 dark:data-[state=open]:border-inherit [&>span]:text-primary-dark";
 
 export const FIELD_GROUP_INNER_INPUT_CLASS =
-  "h-10 min-w-0 flex-1 rounded-none border-0 bg-card shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-primary-dark/70";
+  "h-12 min-w-0 flex-1 rounded-none border-0 bg-card shadow-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-primary-dark/70";

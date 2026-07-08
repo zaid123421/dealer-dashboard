@@ -38,7 +38,7 @@ export function LocaleSwitcher() {
           type="button"
           data-slot="combobox-trigger"
           className={cn(
-            "flex items-center justify-between gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-primary-dark/90 hover:text-primary-onContainer hover:border-primary-dark",
+            "flex items-center justify-between gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-primary-dark hover:bg-primary-dark/90 hover:text-primary-onContainer max-sm:h-12 max-sm:w-full",
             TABLE_FIELD_BORDER,
           )}
           aria-label="Language"

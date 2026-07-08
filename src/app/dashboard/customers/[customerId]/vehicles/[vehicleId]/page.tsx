@@ -9,6 +9,7 @@ import Link from 'next/link'
 import StyledTable from '@/components/ui/styled-table'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { StatTile } from '@/components/ui/stat-tile'
 import {
   VehicleDetailsBreadcrumbSkeleton,
   VehicleDetailsCardSkeleton,
@@ -17,7 +18,8 @@ import {
 import { useVehicleTireSets } from '@/modules/tire-sets/hooks/use-vehicle-tire-sets'
 import { useVehicleDetails } from '@/modules/vehicles/hooks/use-vehicle-details'
 import { useDealerCustomer } from '@/modules/customers/hooks/use-dealer-customer'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
+import { formatLocaleDate } from '@/lib/format-locale'
 import { AddTireSetModal } from '@/modules/tire-sets/components/add-tire-set-modal'
 import { DealerQuotaNotice } from '@/modules/dealer/components/dealer-quota-notice'
 import { DealerQuotaPanel } from '@/modules/dealer/components/dealer-quota-panel'
@@ -32,6 +34,7 @@ export default function VehicleDetailsPage() {
   const params = useParams()
   const router = useRouter()
   const t = useTranslations("customers")
+  const locale = useLocale()
   const customerId = params.customerId as string
   const vehicleId = params.vehicleId as string
   const [isAddTireSetModalOpen, setIsAddTireSetModalOpen] = useState(false)
@@ -70,14 +73,7 @@ export default function VehicleDetailsPage() {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
+  const formatDate = (dateString: string) => formatLocaleDate(dateString, locale)
 
   return (
     <div className="flex flex-col gap-8">
@@ -122,56 +118,24 @@ export default function VehicleDetailsPage() {
             <DealerQuotaNotice variant="tires" tireQuota={snapshot.tires} className="mb-2" />
           ) : null
         ) : null}
-        <Card className="border-0 bg-surface-container rounded-lg">
+        <Card>
           <CardContent className="p-6">
             <div className="flex flex-col gap-4 sm:gap-6 md:flex-row md:items-start">
               <div className="flex size-12 sm:size-16 shrink-0 items-center justify-center rounded-full bg-surface-container text-primary-dark mx-auto md:mx-0">
                 <Car className="size-6 sm:size-8" />
               </div>
               <div className="min-w-0 flex-1 text-center md:text-left">
-                <h1 className="text-lg font-bold text-onSurface mb-2 sm:text-xl md:text-headline-sm">
+                <h1 className="text-lg font-bold text-foreground mb-2 sm:text-xl md:text-headline-sm">
                   {formatVehicleLabel(vehicle.make, vehicle.model, vehicle.year)}
                 </h1>
-                <p className="text-sm font-mono text-secondary-on-surface mb-4 px-2 md:px-0 overflow-hidden truncate">
+                <p className="text-sm font-mono text-muted-foreground mb-4 px-2 md:px-0 overflow-hidden truncate">
                   VIN: {formatTableCell(vehicle.vin)}
                 </p>
                 <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                  <div className="group">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CreditCard className="size-4 text-white" />
-                      <span className="text-sm font-medium text-secondary-on-surface">Plate Number</span>
-                    </div>
-                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-primary-dark group-hover:shadow-md">
-                      <p className="text-body-md font-semibold text-onSurface font-mono text-sm sm:text-base">{formatTableCell(vehicle.plateNumber)}</p>
-                    </div>
-                  </div>
-                  <div className="group">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Palette className="size-3 sm:size-4 text-tertiary-main" />
-                      <span className="text-xs sm:text-sm font-medium text-secondary-on-surface">Color</span>
-                    </div>
-                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-primary-dark group-hover:shadow-md">
-                      <p className="text-body-md font-semibold text-onSurface text-sm sm:text-base">{formatTableCell(vehicle.color)}</p>
-                    </div>
-                  </div>
-                  <div className="group">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Gauge className="size-3 sm:size-4 text-primary-main" />
-                      <span className="text-xs sm:text-sm font-medium text-secondary-on-surface">Odometer</span>
-                    </div>
-                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-primary-dark group-hover:shadow-md">
-                      <p className="text-body-md font-semibold text-onSurface text-sm sm:text-base">{formatOdometer(vehicle.odometerKm)}</p>
-                    </div>
-                  </div>
-                  <div className="group">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Package className="size-3 sm:size-4 text-success-main" />
-                      <span className="text-xs sm:text-sm font-medium text-secondary-on-surface">Tire Sets</span>
-                    </div>
-                    <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-primary-dark group-hover:shadow-md">
-                      <p className="text-body-md font-semibold text-onSurface text-sm sm:text-base">{tireSets.length} sets</p>
-                    </div>
-                  </div>
+                  <StatTile icon={CreditCard} label="Plate Number" value={<span className="font-mono">{formatTableCell(vehicle.plateNumber)}</span>} />
+                  <StatTile icon={Palette} label="Color" value={formatTableCell(vehicle.color)} />
+                  <StatTile icon={Gauge} label="Odometer" value={formatOdometer(vehicle.odometerKm, locale)} />
+                  <StatTile icon={Package} label="Tire Sets" value={`${tireSets.length} sets`} />
                 </div>
               </div>
               <div className="shrink-0 sm:mt-0 mt-4 text-center sm:text-left">

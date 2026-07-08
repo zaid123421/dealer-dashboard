@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CheckCircle2, Clock, Layers, Search, XCircle } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -15,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import StyledTable from "@/components/ui/styled-table";
+import { StatTile } from "@/components/ui/stat-tile";
 import { formatTableCell } from "@/lib/format-table-cell";
 import { cn } from "@/lib/utils";
 import { useServiceSessions } from "@/modules/sessions/hooks/use-service-sessions";
@@ -64,74 +64,6 @@ function matchesDateFilter(startedAt: string | null, filter: DateFilter): boolea
   if (filter === "THIS_WEEK") return d >= startOfWeek;
   if (filter === "THIS_MONTH") return d >= startOfMonth;
   return true;
-}
-
-function SessionStatTile({
-  icon: Icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: number | string;
-  accent: "primary" | "info" | "success" | "error";
-}) {
-  const accentStyles = {
-    primary: {
-      icon: "bg-primary-dark/10 text-primary-dark border-primary-dark/20 dark:bg-primary-dark/20 dark:text-primary dark:border-primary/30",
-      value: "text-primary-dark dark:text-primary",
-      glow: "group-hover:border-primary-dark/50 dark:group-hover:border-primary/40",
-    },
-    info: {
-      icon: "bg-[#2563eb]/10 text-[#2563eb] border-[#2563eb]/25 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30",
-      value: "text-[#2563eb] dark:text-blue-400",
-      glow: "group-hover:border-[#2563eb]/40 dark:group-hover:border-blue-500/40",
-    },
-    success: {
-      icon: "bg-success-dark/10 text-success-dark border-success-dark/25 dark:bg-success-dark/15 dark:text-success-onContainer dark:border-success-dark/30",
-      value: "text-success-dark dark:text-success-onContainer",
-      glow: "group-hover:border-success-dark/40",
-    },
-    error: {
-      icon: "bg-error-main/10 text-error-main border-error-main/25 dark:bg-error-main/15 dark:text-destructive-foreground dark:border-error-main/30",
-      value: "text-error-main dark:text-destructive-foreground",
-      glow: "group-hover:border-error-main/40",
-    },
-  }[accent];
-
-  return (
-    <div className="group min-w-0">
-      <div className="mb-2 flex min-w-0 items-center gap-2">
-        <div
-          className={cn(
-            "flex size-8 shrink-0 items-center justify-center rounded-lg border",
-            accentStyles.icon,
-          )}
-        >
-          <Icon className="size-4" aria-hidden />
-        </div>
-        <span className="min-w-0 truncate text-xs font-medium text-secondary-on-surface sm:text-sm">
-          {label}
-        </span>
-      </div>
-      <div
-        className={cn(
-          "rounded-lg border-2 border-surface-high bg-surface-bright px-3 py-4 transition-all group-hover:shadow-md sm:px-4 sm:py-5",
-          accentStyles.glow,
-        )}
-      >
-        <p
-          className={cn(
-            "text-3xl font-extrabold tabular-nums leading-none tracking-tight sm:text-4xl",
-            accentStyles.value,
-          )}
-        >
-          {value}
-        </p>
-      </div>
-    </div>
-  );
 }
 
 export function SessionsPage() {
@@ -237,29 +169,33 @@ export function SessionsPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <SessionStatTile
+        <StatTile
           icon={Layers}
           label={t("sessionsStatTotal")}
           value={totalSessions}
           accent="primary"
+          size="large"
         />
-        <SessionStatTile
+        <StatTile
           icon={Clock}
           label={t("sessionsStatusInProgress")}
           value={inProgressCount}
           accent="info"
+          size="large"
         />
-        <SessionStatTile
+        <StatTile
           icon={CheckCircle2}
           label={t("sessionsStatusCompleted")}
           value={completedCount}
           accent="success"
+          size="large"
         />
-        <SessionStatTile
+        <StatTile
           icon={XCircle}
           label={t("sessionsStatusCancelled")}
           value={cancelledCount}
           accent="error"
+          size="large"
         />
       </div>
 
@@ -269,7 +205,7 @@ export function SessionsPage() {
           <Input
             type="search"
             placeholder={t("sessionsSearchPlaceholder")}
-            className="h-10 w-full ps-9"
+            className="w-full ps-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label={t("sessionsSearchPlaceholder")}
@@ -281,7 +217,7 @@ export function SessionsPage() {
             {t("sessionsFilterTypeLabel")}
           </span>
           <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TypeFilter)}>
-            <SelectTrigger className="h-10 w-full sm:w-[200px]">
+            <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -298,7 +234,7 @@ export function SessionsPage() {
             {t("sessionsFilterStatusLabel")}
           </span>
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-            <SelectTrigger className="h-10 w-full sm:w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -315,7 +251,7 @@ export function SessionsPage() {
             {t("sessionsFilterDateLabel")}
           </span>
           <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as DateFilter)}>
-            <SelectTrigger className="h-10 w-full sm:w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

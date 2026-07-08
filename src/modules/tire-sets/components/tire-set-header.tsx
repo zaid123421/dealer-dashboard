@@ -1,9 +1,11 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
+import { formatLocaleDate } from '@/lib/format-locale'
 import { ArrowLeft, CalendarDays, Cloud, Hash, Loader2, Package, Ruler, Snowflake, Sun, Tags, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { StatTile } from '@/components/ui/stat-tile'
 import type { TireSetDetail } from '@/modules/tire-sets/types'
 
 interface TireSetHeaderProps {
@@ -13,65 +15,6 @@ interface TireSetHeaderProps {
   isDeleting?: boolean
 }
 
-function formatDate(dateString: string): string {
-  try {
-    return new Date(dateString).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  } catch {
-    return dateString
-  }
-}
-
-const statItems = (
-  tireSet: TireSetDetail,
-  t: ReturnType<typeof useTranslations<'customers'>>,
-) => [
-  {
-    icon: <Ruler className="size-3 sm:size-4 text-white" aria-hidden />,
-    label: t('tireSize'),
-    value: <p className="text-body-md font-semibold text-onSurface font-mono text-sm sm:text-base">{tireSet.size}</p>,
-  },
-  {
-    icon: <Tags className="size-3 sm:size-4 text-white" aria-hidden />,
-    label: t('seasonType'),
-    value: (
-      <div className="flex items-center gap-1">
-        {tireSet.seasonType === 'Winter' && <Snowflake className="size-3 sm:size-4 text-blue-500" />}
-        {tireSet.seasonType === 'Summer' && <Sun className="size-3 sm:size-4 text-orange-500" />}
-        {tireSet.seasonType === 'All-Season' && <Cloud className="size-3 sm:size-4 text-gray-500" />}
-        <p className={`text-body-md font-semibold text-sm sm:text-base ${
-          tireSet.seasonType === 'Winter' ? 'text-blue-500' :
-          tireSet.seasonType === 'Summer' ? 'text-orange-500' :
-          'text-gray-500'
-        }`}>
-          {tireSet.seasonType}
-        </p>
-      </div>
-    ),
-  },
-  {
-    icon: <Hash className="size-3 sm:size-4 text-white" aria-hidden />,
-    label: t('tireSetDetailQty'),
-    value: (
-      <p className="text-body-md font-semibold text-onSurface text-sm sm:text-base">
-        {t('tireSetDetailQtyTires', { count: tireSet.tireCount })}
-      </p>
-    ),
-  },
-  {
-    icon: <CalendarDays className="size-3 sm:size-4 text-white" aria-hidden />,
-    label: t('tireSetDetailDateAdded'),
-    value: (
-      <p className="text-body-md font-semibold text-onSurface font-mono text-sm sm:text-base">
-        {formatDate(tireSet.createdAt)}
-      </p>
-    ),
-  },
-]
-
 export function TireSetHeader({
   tireSet,
   onBack,
@@ -79,16 +22,15 @@ export function TireSetHeader({
   isDeleting = false,
 }: TireSetHeaderProps) {
   const t = useTranslations('customers')
+  const locale = useLocale()
 
   const title =
     tireSet.displayLabel?.trim() !== ''
       ? tireSet.displayLabel.trim()
       : t('tireSetDetailTitleFallback', { id: tireSet.id })
 
-  const items = statItems(tireSet, t)
-
   return (
-    <Card className="border-0 bg-surface-container rounded-lg">
+    <Card>
       <CardContent className="p-6">
         <div className="flex flex-col gap-4 sm:gap-6 md:flex-row md:items-start">
           {/* Icon */}
@@ -96,40 +38,58 @@ export function TireSetHeader({
             <Package className="size-6 sm:size-8" />
           </div>
 
-          {/* Title + stats */}
           <div className="min-w-0 flex-1 text-center md:text-left">
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-1">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={onBack}
-                className="shrink-0"
-                aria-label={t('tireGoBack')}
-              >
-                <ArrowLeft className="size-5" />
-              </Button>
-              <h1 className="text-lg font-bold text-onSurface sm:text-xl md:text-headline-sm">
-                {title}
-              </h1>
-            </div>
-            <p className="text-sm font-mono text-secondary-on-surface mb-4 px-2 md:px-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onBack}
+              className="mb-2 -ms-2 hidden md:inline-flex"
+            >
+              <ArrowLeft className="me-2 size-4" />
+              {t('tireGoBack')}
+            </Button>
+            <h1 className="text-lg font-bold text-foreground mb-2 sm:text-xl md:text-headline-sm">
+              {title}
+            </h1>
+            <p className="text-sm font-mono text-muted-foreground mb-4 px-2 md:px-0">
               {tireSet.brand}
             </p>
 
             <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-4">
-              {items.map((item) => (
-                <div key={item.label} className="group">
-                  <div className="flex items-center gap-2 mb-2">
-                    {item.icon}
-                    <span className="text-xs sm:text-sm font-medium text-secondary-on-surface">
-                      {item.label}
+              <StatTile icon={Ruler} label={t('tireSize')} value={<span className="font-mono">{tireSet.size}</span>} />
+              <StatTile
+                icon={Tags}
+                label={t('seasonType')}
+                value={
+                  <div className="flex items-center gap-1">
+                    {tireSet.seasonType === 'Winter' && <Snowflake className="size-3 sm:size-4 text-blue-500 dark:text-blue-400" />}
+                    {tireSet.seasonType === 'Summer' && <Sun className="size-3 sm:size-4 text-orange-500 dark:text-orange-400" />}
+                    {tireSet.seasonType === 'All-Season' && <Cloud className="size-3 sm:size-4 text-gray-500 dark:text-gray-400" />}
+                    <span
+                      className={
+                        tireSet.seasonType === 'Winter'
+                          ? 'text-blue-500 dark:text-blue-400'
+                          : tireSet.seasonType === 'Summer'
+                            ? 'text-orange-500 dark:text-orange-400'
+                            : 'text-gray-500 dark:text-gray-400'
+                      }
+                    >
+                      {tireSet.seasonType}
                     </span>
                   </div>
-                  <div className="bg-surface-bright border-2 border-surface-high rounded-lg p-2 sm:p-3 transition-all group-hover:border-primary-dark group-hover:shadow-md">
-                    {item.value}
-                  </div>
-                </div>
-              ))}
+                }
+              />
+              <StatTile
+                icon={Hash}
+                label={t('tireSetDetailQty')}
+                value={t('tireSetDetailQtyTires', { count: tireSet.tireCount })}
+              />
+              <StatTile
+                icon={CalendarDays}
+                label={t('tireSetDetailDateAdded')}
+                value={<span className="font-mono">{formatLocaleDate(tireSet.createdAt, locale)}</span>}
+              />
             </div>
           </div>
 

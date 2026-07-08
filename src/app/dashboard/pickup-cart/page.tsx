@@ -1,18 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { AddPickupItemModal } from "@/modules/shipment-requests/components/add-pickup-item-modal";
-import { ShipmentRequestsOrdersStylePage } from "@/modules/shipment-requests/components/shipment-requests-orders-style-page";
+import { useMemo } from "react";
+import { PickupCartPage } from "@/modules/shipment-requests/components/pickup-cart-page";
 
-export default function PickupCartPage() {
-  const t = useTranslations("dashboard");
-  const tp = useTranslations("pickupOrders");
-  const tc = useTranslations("pickupCart");
-  const [addItemOpen, setAddItemOpen] = useState(false);
-
+export default function PickupCartRoute() {
   const baseQuery = useMemo(
     () => ({
       statuses: "IN_CART",
@@ -23,28 +14,5 @@ export default function PickupCartPage() {
     [],
   );
 
-  return (
-    <>
-      <ShipmentRequestsOrdersStylePage
-        title={t("pickupCartTitle")}
-        intro={t("pickupCartIntro")}
-        baseQuery={baseQuery}
-        emptyText={tp("empty")}
-        loadShipmentDetailsOnExpand
-        actionsVariant="soft"
-        headerActions={
-          <Button
-            type="button"
-            variant="brand"
-            onClick={() => setAddItemOpen(true)}
-            className="w-full shrink-0 gap-2 sm:w-auto"
-          >
-            <Plus className="size-4 shrink-0" />
-            <span className="truncate">{tc("addItem")}</span>
-          </Button>
-        }
-      />
-      <AddPickupItemModal open={addItemOpen} onOpenChange={setAddItemOpen} />
-    </>
-  );
+  return <PickupCartPage baseQuery={baseQuery} />;
 }
