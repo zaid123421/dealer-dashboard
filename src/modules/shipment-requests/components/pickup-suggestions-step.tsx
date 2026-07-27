@@ -18,6 +18,7 @@ import { usePickupSuggestions, useCombinePickupMutation } from "@/modules/shipme
 import type { NormalizedPickupCandidate } from "@/modules/shipment-requests/lib/pickup-suggestion-dto";
 import { COMBINE_PICKUP_DELIVERY_VERSION_FALLBACK } from "@/modules/shipment-requests/services/dealer-pickup-suggestion.service";
 import { PRIMARY_BUTTON_RESPONSIVE } from "@/lib/primary-button-styles";
+import { formatLocaleDateTime } from "@/lib/format-locale";
 import { cn } from "@/lib/utils";
 
 export type PickupSuggestionsStepProps = {
@@ -27,20 +28,13 @@ export type PickupSuggestionsStepProps = {
 };
 
 function formatDateTime(iso: string | null, locale: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  try {
-    return d.toLocaleString(locale, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  } catch {
-    return "—";
-  }
+  return formatLocaleDateTime(iso, locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function StepperHeader({

@@ -2,7 +2,9 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useDealerId } from "@/shared/hooks/use-can-access";
+import { useHasClientMounted } from "@/shared/hooks/use-has-client-mounted";
 import { useDealerMe } from "@/modules/dealer/hooks/use-dealer-me";
+import { useViewOnlyMode } from "@/modules/dealer/hooks/use-view-only-mode";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -46,6 +48,7 @@ import { TABLE_BORDER } from "@/lib/table-border";
 import type { DealerCustomer } from "@/modules/customers/schemas/create-dealer-customer.schema";
 import { useDealerCustomersInfinite } from "@/modules/customers/hooks/use-my-dealer-customers";
 import { useArchiveDealerCustomer } from "@/modules/customers/hooks/use-archive-dealer-customer";
+import { useUnarchiveDealerCustomer } from "@/modules/customers/hooks/use-unarchive-dealer-customer";
 import { useDeleteDealerCustomer } from "@/modules/customers/hooks/use-delete-dealer-customer";
 import {
   DealerCustomerVehicleModal,
@@ -212,8 +215,12 @@ function CustomersPageContent() {
   const tCommon = useTranslations("common");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const hasClientMounted = useHasClientMounted();
   const dealerId = useDealerId();
+  const { isViewOnly } = useViewOnlyMode();
   const { isLoading: isProfileLoading } = useDealerMe({ enabled: dealerId == null });
+  const waitingForDealer =
+    dealerId == null && (!hasClientMounted || isProfileLoading);
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [includeArchived, setIncludeArchived] = useState(false);
@@ -231,12 +238,14 @@ function CustomersPageContent() {
   );
 
   const archiveCustomer = useArchiveDealerCustomer();
+  const unarchiveCustomer = useUnarchiveDealerCustomer();
   const deleteCustomer = useDeleteDealerCustomer();
   const deleteVehicle = useDeleteVehicleForCustomer();
 
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
   const [vehicleToEdit, setVehicleToEdit] = useState<VehicleToEdit | null>(null);
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
+  const [unarchiveConfirmOpen, setUnarchiveConfirmOpen] = useState(false);
   const [deleteCustomerConfirmOpen, setDeleteCustomerConfirmOpen] = useState(false);
   const [deleteVehicleId, setDeleteVehicleId] = useState<number | null>(null);
 
@@ -339,6 +348,20 @@ function CustomersPageContent() {
     });
   }
 
+  function confirmUnarchiveCustomer() {
+    const id = selectedCustomer?.id;
+    if (id == null || !selectedCustomer?.archived) return;
+    unarchiveCustomer.mutate(id, {
+      onSuccess: () => {
+        toast.success(t("unarchiveSuccess"));
+        setUnarchiveConfirmOpen(false);
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : t("unarchiveError"));
+      },
+    });
+  }
+
   function confirmDeleteCustomer() {
     const id = selectedCustomer?.id;
     if (id == null) return;
@@ -355,23 +378,30 @@ function CustomersPageContent() {
   }
 
   const customerMutationPending =
-    archiveCustomer.isPending || deleteCustomer.isPending || deleteVehicle.isPending;
+    isViewOnly ||
+    archiveCustomer.isPending ||
+    unarchiveCustomer.isPending ||
+    deleteCustomer.isPending ||
+    deleteVehicle.isPending;
 
   return (
     <div className="flex min-w-0 flex-col h-full gap-4 overflow-auto">
       <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <h1 className="text-headline-sm font-bold text-foreground">{t("title")}</h1>
         <div className="flex flex-wrap gap-2">
-          <Button
-            asChild
-            variant="brand"
-            className="w-full shrink-0 sm:w-auto"
-          >
-            <Link href={ROUTES.DASHBOARD.CUSTOMERS_ADD} className="flex items-center justify-center gap-2">
+          {isViewOnly ? (
+            <Button variant="brand" className="w-full shrink-0 sm:w-auto" disabled>
               <Plus className="size-4 shrink-0" />
               <span className="truncate">{t("addCustomer")}</span>
-            </Link>
-          </Button>
+            </Button>
+          ) : (
+            <Button asChild variant="brand" className="w-full shrink-0 sm:w-auto">
+              <Link href={ROUTES.DASHBOARD.CUSTOMERS_ADD} className="flex items-center justify-center gap-2">
+                <Plus className="size-4 shrink-0" />
+                <span className="truncate">{t("addCustomer")}</span>
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -386,7 +416,7 @@ function CustomersPageContent() {
             className="w-full ps-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            disabled={dealerId == null}
+            disabled={!hasClientMounted || dealerId == null}
             aria-label={t("searchByPhoneAria")}
           />
         </div>
@@ -399,7 +429,7 @@ function CustomersPageContent() {
             includeArchived && "bg-primary-container/20",
           )}
           onClick={() => setIncludeArchived((v) => !v)}
-          disabled={dealerId == null}
+          disabled={!hasClientMounted || dealerId == null}
           aria-pressed={includeArchived}
         >
           <Archive className="size-4 shrink-0" />
@@ -407,7 +437,7 @@ function CustomersPageContent() {
         </Button>
       </div>
 
-      {dealerId == null && isProfileLoading ? (
+      {waitingForDealer ? (
         <p className="text-body-sm text-muted-foreground" role="status">
           {t("loadingDealerProfile")}
         </p>
@@ -590,19 +620,31 @@ function CustomersPageContent() {
                       </div>
                     </div>
                     <div className="flex shrink-0 flex-wrap justify-center gap-2 lg:flex-col lg:items-stretch">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        asChild
-                        className="h-9 flex-1 border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
-                          hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
-                          transition-all duration-[var(--duration-normal)] sm:flex-initial"
-                      >
-                        <Link href={ROUTES.DASHBOARD.CUSTOMER_EDIT(String(selectedCustomer.id))}>
+                      {isViewOnly ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled
+                          className="h-9 flex-1 border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] sm:flex-initial"
+                        >
                           <Pencil className="size-4 shrink-0" />
                           {t("edit")}
-                        </Link>
-                      </Button>
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          className="h-9 flex-1 border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
+                          hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
+                          transition-all duration-[var(--duration-normal)] sm:flex-initial"
+                        >
+                          <Link href={ROUTES.DASHBOARD.CUSTOMER_EDIT(String(selectedCustomer.id))}>
+                            <Pencil className="size-4 shrink-0" />
+                            {t("edit")}
+                          </Link>
+                        </Button>
+                      )}
                       <Button
                         type="button"
                         variant="outline"
@@ -610,10 +652,20 @@ function CustomersPageContent() {
                         className="h-9 flex-1 border-[var(--color-warning-main-light)] bg-transparent text-[var(--color-warning-main-light)] 
                           hover:bg-[var(--color-warning-main-dark)] hover:text-white hover:border-[var(--color-warning-main-dark)] 
                           transition-all duration-[var(--duration-normal)] sm:flex-initial"
-                        disabled={selectedCustomer.archived || customerMutationPending}
-                        onClick={() => setArchiveConfirmOpen(true)}
+                        disabled={customerMutationPending}
+                        onClick={() =>
+                          selectedCustomer.archived
+                            ? setUnarchiveConfirmOpen(true)
+                            : setArchiveConfirmOpen(true)
+                        }
                       >
-                        {archiveCustomer.isPending ? t("loading") : t("archive")}
+                        {selectedCustomer.archived
+                          ? unarchiveCustomer.isPending
+                            ? t("loading")
+                            : t("unarchive")
+                          : archiveCustomer.isPending
+                            ? t("loading")
+                            : t("archive")}
                       </Button>
                       <Button
                         type="button"
@@ -640,7 +692,7 @@ function CustomersPageContent() {
                     type="button"
                     variant="brand"
                     className="w-full shrink-0 sm:w-auto"
-                    disabled={selectedCustomer.archived}
+                    disabled={isViewOnly || selectedCustomer.archived}
                     onClick={() => {
                       setVehicleToEdit(null);
                       setVehicleModalOpen(true);
@@ -746,7 +798,7 @@ function CustomersPageContent() {
                               className="h-8 w-8 sm:h-9 sm:w-9 rounded-md border border-[var(--color-tertiary-main-light)] bg-transparent text-[var(--color-tertiary-main-light)] 
                                         hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
                                         transition-all duration-[var(--duration-normal)]"
-                              disabled={selectedCustomer.archived}
+                              disabled={isViewOnly || selectedCustomer.archived}
                               aria-label={t("edit")}
                               onClick={() => {
                                 setVehicleToEdit(dealerCustomerVehicleToEdit(v));
@@ -835,6 +887,45 @@ function CustomersPageContent() {
                 </span>
               ) : (
                 t("archive")
+              )}
+            </Button>
+          </DialogFooter>
+        </ConfirmDialogContent>
+      </Dialog>
+
+      <Dialog open={unarchiveConfirmOpen} onOpenChange={setUnarchiveConfirmOpen}>
+        <ConfirmDialogContent>
+          <div className="space-y-2 text-start">
+            <DialogTitle className="text-lg font-semibold leading-tight text-foreground">
+              {t("unarchiveCustomer")}
+            </DialogTitle>
+            <DialogDescription className="text-body-sm leading-relaxed text-muted-foreground">
+              {t("unarchiveConfirmSubtitle")}
+            </DialogDescription>
+            <p className="text-body-sm text-muted-foreground">{t("unarchiveWarning")}</p>
+          </div>
+          <DialogFooter className="mt-6 flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setUnarchiveConfirmOpen(false)}
+              disabled={unarchiveCustomer.isPending}
+            >
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="brand"
+              disabled={unarchiveCustomer.isPending}
+              onClick={confirmUnarchiveCustomer}
+            >
+              {unarchiveCustomer.isPending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {t("loading")}
+                </span>
+              ) : (
+                t("unarchive")
               )}
             </Button>
           </DialogFooter>

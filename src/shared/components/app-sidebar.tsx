@@ -13,7 +13,6 @@ import {
   CircleDot,
   ShoppingCart,
   Mail,
-  FileText,
   Settings,
   Menu,
   ClipboardList,
@@ -44,7 +43,6 @@ const KEY_ICON_MAP: Record<string, LucideIcon> = {
   orders: ShoppingCart,
   sessions: ClipboardList,
   emailInbox: Mail,
-  reports: FileText,
   settings: Settings,
 };
 

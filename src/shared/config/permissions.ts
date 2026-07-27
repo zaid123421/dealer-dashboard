@@ -24,7 +24,6 @@ const ROLE_ROUTE_PREFIXES: Record<Role, string[]> = {
     ROUTES.DASHBOARD.SESSIONS,
     '/dashboard/sessions/',
     ROUTES.DASHBOARD.EMAIL_INBOX,
-    ROUTES.DASHBOARD.REPORTS,
     ROUTES.DASHBOARD.PROFILE,
     ROUTES.DASHBOARD.PRODUCTS.LIST,
     ROUTES.DASHBOARD.PRODUCTS.ADD,
@@ -48,7 +47,6 @@ const ROLE_ROUTE_PREFIXES: Record<Role, string[]> = {
     ROUTES.DASHBOARD.SESSIONS,
     '/dashboard/sessions/',
     ROUTES.DASHBOARD.EMAIL_INBOX,
-    ROUTES.DASHBOARD.REPORTS,
     ROUTES.DASHBOARD.PROFILE,
     ROUTES.DASHBOARD.PRODUCTS.LIST,
     ROUTES.DASHBOARD.PRODUCTS.ADD,
@@ -87,7 +85,6 @@ export const NAV_ENTRIES = [
   { path: ROUTES.DASHBOARD.ORDERS.LIST, label: 'Orders', key: 'orders' },
   { path: ROUTES.DASHBOARD.PICKUP_ORDERS, label: 'Pickup Orders', key: 'pickupOrders' },
   { path: ROUTES.DASHBOARD.SESSIONS, label: 'Sessions', key: 'sessions' },
-  { path: ROUTES.DASHBOARD.REPORTS, label: 'Reports', key: 'reports' },
   { path: ROUTES.DASHBOARD.PROFILE, label: 'Settings', key: 'settings' },
 ] as const;
 

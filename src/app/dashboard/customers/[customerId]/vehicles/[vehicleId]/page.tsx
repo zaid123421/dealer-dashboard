@@ -2,7 +2,23 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Eye, Trash2, Car, Plus, CreditCard, Palette, Gauge, Package, Snowflake, Sun, Cloud, ChevronRight, Home } from 'lucide-react'
+import {
+  Eye,
+  Trash2,
+  Car,
+  Plus,
+  CreditCard,
+  Palette,
+  Gauge,
+  Package,
+  Snowflake,
+  Sun,
+  Cloud,
+  ChevronRight,
+  Home,
+  Loader2,
+} from 'lucide-react'
+import { toast } from 'sonner'
 import { ErrorAlert } from '@/components/ui/error-alert'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -10,12 +26,20 @@ import StyledTable from '@/components/ui/styled-table'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { StatTile } from '@/components/ui/stat-tile'
+import { Dialog } from '@/components/ui/dialog'
+import {
+  ConfirmDialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from '@/components/ui/app-dialog'
 import {
   VehicleDetailsBreadcrumbSkeleton,
   VehicleDetailsCardSkeleton,
   VehicleTireSetsSectionSkeleton,
 } from '@/modules/vehicles/components/vehicle-details-skeleton'
 import { useVehicleTireSets } from '@/modules/tire-sets/hooks/use-vehicle-tire-sets'
+import { deleteTireSetService } from '@/modules/tire-sets/services/tire-set.service'
 import { useVehicleDetails } from '@/modules/vehicles/hooks/use-vehicle-details'
 import { useDealerCustomer } from '@/modules/customers/hooks/use-dealer-customer'
 import { useTranslations, useLocale } from 'next-intl'
@@ -24,6 +48,7 @@ import { AddTireSetModal } from '@/modules/tire-sets/components/add-tire-set-mod
 import { DealerQuotaNotice } from '@/modules/dealer/components/dealer-quota-notice'
 import { DealerQuotaPanel } from '@/modules/dealer/components/dealer-quota-panel'
 import { useDealerQuota } from '@/modules/dealer/hooks/use-dealer-quota'
+import { useGuardWrite } from '@/modules/dealer/hooks/use-view-only-mode'
 import {
   formatOdometer,
   formatTableCell,
@@ -38,8 +63,11 @@ export default function VehicleDetailsPage() {
   const customerId = params.customerId as string
   const vehicleId = params.vehicleId as string
   const [isAddTireSetModalOpen, setIsAddTireSetModalOpen] = useState(false)
-  const { snapshot, canAddTires } = useDealerQuota()
-  const canAddTireSet = canAddTires(1)
+  const [deleteConfirmTireSetId, setDeleteConfirmTireSetId] = useState<number | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const { snapshot, canAddTires, isViewOnly } = useDealerQuota()
+  const guardWrite = useGuardWrite()
+  const canAddTireSet = !isViewOnly && canAddTires(1)
 
   // Fetch vehicle details and tire sets from API
   const { vehicle, isLoading: vehicleLoading, isError: vehicleError } = useVehicleDetails({
@@ -58,6 +86,36 @@ export default function VehicleDetailsPage() {
     router.push(
       `/dashboard/customers/${customerId}/vehicles/${vehicleId}/tire-sets/${tireSetId}`
     )
+  }
+
+  function onDeleteTireSetRequest(tireSetId: number) {
+    if (!guardWrite()) return
+    setDeleteConfirmTireSetId(tireSetId)
+  }
+
+  async function onDeleteTireSetConfirm() {
+    if (deleteConfirmTireSetId == null) return
+    if (!guardWrite()) return
+
+    const cidNum = Number(customerId)
+    const vidNum = Number(vehicleId)
+    if (Number.isNaN(cidNum) || Number.isNaN(vidNum)) return
+
+    setIsDeleting(true)
+    try {
+      await deleteTireSetService(cidNum, vidNum, deleteConfirmTireSetId)
+      toast.success(t("tireSetDetailDeleteSuccess"))
+      setDeleteConfirmTireSetId(null)
+      refetch()
+    } catch (err) {
+      toast.error(
+        err instanceof Error && err.message.trim()
+          ? err.message
+          : t("tireSetDetailDeleteError"),
+      )
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const getSeasonBadgeColor = (season: string) => {
@@ -238,17 +296,21 @@ export default function VehicleDetailsPage() {
                     >
                       <Eye className="size-4" />
                     </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 rounded-md border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
-                                hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
-                                transition-all duration-[var(--duration-normal)]"
-                      title="Delete tire set"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    {!isViewOnly ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 rounded-md border border-[var(--color-error-main)] bg-transparent text-[var(--color-error-main)] 
+                                  hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
+                                  transition-all duration-[var(--duration-normal)]"
+                        title={t("tireSetDetailDeleteSet")}
+                        disabled={isDeleting && deleteConfirmTireSetId === tireSet.id}
+                        onClick={() => onDeleteTireSetRequest(tireSet.id)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    ) : null}
                   </div>
                 ),
               },
@@ -266,6 +328,51 @@ export default function VehicleDetailsPage() {
         vehicleId={vehicleId}
         onCreated={() => refetch()}
       />
+
+      <Dialog
+        open={deleteConfirmTireSetId != null}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setDeleteConfirmTireSetId(null)
+        }}
+      >
+        <ConfirmDialogContent>
+          <div className="space-y-2 text-start">
+            <DialogTitle className="text-lg font-semibold leading-tight text-foreground">
+              {t("tireSetDetailDeleteConfirmTitle")}
+            </DialogTitle>
+            <DialogDescription className="text-body-sm leading-relaxed text-muted-foreground">
+              {t("tireSetDetailDeleteConfirmDescription", {
+                id: deleteConfirmTireSetId ?? "—",
+              })}
+            </DialogDescription>
+          </div>
+          <DialogFooter className="mt-6 flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteConfirmTireSetId(null)}
+              disabled={isDeleting}
+            >
+              {t("tireSetDetailCancel")}
+            </Button>
+            <Button
+              type="button"
+              className="border-0 bg-[var(--color-error-main)] font-semibold text-white shadow-none hover:bg-[var(--color-error-main)]/90"
+              disabled={isDeleting}
+              onClick={() => void onDeleteTireSetConfirm()}
+            >
+              {isDeleting ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {t("tireSetDetailDeleting")}
+                </span>
+              ) : (
+                t("tireSetDetailDeleteSet")
+              )}
+            </Button>
+          </DialogFooter>
+        </ConfirmDialogContent>
+      </Dialog>
     </div>
   )
 }

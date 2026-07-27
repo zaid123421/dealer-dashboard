@@ -27,6 +27,7 @@ import {
 import { useCreateDealerCustomer } from "@/modules/customers/hooks/use-create-dealer-customer";
 import { DealerCustomerAddressRegionFields } from "@/modules/customers/components/dealer-customer-address-region-fields";
 import { PhoneWithCountryCodeField } from "@/modules/customers/components/phone-with-country-code-field";
+import { useGuardWrite, useViewOnlyMode } from "@/modules/dealer/hooks/use-view-only-mode";
 
 const defaultFormValues: CreateDealerCustomerFormValues = {
   firstName: "",
@@ -52,6 +53,8 @@ export default function AddCustomerPage() {
   const tValidation = useTranslations("validation");
   const router = useRouter();
   const createCustomer = useCreateDealerCustomer();
+  const { isViewOnly } = useViewOnlyMode();
+  const guardWrite = useGuardWrite();
 
   const formSchema = useMemo(
     () =>
@@ -75,6 +78,7 @@ export default function AddCustomerPage() {
   });
 
   function onSubmit(data: CreateDealerCustomerFormValues) {
+    if (!guardWrite()) return;
     createCustomer.mutate(mapDealerCustomerFormToRequest(data), {
       onSuccess: () => {
         toast.success(t("customerCreatedSuccess"));
@@ -259,7 +263,7 @@ export default function AddCustomerPage() {
             type="submit"
             variant="brand"
             className="w-full sm:w-auto"
-            disabled={createCustomer.isPending}
+            disabled={isViewOnly || createCustomer.isPending}
           >
             {createCustomer.isPending ? "…" : t("saveCustomer")}
           </Button>

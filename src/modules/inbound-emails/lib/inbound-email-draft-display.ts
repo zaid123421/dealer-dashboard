@@ -1,20 +1,15 @@
 import type { NormalizedShipmentRequestDetailSetRow } from "@/modules/shipment-requests/lib/shipment-request-detail-dto";
+import { APP_TIME_ZONE, formatLocaleDateTime, toIntlLocale } from "@/lib/format-locale";
 
 export function formatDraftAppointment(iso: string | null | undefined, locale: string): string {
   if (!iso?.trim()) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  try {
-    return d.toLocaleString(locale, {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  } catch {
-    return "—";
-  }
+  return formatLocaleDateTime(iso, locale, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 export function formatDraftTimeWindow(iso: string | null | undefined, locale: string): string {
@@ -22,9 +17,10 @@ export function formatDraftTimeWindow(iso: string | null | undefined, locale: st
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
   try {
-    return d.toLocaleTimeString(locale, {
+    return d.toLocaleTimeString(toIntlLocale(locale), {
       hour: "numeric",
       minute: "2-digit",
+      timeZone: APP_TIME_ZONE,
     });
   } catch {
     return "—";
@@ -56,4 +52,31 @@ export function formatDraftTireSets(sets: NormalizedShipmentRequestDetailSetRow[
       return [season, count, spec].filter(Boolean).join(" ");
     })
     .join("; ");
+}
+
+/** Prefer plain-text portion of inbound email body; strip HTML when needed. */
+export function formatInboundEmailBody(raw: string | null | undefined): string {
+  if (!raw?.trim()) return "";
+
+  const htmlStart = raw.search(/<\s*(?:html|div|p|br|span|table|body)\b/i);
+  const candidate = (htmlStart > 0 ? raw.slice(0, htmlStart) : raw)
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .trim();
+
+  if (candidate && !/<[a-z]/i.test(candidate)) return candidate;
+
+  return raw
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }

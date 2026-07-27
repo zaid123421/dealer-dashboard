@@ -23,8 +23,14 @@ import {
   type SearchableComboboxOption,
 } from "@/components/ui/searchable-combobox";
 import { cn } from "@/lib/utils";
+import { formatLocaleDate } from "@/lib/format-locale";
 import { CART_MODAL_SUBMIT_RESPONSIVE } from "@/lib/dialog-styles";
-import { useDealerId } from "@/shared/hooks/use-can-access";
+import { useDealerId, useDealerProfile } from "@/shared/hooks/use-can-access";
+import { useClientNowMs } from "@/shared/hooks/use-client-now-ms";
+import {
+  normalizeServiceDays,
+  type WeekDay,
+} from "@/modules/dealer/lib/service-days";
 import { useDealerCustomersInfinite } from "@/modules/customers/hooks/use-my-dealer-customers";
 import { useCustomerVehicles } from "@/modules/vehicles/hooks/use-customer-vehicles";
 import { useVehicleTireSets } from "@/modules/tire-sets/hooks/use-vehicle-tire-sets";
@@ -32,16 +38,6 @@ import { createDeliveryRequest } from "@/modules/shipment-requests/services/deal
 import { getDealerShipmentRequestDetail } from "@/modules/shipment-requests/services/dealer-shipment-request-detail.service";
 import { COMBINE_PICKUP_DELIVERY_VERSION_FALLBACK } from "@/modules/shipment-requests/services/dealer-pickup-suggestion.service";
 import { PickupSuggestionsStep } from "@/modules/shipment-requests/components/pickup-suggestions-step";
-
-const WEEK_DAYS = [
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-  "SUNDAY",
-] as const;
 
 const PREFERRED_DAY_NONE = "__none__";
 
@@ -114,7 +110,14 @@ export function AddDeliveryItemModal({
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const dealerId = useDealerId();
+  const profile = useDealerProfile();
+  const nowMs = useClientNowMs();
   const queryClient = useQueryClient();
+
+  const serviceDays = useMemo(
+    () => normalizeServiceDays(profile?.activeSubscription?.serviceDays),
+    [profile?.activeSubscription?.serviceDays],
+  );
 
   const [step, setStep] = useState<WizardStep>("form");
   const [createdDeliveryId, setCreatedDeliveryId] = useState<number | null>(null);
@@ -141,6 +144,12 @@ export function AddDeliveryItemModal({
       setNotes("");
     }
   }, [open]);
+
+  useEffect(() => {
+    if (preferredDeliveryDay && !serviceDays.includes(preferredDeliveryDay as WeekDay)) {
+      setPreferredDeliveryDay("");
+    }
+  }, [preferredDeliveryDay, serviceDays]);
 
   /* ── Customers ── */
   const { data: customersData } = useDealerCustomersInfinite({
@@ -195,34 +204,23 @@ export function AddDeliveryItemModal({
 
   /* ── Window info (from swap appointment) ── */
   const windowInfo = useMemo(() => {
+    if (nowMs == null) return null;
     const iso = swapLocalInputToIso(swapAppointmentLocal);
     if (!iso) return null;
     const apptMs = new Date(iso).getTime();
     if (Number.isNaN(apptMs)) return null;
-    const now = Date.now();
     const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
     const deadlineMs = apptMs - WEEK_MS;
     const daysUntilDeadline = Math.floor(
-      (deadlineMs - now) / (1000 * 60 * 60 * 24),
+      (deadlineMs - nowMs) / (1000 * 60 * 60 * 24),
     );
-    const fmt = (ms: number) => {
-      try {
-        return new Date(ms).toLocaleDateString(locale, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        });
-      } catch {
-        return "";
-      }
-    };
     return {
-      apptDisplay: fmt(apptMs),
-      deadlineDisplay: fmt(deadlineMs),
+      apptDisplay: formatLocaleDate(new Date(apptMs), locale),
+      deadlineDisplay: formatLocaleDate(new Date(deadlineMs), locale),
       daysUntilDeadline,
       isOk: daysUntilDeadline > 0,
     };
-  }, [swapAppointmentLocal, locale]);
+  }, [swapAppointmentLocal, locale, nowMs]);
 
   function handleCustomerChange(val: string) {
     setCustomerId(val);
@@ -394,7 +392,7 @@ export function AddDeliveryItemModal({
                     <SelectItem value={PREFERRED_DAY_NONE}>
                       {tc("preferredDayNone")}
                     </SelectItem>
-                    {WEEK_DAYS.map((day) => (
+                    {serviceDays.map((day) => (
                       <SelectItem key={day} value={day}>
                         {weekDayLabels[day]}
                       </SelectItem>

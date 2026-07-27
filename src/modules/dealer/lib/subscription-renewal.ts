@@ -51,7 +51,8 @@ export function getSubscriptionRenewalContext(
       hasActiveSubscription &&
       daysToExpiry != null &&
       daysToExpiry <= RENEW_SOON_DAYS,
-    showRenewInSettings: canManageRenewal,
+    /** Settings: renew only after the plan has ended (not while still active). */
+    showRenewInSettings: canManageRenewal && !hasActiveSubscription,
     showContactAdmin: !canManageRenewal && !hasActiveSubscription,
   };
 }

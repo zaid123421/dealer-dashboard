@@ -27,8 +27,11 @@ import {
 } from "@/components/ui/app-dialog";
 import { cn } from "@/lib/utils";
 import { PRIMARY_BUTTON_PILL_CLASS } from "@/lib/primary-button-styles";
+import { useViewOnlyMode } from "@/modules/dealer/hooks/use-view-only-mode";
 
-const SUBTLE_BORDER = "border-foreground/10 dark:border-surface-container-high";
+/** Dividers that match panel surfaces — never light/white outlines. */
+const PANEL_DIVIDER =
+  "border-[var(--color-surface-light-container)] dark:border-[var(--color-surface-container-high)]";
 
 type CartCustomerGroup = {
   name: string;
@@ -65,6 +68,7 @@ export function PickupCartPage({ baseQuery }: PickupCartPageProps) {
   // keep locale for future date formatting or API display
   useLocale();
   const queryClient = useQueryClient();
+  const { isViewOnly } = useViewOnlyMode();
 
   const [page, setPage] = useState(0);
   const [addItemOpen, setAddItemOpen] = useState(false);
@@ -247,6 +251,7 @@ export function PickupCartPage({ baseQuery }: PickupCartPageProps) {
         <Button
           type="button"
           variant="brand"
+          disabled={isViewOnly}
           onClick={() => setAddItemOpen(true)}
           className="w-full shrink-0 gap-2 sm:w-auto"
         >
@@ -267,7 +272,7 @@ export function PickupCartPage({ baseQuery }: PickupCartPageProps) {
       <div className="grid min-h-0 gap-4 lg:grid-cols-[1.65fr_1fr]">
         {/* ── Left panel: Step 1 + Step 2 ── */}
         <div className="min-h-0 overflow-hidden rounded-lg border-0 bg-surface-lightContainer dark:bg-surface-container">
-          <div className={cn("border-b px-4 py-4 sm:px-6", SUBTLE_BORDER)}>
+          <div className={cn("border-b px-4 py-4 sm:px-6", PANEL_DIVIDER)}>
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               {tc("step1Title")}
             </p>
@@ -277,7 +282,7 @@ export function PickupCartPage({ baseQuery }: PickupCartPageProps) {
                 <Input
                   type="search"
                   placeholder={tc("searchPlaceholder")}
-                  className="w-full ps-9"
+                  className="w-full border-0 ps-9 shadow-none focus:border-0 focus-visible:border-0 dark:border-0"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -293,12 +298,7 @@ export function PickupCartPage({ baseQuery }: PickupCartPageProps) {
                 ))}
               </div>
             ) : customerGroups.length === 0 ? (
-              <div
-                className={cn(
-                  "flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed bg-muted/30 px-4 py-10 text-center",
-                  SUBTLE_BORDER,
-                )}
-              >
+              <div className="flex flex-col items-center justify-center gap-3 rounded-lg border-0 bg-muted/30 px-4 py-10 text-center">
                 <div
                   className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground"
                   aria-hidden
@@ -324,20 +324,20 @@ export function PickupCartPage({ baseQuery }: PickupCartPageProps) {
                           type="button"
                           onClick={() => setActiveCustomer(g.name)}
                           className={cn(
-                            "flex items-center justify-between gap-3 rounded-lg border-0 bg-surface-lightContainer dark:bg-surface-container p-3 text-left transition-colors",
+                            "flex items-center justify-between gap-3 rounded-lg border bg-surface-lightContainer p-3 text-left transition-colors dark:bg-surface-container",
                             "hover:bg-[var(--color-surface-light)] dark:hover:bg-[var(--color-surface-bright)]/30",
                             selected
-                              ? "ring-1 ring-primary/30 bg-primary/10"
-                              : "ring-0",
+                              ? "border-primary-dark/50 bg-primary-dark/10 dark:border-primary/50"
+                              : "border-primary-dark/20 dark:border-primary/25",
                           )}
                         >
                           <div className="flex min-w-0 items-center gap-3">
                             <div
                               className={cn(
-                                "flex size-10 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                                "flex size-10 shrink-0 items-center justify-center rounded-full border transition-colors",
                                 selected
-                                  ? "border-primary-dark/40 bg-primary-dark/10 text-primary-dark"
-                                  : cn(SUBTLE_BORDER, "bg-surface-light text-muted-foreground dark:bg-surface-bright"),
+                                  ? "border-primary-dark/40 bg-primary-dark/10 text-primary-dark dark:border-primary/40"
+                                  : "border-primary-dark/20 bg-surface-light text-muted-foreground dark:border-primary/25 dark:bg-surface-bright",
                               )}
                               aria-hidden
                             >
@@ -376,11 +376,11 @@ export function PickupCartPage({ baseQuery }: PickupCartPageProps) {
                           aria-checked={checked}
                           onClick={() => toggleSelected(row.id)}
                           className={cn(
-                            "group w-full overflow-hidden rounded-lg border-0 bg-surface-lightContainer dark:bg-surface-container p-3 text-left transition-all duration-[var(--duration-normal)]",
-                            "hover:border-primary-dark/40 hover:bg-[var(--color-surface-light)] dark:hover:bg-[var(--color-surface-bright)]/20",
+                            "group w-full overflow-hidden rounded-lg border bg-surface-lightContainer p-3 text-left transition-all duration-[var(--duration-normal)] dark:bg-surface-container",
+                            "hover:bg-[var(--color-surface-light)] dark:hover:bg-[var(--color-surface-bright)]/20",
                             checked
-                              ? "border-primary-dark/40 bg-primary-dark/10 ring-1 ring-primary/30"
-                              : SUBTLE_BORDER,
+                              ? "border-primary-dark/50 bg-primary-dark/10 dark:border-primary/50"
+                              : "border-primary-dark/20 dark:border-primary/25",
                           )}
                         >
                           <div className="flex items-start justify-between gap-3">
@@ -401,13 +401,10 @@ export function PickupCartPage({ baseQuery }: PickupCartPageProps) {
                             <div className="flex shrink-0 items-center gap-2">
                               <div
                                 className={cn(
-                                  "flex size-6 items-center justify-center rounded-full border-2 transition-colors",
+                                  "flex size-6 items-center justify-center rounded-full border transition-colors",
                                   checked
-                                    ? "border-primary-dark bg-primary-dark text-white"
-                                    : cn(
-                                        SUBTLE_BORDER,
-                                        "bg-surface-light text-transparent group-hover:text-muted-foreground dark:bg-surface-bright",
-                                      ),
+                                    ? "border-primary-dark bg-primary-dark text-white dark:border-primary"
+                                    : "border-primary-dark/25 bg-surface-light text-transparent group-hover:text-muted-foreground dark:border-primary/30 dark:bg-surface-bright",
                                 )}
                                 aria-hidden
                               >
@@ -420,12 +417,7 @@ export function PickupCartPage({ baseQuery }: PickupCartPageProps) {
                     })}
 
                     {activeRows.length === 0 ? (
-                      <div
-                        className={cn(
-                          "rounded-lg border border-dashed bg-muted/30 px-4 py-8 text-center text-body-sm text-muted-foreground",
-                          SUBTLE_BORDER,
-                        )}
-                      >
+                      <div className="rounded-lg border-0 bg-muted/30 px-4 py-8 text-center text-body-sm text-muted-foreground">
                         {tc("step2Empty")}
                       </div>
                     ) : null}
@@ -438,7 +430,7 @@ export function PickupCartPage({ baseQuery }: PickupCartPageProps) {
 
         {/* ── Right panel: cart summary + submit ── */}
         <div className="min-h-0 overflow-hidden rounded-lg border-0 bg-surface-lightContainer dark:bg-surface-container">
-          <div className={cn("border-b px-4 py-4 sm:px-6", SUBTLE_BORDER)}>
+          <div className={cn("border-b px-4 py-4 sm:px-6", PANEL_DIVIDER)}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -464,12 +456,7 @@ export function PickupCartPage({ baseQuery }: PickupCartPageProps) {
 
           <div className="min-h-0 overflow-auto p-4 sm:p-6">
             {selectedRows.length === 0 ? (
-              <div
-                className={cn(
-                  "rounded-lg border border-dashed bg-muted/30 px-4 py-10 text-center",
-                  SUBTLE_BORDER,
-                )}
-              >
+              <div className="rounded-lg border-0 bg-muted/30 px-4 py-10 text-center">
                 <p className="text-body-md font-semibold text-foreground">{tc("cartEmptyHint")}</p>
                 <p className="mt-1 text-body-sm text-muted-foreground">{tc("cartEmptyHint2")}</p>
               </div>
@@ -478,10 +465,7 @@ export function PickupCartPage({ baseQuery }: PickupCartPageProps) {
                 {selectedByCustomer.map(([customer, list]) => (
                   <div
                     key={customer}
-                    className={cn(
-                      "rounded-lg border bg-surface-light p-3 dark:bg-surface-bright",
-                      SUBTLE_BORDER,
-                    )}
+                    className="rounded-lg border-0 bg-surface-light p-3 dark:bg-surface-bright"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
@@ -507,10 +491,7 @@ export function PickupCartPage({ baseQuery }: PickupCartPageProps) {
                       {list.map((row) => (
                         <div
                           key={row.id}
-                          className={cn(
-                            "flex items-center justify-between gap-3 rounded-lg border bg-surface-lightContainer dark:bg-surface-container p-2",
-                            SUBTLE_BORDER,
-                          )}
+                          className="flex items-center justify-between gap-3 rounded-lg border-0 bg-surface-lightContainer dark:bg-surface-container p-2"
                         >
                           <div className="min-w-0">
                             <p className="truncate text-body-sm font-semibold text-foreground">
@@ -538,12 +519,12 @@ export function PickupCartPage({ baseQuery }: PickupCartPageProps) {
             )}
           </div>
 
-          <div className={cn("shrink-0 border-t px-4 py-4 sm:px-6", SUBTLE_BORDER)}>
+          <div className={cn("shrink-0 border-t px-4 py-4 sm:px-6", PANEL_DIVIDER)}>
             <Button
               type="button"
               variant="brand"
               className={cn("w-full gap-2", PRIMARY_BUTTON_PILL_CLASS)}
-              disabled={selectedRows.length === 0 || submitting}
+              disabled={isViewOnly || selectedRows.length === 0 || submitting}
               onClick={() => setCreateOpen(true)}
             >
               {submitting ? (

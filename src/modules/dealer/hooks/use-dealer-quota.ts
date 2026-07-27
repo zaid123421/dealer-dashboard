@@ -19,9 +19,13 @@ export function useDealerQuota() {
     [profile],
   );
 
+  const isViewOnly = snapshot.isLoaded && !snapshot.hasActiveSubscription;
+
   return {
     profile,
     snapshot,
+    isViewOnly,
+    canMutate: !isViewOnly,
     canAddStaff: (role?: string) => canAddStaffMember(snapshot, role),
     canAddTires: (count = 1) => canAddTireCount(snapshot, count),
     getRoleQuota: (role: string) => getRoleQuota(snapshot, role),

@@ -6,13 +6,16 @@ import { toast } from "sonner";
 import {
   AlertTriangle,
   Loader2,
+  Pencil,
   Plus,
   Search,
   Send,
+  X,
 } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddDeliveryItemModal } from "@/modules/shipment-requests/components/add-delivery-item-modal";
+import { EditAppointmentModal } from "@/modules/shipment-requests/components/edit-appointment-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -32,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useDealerShipmentRequestsPaged } from "@/modules/shipment-requests/hooks/use-dealer-shipment-requests-paged";
+import { useCancelShipmentRequest } from "@/modules/shipment-requests/hooks/use-cancel-shipment-request";
 import {
   useSubmitAllShipmentRequests,
   useSubmitShipmentRequest,
@@ -39,6 +43,8 @@ import {
 import { SUBMIT_SHIPMENT_REQUEST_VERSION_FALLBACK } from "@/modules/shipment-requests/services/dealer-shipment-request-submit.service";
 import type { DealerShipmentRequestsPagedQuery } from "@/modules/shipment-requests/services/dealer-shipment-requests-paged.service";
 import type { NormalizedDeliveryOrderRow } from "@/modules/shipment-requests/lib/shipment-request-dto";
+import { useClientNowMs } from "@/shared/hooks/use-client-now-ms";
+import { useViewOnlyMode } from "@/modules/dealer/hooks/use-view-only-mode";
 import { cn } from "@/lib/utils";
 import { formatLocaleDate } from "@/lib/format-locale";
 import { PRIMARY_BUTTON_PILL_CLASS } from "@/lib/primary-button-styles";
@@ -47,9 +53,13 @@ import { PRIMARY_BUTTON_PILL_CLASS } from "@/lib/primary-button-styles";
 
 type WindowStatus = "ok" | "approaching" | "expired";
 
-function getWindowStatus(appointmentDate: Date | null): WindowStatus {
+function getWindowStatus(
+  appointmentDate: Date | null,
+  nowMs: number | null,
+): WindowStatus | null {
+  if (nowMs == null) return null;
   if (!appointmentDate) return "ok";
-  const diffMs = appointmentDate.getTime() - Date.now();
+  const diffMs = appointmentDate.getTime() - nowMs;
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
   if (diffDays < 0) return "expired";
   if (diffDays < 2) return "expired";
@@ -61,9 +71,17 @@ function WindowBadge({
   status,
   tc,
 }: {
-  status: WindowStatus;
+  status: WindowStatus | null;
   tc: (k: string) => string;
 }) {
+  if (status == null) {
+    return (
+      <Badge className="whitespace-nowrap border-0 bg-muted px-3 py-1 text-label-sm font-semibold text-muted-foreground shadow-none">
+        …
+      </Badge>
+    );
+  }
+
   const cfg: Record<WindowStatus, { label: string; cls: string }> = {
     ok: {
       label: tc("windowOk"),
@@ -88,15 +106,15 @@ function WindowBadge({
 
 /* ─────────────────────────── Footer counts ─────────────────────────── */
 
-function buildCounts(rows: NormalizedDeliveryOrderRow[]) {
+function buildCounts(rows: NormalizedDeliveryOrderRow[], nowMs: number | null) {
   let ready = 0;
   let blocked = 0;
   let approaching = 0;
   for (const r of rows) {
-    const ws = getWindowStatus(r.appointmentDate);
+    const ws = getWindowStatus(r.appointmentDate, nowMs);
     if (ws === "ok") ready += 1;
     else if (ws === "expired") blocked += 1;
-    else approaching += 1;
+    else if (ws === "approaching") approaching += 1;
   }
   return { ready, blocked, approaching, total: rows.length };
 }
@@ -112,17 +130,28 @@ type WindowFilter = "all" | WindowStatus;
 export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
   const tc = useTranslations("deliveryCart");
   const ts = useTranslations("staff");
+  const tCommon = useTranslations("common");
   const locale = useLocale();
   const [page, setPage] = useState(0);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [submitAllOpen, setSubmitAllOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<NormalizedDeliveryOrderRow | null>(null);
+  const [editTarget, setEditTarget] = useState<NormalizedDeliveryOrderRow | null>(null);
   const [submittingRowId, setSubmittingRowId] = useState<number | null>(null);
+  const [cancellingRowId, setCancellingRowId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [windowFilter, setWindowFilter] = useState<WindowFilter>("all");
+  const nowMs = useClientNowMs();
+  const { isViewOnly } = useViewOnlyMode();
 
   const submitMutation = useSubmitShipmentRequest();
   const submitAllMutation = useSubmitAllShipmentRequests();
-  const submitPending = submitMutation.isPending || submitAllMutation.isPending;
+  const cancelMutation = useCancelShipmentRequest();
+  const rowActionPending =
+    isViewOnly ||
+    submitMutation.isPending ||
+    submitAllMutation.isPending ||
+    cancelMutation.isPending;
 
   const listQuery = useMemo<DealerShipmentRequestsPagedQuery>(
     () => ({ ...baseQuery, page, size: baseQuery.size ?? 20, sortBy: baseQuery.sortBy ?? "createdAt" }),
@@ -136,8 +165,11 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return rows.filter((row) => {
-      const ws = getWindowStatus(row.appointmentDate);
-      if (windowFilter !== "all" && ws !== windowFilter) return false;
+      if (windowFilter !== "all") {
+        const ws = getWindowStatus(row.appointmentDate, nowMs);
+        // Until the client clock is ready, skip window filtering to keep SSR/hydrate stable.
+        if (ws != null && ws !== windowFilter) return false;
+      }
       if (!q) return true;
       const tireSetLabel =
         row.sets.length > 0
@@ -160,15 +192,16 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [rows, searchQuery, windowFilter, locale]);
+  }, [rows, searchQuery, windowFilter, locale, nowMs]);
 
-  const counts = useMemo(() => buildCounts(filteredRows), [filteredRows]);
+  const counts = useMemo(() => buildCounts(filteredRows, nowMs), [filteredRows, nowMs]);
   const loading = isPending || (isFetching && !data);
 
   const borderColor =
     "border-[var(--color-surface-light-container)] dark:border-[var(--color-surface-container-high)]";
 
   function onAddItem() {
+    if (isViewOnly) return;
     setAddItemOpen(true);
   }
 
@@ -177,7 +210,8 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
   }
 
   function canSubmitRow(row: NormalizedDeliveryOrderRow): boolean {
-    return getWindowStatus(row.appointmentDate) !== "expired";
+    const ws = getWindowStatus(row.appointmentDate, nowMs);
+    return ws === "ok" || ws === "approaching";
   }
 
   function onSubmitRow(row: NormalizedDeliveryOrderRow) {
@@ -197,6 +231,25 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
         onError: (err) => {
           toast.error(err instanceof Error ? err.message : tc("submitError"));
           setSubmittingRowId(null);
+        },
+      },
+    );
+  }
+
+  function onCancelConfirm() {
+    if (!cancelTarget) return;
+    setCancellingRowId(cancelTarget.id);
+    cancelMutation.mutate(
+      { id: cancelTarget.id, version: resolveRowVersion(cancelTarget) },
+      {
+        onSuccess: () => {
+          toast.success(tc("cancelSuccess"));
+          setCancelTarget(null);
+          setCancellingRowId(null);
+        },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : tc("cancelError"));
+          setCancellingRowId(null);
         },
       },
     );
@@ -227,6 +280,7 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
           type="button"
           variant="brand"
           onClick={onAddItem}
+          disabled={isViewOnly}
           className="w-full shrink-0 gap-2 sm:w-auto"
         >
           <Plus className="size-4 shrink-0" />
@@ -359,7 +413,7 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
             ) : (
               filteredRows.map((row, idx) => {
                 const isLast = idx === filteredRows.length - 1;
-                const ws = getWindowStatus(row.appointmentDate);
+                const ws = getWindowStatus(row.appointmentDate, nowMs);
 
                 /* vehicle subtitle: "Toyota Camry — ABC-1234" */
                 const vehicleSubtitle = [row.vehicleLabel, row.vehiclePlate]
@@ -416,35 +470,69 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
 
                     {/* Actions */}
                     <td className={cn(cellBase, "text-center")}>
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={
-                          !canSubmitRow(row) ||
-                          submitPending ||
-                          (submitMutation.isPending && submittingRowId === row.id)
-                        }
-                        onClick={() => onSubmitRow(row)}
-                        title={!canSubmitRow(row) ? tc("submitWindowBlocked") : undefined}
-                        className={cn(
-                          "h-8 gap-1.5 rounded-full px-3.5 text-label-sm font-medium shadow-none transition-all duration-200",
-                          canSubmitRow(row)
-                            ? "border border-primary-dark/25 bg-primary-dark/10 text-primary-dark hover:border-primary-dark/40 hover:bg-primary-dark/15 dark:border-primary/30 dark:bg-primary/10 dark:text-primary dark:hover:bg-primary/15"
-                            : "border border-border/60 bg-muted/40 text-muted-foreground",
-                        )}
-                      >
-                        {submitMutation.isPending && submittingRowId === row.id ? (
-                          <>
-                            <Loader2 className="size-3.5 animate-spin" aria-hidden />
-                            {tc("submittingRow")}
-                          </>
-                        ) : (
-                          <>
-                            <Send className="size-3.5 shrink-0 opacity-80" aria-hidden />
-                            {tc("submitRow")}
-                          </>
-                        )}
-                      </Button>
+                      <div className="inline-flex flex-wrap items-center justify-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={rowActionPending}
+                          onClick={() => setEditTarget(row)}
+                          className="h-8 gap-1.5 rounded-full border border-border/70 bg-transparent px-3.5 text-label-sm font-medium text-foreground shadow-none transition-all duration-200 hover:border-border hover:bg-muted/50"
+                        >
+                          <Pencil className="size-3.5 shrink-0 opacity-80" aria-hidden />
+                          {tc("editRow")}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={
+                            !canSubmitRow(row) ||
+                            rowActionPending ||
+                            (submitMutation.isPending && submittingRowId === row.id)
+                          }
+                          onClick={() => onSubmitRow(row)}
+                          title={!canSubmitRow(row) ? tc("submitWindowBlocked") : undefined}
+                          className={cn(
+                            "h-8 gap-1.5 rounded-full px-3.5 text-label-sm font-medium shadow-none transition-all duration-200",
+                            canSubmitRow(row)
+                              ? "border border-primary-dark/25 bg-primary-dark/10 text-primary-dark hover:border-primary-dark/40 hover:bg-primary-dark/15 dark:border-primary/30 dark:bg-primary/10 dark:text-primary dark:hover:bg-primary/15"
+                              : "border border-border/60 bg-muted/40 text-muted-foreground",
+                          )}
+                        >
+                          {submitMutation.isPending && submittingRowId === row.id ? (
+                            <>
+                              <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                              {tc("submittingRow")}
+                            </>
+                          ) : (
+                            <>
+                              <Send className="size-3.5 shrink-0 opacity-80" aria-hidden />
+                              {tc("submitRow")}
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={
+                            rowActionPending ||
+                            (cancelMutation.isPending && cancellingRowId === row.id)
+                          }
+                          onClick={() => setCancelTarget(row)}
+                          className="h-8 gap-1.5 rounded-full border border-[var(--color-error-main)]/40 bg-transparent px-3.5 text-label-sm font-medium text-[var(--color-error-main)] shadow-none transition-all duration-200 hover:border-[var(--color-error-main)] hover:bg-[var(--color-error-main)] hover:text-white"
+                        >
+                          {cancelMutation.isPending && cancellingRowId === row.id ? (
+                            <>
+                              <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                              {tc("cancellingRow")}
+                            </>
+                          ) : (
+                            <>
+                              <X className="size-3.5 shrink-0 opacity-80" aria-hidden />
+                              {tc("cancelRow")}
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -478,7 +566,7 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <Button
                         type="button"
-                        disabled={counts.ready === 0 || submitPending}
+                        disabled={counts.ready === 0 || rowActionPending || isViewOnly}
                         onClick={() => setSubmitAllOpen(true)}
                         className="gap-2 rounded-full border border-primary-dark/25 bg-primary-dark/10 px-4 font-medium text-primary-dark shadow-none transition-all duration-200 hover:border-primary-dark/40 hover:bg-primary-dark/15 dark:border-primary/30 dark:bg-primary/10 dark:text-primary dark:hover:bg-primary/15"
                       >
@@ -525,6 +613,14 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
         onCreated={() => void refetch()}
       />
 
+      <EditAppointmentModal
+        open={editTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setEditTarget(null);
+        }}
+        row={editTarget}
+      />
+
       <Dialog open={submitAllOpen} onOpenChange={setSubmitAllOpen}>
         <ConfirmDialogContent>
           <div className="space-y-2 text-start">
@@ -553,6 +649,47 @@ export function DeliveryCartPage({ baseQuery }: DeliveryCartPageProps) {
                 </span>
               ) : (
                 tc("submitAllConfirm")
+              )}
+            </Button>
+          </DialogFooter>
+        </ConfirmDialogContent>
+      </Dialog>
+
+      <Dialog
+        open={cancelTarget != null}
+        onOpenChange={(open) => !open && !cancelMutation.isPending && setCancelTarget(null)}
+      >
+        <ConfirmDialogContent>
+          <div className="space-y-2 text-start">
+            <DialogTitle className="text-lg font-semibold leading-tight text-foreground">
+              {tc("cancelConfirmTitle")}
+            </DialogTitle>
+            <DialogDescription className="text-body-sm leading-relaxed text-muted-foreground">
+              {tc("cancelConfirmDescription")}
+            </DialogDescription>
+          </div>
+          <DialogFooter className="mt-6 flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCancelTarget(null)}
+              disabled={cancelMutation.isPending}
+            >
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              type="button"
+              className="border-0 bg-[var(--color-error-main)] font-semibold text-white shadow-none hover:bg-[var(--color-error-main)]/90"
+              disabled={cancelMutation.isPending}
+              onClick={onCancelConfirm}
+            >
+              {cancelMutation.isPending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {tc("cancellingRow")}
+                </span>
+              ) : (
+                tc("cancelConfirm")
               )}
             </Button>
           </DialogFooter>

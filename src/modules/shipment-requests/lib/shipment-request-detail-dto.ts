@@ -29,6 +29,8 @@ export type NormalizedShipmentRequestDetail = {
   submittedAt?: string | null;
   receivedAt?: string | null;
   notes: string;
+  /** Original inbound email body when present (draft endpoint). */
+  body?: string | null;
   version?: number;
   handoverSessionId?: number;
   handoverSessionVersion?: number;
@@ -82,13 +84,15 @@ function normalizeSet(item: unknown, idx: number): NormalizedShipmentRequestDeta
 
 /** Accepts the JSON body from GET /v1/dealer/shipment-requests/:id */
 export function normalizeShipmentRequestDetailDto(rawUnknown: unknown): NormalizedShipmentRequestDetail | null {
-  const raw = asRecord(rawUnknown);
-  if (!raw) return null;
+  const root = asRecord(rawUnknown);
+  if (!root) return null;
+  const raw = asRecord(root.data) ?? root;
   const id = num(raw.id);
   if (id == null) return null;
 
   const setsRaw = raw.sets;
   const sets = Array.isArray(setsRaw) ? setsRaw.map((item, i) => normalizeSet(item, i)) : [];
+  const bodyRaw = typeof raw.body === "string" ? raw.body : null;
 
   return {
     id,
@@ -115,6 +119,7 @@ export function normalizeShipmentRequestDetailDto(rawUnknown: unknown): Normaliz
     submittedAt: pickString(raw, ["submittedAt"]) ?? null,
     receivedAt: pickString(raw, ["receivedAt"]) ?? null,
     notes: pickString(raw, ["notes"]) ?? "",
+    body: bodyRaw && bodyRaw.trim() ? bodyRaw : null,
     version: num(raw.version),
     ...(() => {
       const { handoverSessionId, handoverSessionVersion } = parseHandoverSessionFields(raw);

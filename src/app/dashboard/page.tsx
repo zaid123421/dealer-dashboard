@@ -1,6 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { ROUTES } from "@/constants/routes";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ReportsPage } from "@/modules/reports/components/reports-page";
 
 export default async function DashboardPage() {
   const t = await getTranslations("dashboard");
@@ -12,21 +11,7 @@ export default async function DashboardPage() {
         </h1>
         <p className="mt-1 text-body-md text-subtle">{t("intro")}</p>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-title-lg text-foreground">
-            {t("title")}
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">
-            {t("intro")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="w-fit rounded-md bg-muted/50 px-2 py-1 font-mono text-sm text-muted-foreground">
-            {ROUTES.DASHBOARD.ROOT}
-          </p>
-        </CardContent>
-      </Card>
+      <ReportsPage />
     </div>
   );
 }

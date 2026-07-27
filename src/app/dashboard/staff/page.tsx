@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Ban, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Ban, CheckCircle2, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -22,11 +22,13 @@ import {
 } from "@/components/ui/select";
 import { PRIMARY_BUTTON_RESPONSIVE } from "@/lib/primary-button-styles";
 import { PaginationControls } from "@/components/ui/pagination-controls";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { DealerQuotaPanel } from "@/modules/dealer/components/dealer-quota-panel";
 import { useDealerQuota } from "@/modules/dealer/hooks/use-dealer-quota";
 import { useDealerStaff } from "@/modules/staff/hooks/use-dealer-staff";
 import { useDisableDealerStaff } from "@/modules/staff/hooks/use-disable-dealer-staff";
+import { useReactivateDealerStaff } from "@/modules/staff/hooks/use-reactivate-dealer-staff";
 import { useDeleteDealerStaff } from "@/modules/staff/hooks/use-delete-dealer-staff";
 import { AddStaffModal } from "@/modules/staff/components/add-staff-modal";
 import type { DealerStaffMember } from "@/modules/staff/schemas/dealer-staff-page.schema";
@@ -44,10 +46,15 @@ function staffFullName(row: DealerStaffMember): string {
   return parts.length > 0 ? parts.join(" ") : "—";
 }
 
+function isStaffDisabled(status: string | null | undefined): boolean {
+  const s = (status ?? "").trim().toUpperCase();
+  return s === "INACTIVE" || s === "DISABLED" || s === "DEACTIVATED";
+}
+
 export default function StaffPage() {
   const t = useTranslations("staff");
   const tCommon = useTranslations("common");
-  const { canAddStaff } = useDealerQuota();
+  const { canAddStaff, isViewOnly } = useDealerQuota();
   const [page, setPage] = useState(0);
   const [staffModalOpen, setStaffModalOpen] = useState(false);
   const [staffToEdit, setStaffToEdit] = useState<DealerStaffMember | null>(null);
@@ -55,9 +62,11 @@ export default function StaffPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [disableTarget, setDisableTarget] = useState<DealerStaffMember | null>(null);
+  const [enableTarget, setEnableTarget] = useState<DealerStaffMember | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DealerStaffMember | null>(null);
 
   const disableStaff = useDisableDealerStaff();
+  const reactivateStaff = useReactivateDealerStaff();
   const deleteStaff = useDeleteDealerStaff();
 
   const { data, isPending, isError, error, refetch, isPlaceholderData } = useDealerStaff({
@@ -111,7 +120,7 @@ export default function StaffPage() {
   const canPrev = page > 0 && !isPending;
   const canNext =
     data != null && !data.last && page < totalPages - 1 && !isPending;
-  const canAddNewStaff = canAddStaff();
+  const canAddNewStaff = canAddStaff() && !isViewOnly;
 
   function confirmDisable() {
     if (!disableTarget) return;
@@ -122,6 +131,19 @@ export default function StaffPage() {
       },
       onError: (err) => {
         toast.error(err instanceof Error ? err.message : t("disableStaffError"));
+      },
+    });
+  }
+
+  function confirmEnable() {
+    if (!enableTarget) return;
+    reactivateStaff.mutate(enableTarget.id, {
+      onSuccess: () => {
+        toast.success(t("enableStaffSuccess"));
+        setEnableTarget(null);
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : t("enableStaffError"));
       },
     });
   }
@@ -256,17 +278,27 @@ export default function StaffPage() {
           { header: t("role"), render: (row: DealerStaffMember) => <span className="font-mono text-sm">{row.role}</span> },
           {
             header: t("status"),
-            render: (row: DealerStaffMember) => (
-              <span className="inline-flex items-center rounded-full bg-emerald-600 px-3 py-1 text-white text-sm">
-                {row.status}
-              </span>
-            ),
+            render: (row: DealerStaffMember) => {
+              const disabled = isStaffDisabled(row.status);
+              return (
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-full px-3 py-1 text-sm text-white",
+                    disabled ? "bg-gray-500" : "bg-emerald-600",
+                  )}
+                >
+                  {row.status}
+                </span>
+              );
+            },
           },
           { header: t("accessLevel"), render: (row: DealerStaffMember) => <span className="font-mono text-sm">{row.accessLevel}</span> },
           {
             header: t("actions"),
             className: "min-w-[220px]",
-            render: (row: DealerStaffMember) => (
+            render: (row: DealerStaffMember) => {
+              const disabled = isStaffDisabled(row.status);
+              return (
               <div className="flex justify-center gap-2">
                 <Button
                   type="button"
@@ -276,6 +308,7 @@ export default function StaffPage() {
                             hover:bg-[var(--color-tertiary-main-dark)] hover:text-white hover:border-[var(--color-tertiary-main-dark)] 
                             transition-all duration-[var(--duration-normal)]"
                   aria-label={t("edit")}
+                  disabled={isViewOnly}
                   onClick={() => {
                     setStaffToEdit(row);
                     setStaffModalOpen(true);
@@ -284,19 +317,35 @@ export default function StaffPage() {
                   <Pencil className="size-4" />
                 </Button>
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-md border border-[var(--color-warning-main-light)] bg-transparent text-[var(--color-warning-main-light)] 
-                            hover:bg-[var(--color-warning-main-dark)] hover:text-white hover:border-[var(--color-warning-main-dark)] 
-                            transition-all duration-[var(--duration-normal)]"
-                  aria-label={t("disable")}
-                  disabled={disableStaff.isPending && disableStaff.variables === row.id}
-                  onClick={() => setDisableTarget(row)}
-                >
-                  <Ban className="size-4" />
-                </Button>
+                {disabled ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 rounded-md border border-[var(--color-success-main-light)] bg-transparent text-[var(--color-success-main-light)] 
+                              hover:bg-[var(--color-success-main-dark)] hover:text-white hover:border-[var(--color-success-main-dark)] 
+                              transition-all duration-[var(--duration-normal)]"
+                    aria-label={t("enable")}
+                    disabled={isViewOnly || (reactivateStaff.isPending && reactivateStaff.variables === row.id)}
+                    onClick={() => setEnableTarget(row)}
+                  >
+                    <CheckCircle2 className="size-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 rounded-md border border-[var(--color-warning-main-light)] bg-transparent text-[var(--color-warning-main-light)] 
+                              hover:bg-[var(--color-warning-main-dark)] hover:text-white hover:border-[var(--color-warning-main-dark)] 
+                              transition-all duration-[var(--duration-normal)]"
+                    aria-label={t("disable")}
+                    disabled={isViewOnly || (disableStaff.isPending && disableStaff.variables === row.id)}
+                    onClick={() => setDisableTarget(row)}
+                  >
+                    <Ban className="size-4" />
+                  </Button>
+                )}
 
                 <Button
                   type="button"
@@ -306,13 +355,14 @@ export default function StaffPage() {
                             hover:bg-[var(--color-error-main)] hover:text-white hover:border-[var(--color-error-main)] 
                             transition-all duration-[var(--duration-normal)]"
                   aria-label={t("delete")}
-                  disabled={deleteStaff.isPending && deleteStaff.variables === row.id}
+                  disabled={isViewOnly || (deleteStaff.isPending && deleteStaff.variables === row.id)}
                   onClick={() => setDeleteTarget(row)}
                 >
                   <Trash2 className="size-4" />
                 </Button>
               </div>
-            ),
+              );
+            },
           },
         ]}
       />
@@ -362,6 +412,44 @@ export default function StaffPage() {
                 </span>
               ) : (
                 t("disable")
+              )}
+            </Button>
+          </DialogFooter>
+        </ConfirmDialogContent>
+      </Dialog>
+
+      <Dialog open={enableTarget != null} onOpenChange={(open) => !open && setEnableTarget(null)}>
+        <ConfirmDialogContent>
+          <div className="space-y-2 text-start">
+            <DialogTitle className="text-lg font-semibold leading-tight text-foreground">
+              {t("enable")}
+            </DialogTitle>
+            <DialogDescription className="text-body-sm leading-relaxed text-muted-foreground">
+              {t("enableConfirm")}
+            </DialogDescription>
+          </div>
+          <DialogFooter className="mt-6 flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEnableTarget(null)}
+              disabled={reactivateStaff.isPending}
+            >
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="brand"
+              disabled={reactivateStaff.isPending}
+              onClick={confirmEnable}
+            >
+              {reactivateStaff.isPending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {t("loading")}
+                </span>
+              ) : (
+                t("enable")
               )}
             </Button>
           </DialogFooter>

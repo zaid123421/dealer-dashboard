@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useState, useCallback } from 'react'
-import { Home, ChevronRight, AlertCircle, ArrowLeft } from 'lucide-react'
+import { Home, ChevronRight, AlertCircle, ArrowLeft, Loader2 } from 'lucide-react'
 import { ErrorAlert } from '@/components/ui/error-alert'
 import { toast } from 'sonner'
 import { useTireSetDetails } from '@/modules/tire-sets/hooks/use-tire-set-details'
@@ -14,16 +14,27 @@ import { TireSetDetailsPageSkeleton } from '@/modules/tire-sets/components/tire-
 import { deleteTireSetService } from '@/modules/tire-sets/services/tire-set.service'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
+import { Dialog } from '@/components/ui/dialog'
+import {
+  ConfirmDialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from '@/components/ui/app-dialog'
 import { useDealerCustomer } from '@/modules/customers/hooks/use-dealer-customer'
 import { useVehicleDetails } from '@/modules/vehicles/hooks/use-vehicle-details'
 import { formatVehicleLabel } from '@/lib/format-table-cell'
 import { useTranslations } from 'next-intl'
+import { useGuardWrite, useViewOnlyMode } from '@/modules/dealer/hooks/use-view-only-mode'
 
 export default function TireDetailsPage() {
   const params = useParams()
   const router = useRouter()
   const t = useTranslations('customers')
+  const { isViewOnly } = useViewOnlyMode()
+  const guardWrite = useGuardWrite()
 
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const customerId = params.customerId as string | undefined
@@ -44,7 +55,13 @@ export default function TireDetailsPage() {
     router.back()
   }, [router])
 
-  const handleDelete = useCallback(async () => {
+  function onDeleteRequest() {
+    if (!guardWrite()) return
+    setDeleteConfirmOpen(true)
+  }
+
+  async function onDeleteConfirm() {
+    if (!guardWrite()) return
     if (!customerId || !vehicleId || !tireSetId) return
     const cidNum = Number(customerId)
     const vidNum = Number(vehicleId)
@@ -54,14 +71,19 @@ export default function TireDetailsPage() {
     setIsDeleting(true)
     try {
       await deleteTireSetService(cidNum, vidNum, tidNum)
-      toast.success('Tire set deleted successfully.')
+      toast.success(t('tireSetDetailDeleteSuccess'))
+      setDeleteConfirmOpen(false)
       router.push(`/dashboard/customers/${customerId}/vehicles/${vehicleId}`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete tire set.')
+      toast.error(
+        err instanceof Error && err.message.trim()
+          ? err.message
+          : t('tireSetDetailDeleteError'),
+      )
     } finally {
       setIsDeleting(false)
     }
-  }, [customerId, vehicleId, tireSetId, router])
+  }
 
   const breadcrumbTireLabel =
     tireSet?.displayLabel?.trim() ||
@@ -162,11 +184,54 @@ export default function TireDetailsPage() {
       <TireSetHeader
         tireSet={tireSet}
         onBack={handleBack}
-        onDelete={handleDelete}
+        onDelete={isViewOnly ? undefined : onDeleteRequest}
         isDeleting={isDeleting}
       />
 
       <TireSetIndividualTiresTable tires={tires} />
+
+      <Dialog
+        open={deleteConfirmOpen}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setDeleteConfirmOpen(false)
+        }}
+      >
+        <ConfirmDialogContent>
+          <div className="space-y-2 text-start">
+            <DialogTitle className="text-lg font-semibold leading-tight text-foreground">
+              {t('tireSetDetailDeleteConfirmTitle')}
+            </DialogTitle>
+            <DialogDescription className="text-body-sm leading-relaxed text-muted-foreground">
+              {t('tireSetDetailDeleteConfirmDescription', { id: tireSet.id })}
+            </DialogDescription>
+          </div>
+          <DialogFooter className="mt-6 flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteConfirmOpen(false)}
+              disabled={isDeleting}
+            >
+              {t('tireSetDetailCancel')}
+            </Button>
+            <Button
+              type="button"
+              className="border-0 bg-[var(--color-error-main)] font-semibold text-white shadow-none hover:bg-[var(--color-error-main)]/90"
+              disabled={isDeleting}
+              onClick={() => void onDeleteConfirm()}
+            >
+              {isDeleting ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {t('tireSetDetailDeleting')}
+                </span>
+              ) : (
+                t('tireSetDetailDeleteSet')
+              )}
+            </Button>
+          </DialogFooter>
+        </ConfirmDialogContent>
+      </Dialog>
     </div>
   )
 }

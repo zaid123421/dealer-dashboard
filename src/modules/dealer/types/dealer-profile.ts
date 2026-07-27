@@ -37,6 +37,8 @@ export type DealerMeSubscription = {
   amountPaid: number;
   autoRenew: boolean;
   billingWeekday: string | null;
+  serviceDays: string[];
+  weeklyServiceDaysCap: number | null;
   cancellationDate: string | null;
   cancellationReason: string | null;
   totalUsers: number;

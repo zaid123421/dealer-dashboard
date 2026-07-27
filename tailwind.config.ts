@@ -9,6 +9,33 @@ const config: Config = {
 
       /* ───────── COLORS ───────── */
       colors: {
+        /* ── Shadcn / base design tokens ── */
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        border: "var(--border)",
+        input: "var(--input)",
+        ring: "var(--ring)",
+        card: {
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)",
+        },
+        popover: {
+          DEFAULT: "var(--popover)",
+          foreground: "var(--popover-foreground)",
+        },
+        muted: {
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
+        },
+        accent: {
+          DEFAULT: "var(--accent)",
+          foreground: "var(--accent-foreground)",
+        },
+        destructive: {
+          DEFAULT: "var(--destructive)",
+          foreground: "var(--destructive-foreground)",
+        },
+
         primary: {
           dark: "var(--color-primary-main-dark)",
           light: "var(--color-primary-main-light)",

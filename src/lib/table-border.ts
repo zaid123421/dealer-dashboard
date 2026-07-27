@@ -1,6 +1,6 @@
 /** Matches StyledTable outer container border. */
 export const TABLE_BORDER_COLOR =
-  "border-[var(--color-surface-light-container)] dark:border-[var(--color-surface-container-high)]";
+  "border-[var(--border)] dark:border-[var(--color-surface-container-high)]";
 
 export const TABLE_BORDER = `border-2 ${TABLE_BORDER_COLOR}`;
 

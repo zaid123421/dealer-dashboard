@@ -34,6 +34,7 @@ import {
   addressLookupKeys,
 } from "@/modules/addresses/hooks/use-address-lookups";
 import { fetchAddressCountries } from "@/modules/addresses/services/address-base.service";
+import { useGuardWrite, useViewOnlyMode } from "@/modules/dealer/hooks/use-view-only-mode";
 
 const emptyFormValues: CreateDealerCustomerFormValues = {
   firstName: "",
@@ -64,6 +65,8 @@ export default function EditCustomerPage() {
   const { data: customer, isPending, isError, error } = useDealerCustomer(customerIdParam);
   const updateCustomer = useUpdateDealerCustomer();
   const queryClient = useQueryClient();
+  const { isViewOnly } = useViewOnlyMode();
+  const guardWrite = useGuardWrite();
 
   const savedRegionLabels = customer?.address
     ? {
@@ -116,6 +119,7 @@ export default function EditCustomerPage() {
   }, [resolvedFormValues, reset]);
 
   function onSubmit(data: CreateDealerCustomerFormValues) {
+    if (!guardWrite()) return;
     const idNum = customerIdParam != null ? Number(customerIdParam) : NaN;
     if (!Number.isFinite(idNum) || customer == null) return;
     const payload = mapDealerCustomerFormToRequest(data);
@@ -335,7 +339,7 @@ export default function EditCustomerPage() {
             type="submit"
             variant="brand"
             className="w-full sm:w-auto"
-            disabled={updateCustomer.isPending}
+            disabled={isViewOnly || updateCustomer.isPending}
           >
             {updateCustomer.isPending ? "…" : t("saveCustomer")}
           </Button>

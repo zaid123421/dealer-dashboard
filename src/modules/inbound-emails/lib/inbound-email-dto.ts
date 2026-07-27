@@ -1,3 +1,5 @@
+import { formatLocaleDateTime } from "@/lib/format-locale";
+
 export type InboundStatusTone = "success" | "warning" | "error" | "info";
 
 export type EmailSuggestion = {
@@ -116,18 +118,12 @@ export function isInboundStatusFailed(raw: string): boolean {
 
 export function formatReceivedAt(iso: string | null, locale: string): string {
   if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  try {
-    return d.toLocaleString(locale, {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  } catch {
-    return "—";
-  }
+  return formatLocaleDateTime(iso, locale, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 /** Accepts one item from GET /v1/dealer/inbound-emails content[]. */

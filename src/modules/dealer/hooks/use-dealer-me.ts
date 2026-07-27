@@ -2,11 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import TokenService from "@/infrastructure/auth/token-service";
 import { syncDealerSessionFromMeApi } from "@/application/auth/sync-dealer-session.use-case";
 import type { DealerProfile } from "@/modules/dealer/types/dealer-profile";
+import { useHasClientMounted } from "@/shared/hooks/use-has-client-mounted";
 
 export const dealerMeQueryKey = ["dealer", "me"] as const;
 
 export function useDealerMe(options?: { enabled?: boolean }) {
-  const enabled = (options?.enabled ?? true) && Boolean(TokenService.getAccessToken());
+  const mounted = useHasClientMounted();
+  // Cookies are unavailable/empty on SSR — only enable after mount to keep isLoading stable.
+  const enabled =
+    mounted && (options?.enabled ?? true) && Boolean(TokenService.getAccessToken());
 
   return useQuery({
     queryKey: dealerMeQueryKey,

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Calendar, Car, CircleX, Clock, Layers, Loader2, Mail, Search, User, X } from "lucide-react";
+import { AlertTriangle, Calendar, Car, CircleX, Clock, FileText, Layers, Loader2, Mail, Search, User, X } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/app-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useViewOnlyMode } from "@/modules/dealer/hooks/use-view-only-mode";
 import { useDealerInboundEmails } from "@/modules/inbound-emails/hooks/use-dealer-inbound-emails";
 import { useInboundEmailDraft } from "@/modules/inbound-emails/hooks/use-inbound-email-draft";
 import {
@@ -27,6 +28,7 @@ import {
   formatDraftTireSets,
   formatDraftTimeWindow,
   formatDraftVehicle,
+  formatInboundEmailBody,
 } from "@/modules/inbound-emails/lib/inbound-email-draft-display";
 import type { InboundStatusTone } from "@/modules/inbound-emails/lib/inbound-email-dto";
 import {
@@ -73,11 +75,25 @@ function EmailDetailCardSkeleton() {
                 </div>
               ))}
             </div>
-            <Skeleton className="mt-4 h-32 w-full rounded-lg" />
           </div>
           <div className="flex w-full shrink-0 flex-col gap-2 lg:w-auto">
             <Skeleton className="h-9 w-full rounded-md" />
             <Skeleton className="h-9 w-full rounded-md" />
+          </div>
+        </div>
+        <div className="mt-5 overflow-hidden rounded-xl border border-border/60">
+          <div className="flex items-center gap-2.5 border-b border-border/60 px-4 py-3">
+            <Skeleton className="size-8 rounded-lg" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-3.5 w-36" />
+              <Skeleton className="h-3 w-48" />
+            </div>
+          </div>
+          <div className="space-y-3 px-4 py-5">
+            <Skeleton className="h-4 w-[92%]" />
+            <Skeleton className="h-4 w-[78%]" />
+            <Skeleton className="h-4 w-[85%]" />
+            <Skeleton className="h-4 w-[60%]" />
           </div>
         </div>
       </CardContent>
@@ -147,6 +163,7 @@ export default function EmailInboxPage() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const rejectMutation = useRejectShipmentRequest();
   const moveToCartMutation = useMoveShipmentRequestToCart();
+  const { isViewOnly } = useViewOnlyMode();
 
   const selected =
     resolvedSelectedId == null
@@ -160,7 +177,8 @@ export default function EmailInboxPage() {
 
   const draftVersion = draft?.version ?? 0;
   const canActOnShipmentRequest = Boolean(draft?.id && draft.status === "DRAFT");
-  const actionPending = rejectMutation.isPending || moveToCartMutation.isPending;
+  const actionPending = isViewOnly || rejectMutation.isPending || moveToCartMutation.isPending;
+  const emailBodyText = formatInboundEmailBody(draft?.body);
 
   function dismissInboundEmail(inboundEmailId: string) {
     setDismissedEmailIds((current) =>
@@ -380,16 +398,6 @@ export default function EmailInboxPage() {
                         </StatTileBox>
                       </div>
                     </div>
-                    <div className="mt-4 flex flex-col gap-2 text-start">
-                      <p className="text-xs font-medium text-muted-foreground sm:text-sm">
-                        {t("emailInboxParsedPreview")}
-                      </p>
-                      <StatTileBox className="max-h-48 overflow-auto p-3">
-                        <pre className="font-mono text-label-md leading-relaxed whitespace-pre-wrap text-foreground">
-                          {selected.preview}
-                        </pre>
-                      </StatTileBox>
-                    </div>
                   </div>
                   <div className="flex w-full shrink-0 flex-wrap justify-center gap-2 lg:w-auto lg:flex-col lg:items-stretch">
                     <Button
@@ -419,6 +427,45 @@ export default function EmailInboxPage() {
                         t("emailInboxApproveCart")
                       )}
                     </Button>
+                  </div>
+                </div>
+
+                <div className="mt-5 overflow-hidden rounded-xl border border-border/70 bg-gradient-to-b from-muted/35 to-muted/10 dark:from-surface-container/80 dark:to-surface-container/40">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-surface-light/70 px-4 py-3 dark:bg-surface-bright/40">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-dark/10 text-primary-dark">
+                        <FileText className="size-4" aria-hidden />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-label-md font-semibold text-foreground">
+                          {t("emailInboxEmailBody")}
+                        </p>
+                        <p className="truncate text-label-sm text-muted-foreground">
+                          {t("emailInboxEmailBodyMeta", {
+                            from: selected.from,
+                            time: selected.receivedAt,
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="max-h-72 overflow-auto px-4 py-4 sm:px-5 sm:py-5">
+                    {emailBodyText ? (
+                      <div className="space-y-3 text-start">
+                        {emailBodyText.split(/\n{2,}/).map((paragraph, index) => (
+                          <p
+                            key={index}
+                            className="whitespace-pre-wrap text-body-sm leading-7 text-foreground/90"
+                          >
+                            {paragraph}
+                          </p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-center text-body-sm text-muted-foreground">
+                        {t("emailInboxEmailBodyEmpty")}
+                      </p>
+                    )}
                   </div>
                 </div>
               </CardContent>

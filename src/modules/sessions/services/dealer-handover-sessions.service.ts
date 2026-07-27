@@ -1,20 +1,28 @@
 import axios from "axios";
 import api from "@/lib/api";
+import type { HandoverDirection } from "@/modules/shipment-requests/services/dealer-handover.service";
 import {
-  normalizeServiceSessionDto,
-  toServiceSessionRow,
-  type ServiceSessionRow,
-} from "@/modules/sessions/lib/service-session-dto";
+  normalizeHandoverSessionDto,
+  toHandoverSessionRow,
+  type HandoverSessionRow,
+} from "@/modules/sessions/lib/handover-session-dto";
 
-export type ServiceSessionsQuery = {
+export type HandoverSessionStatusFilter = "OPEN" | "CLOSED" | "CANCELLED";
+
+export type DealerHandoverSessionsQuery = {
+  direction: HandoverDirection;
   page?: number;
   size?: number;
   sortBy?: string;
-  direction?: "asc" | "desc";
+  /** Sort order — API uses `sort`, not `direction` (direction is handover inbound/outbound). */
+  sort?: "asc" | "desc";
+  status?: HandoverSessionStatusFilter;
+  dateFrom?: string;
+  dateTo?: string;
   locale?: string;
 };
 
-export type ServiceSessionsPagedMeta = {
+export type DealerHandoverSessionsPagedMeta = {
   page: number;
   size: number;
   totalPages: number;
@@ -25,9 +33,9 @@ export type ServiceSessionsPagedMeta = {
   empty: boolean;
 };
 
-export type ServiceSessionsPagedResult = {
-  rows: ServiceSessionRow[];
-  meta: ServiceSessionsPagedMeta;
+export type DealerHandoverSessionsPagedResult = {
+  rows: HandoverSessionRow[];
+  meta: DealerHandoverSessionsPagedMeta;
 };
 
 function asRecord(v: unknown): Record<string, unknown> | null {
@@ -51,34 +59,47 @@ function messageFromResponseData(data: unknown): string | undefined {
   return undefined;
 }
 
-function buildQueryString(query: ServiceSessionsQuery): string {
-  const { page = 0, size = 20, sortBy = "startedAt", direction = "desc" } = query;
+function buildQueryString(query: DealerHandoverSessionsQuery): string {
+  const {
+    direction,
+    page = 0,
+    size = 20,
+    sortBy = "openedAt",
+    sort = "desc",
+    status,
+    dateFrom,
+    dateTo,
+  } = query;
   const sp = new URLSearchParams();
+  sp.set("direction", direction);
   sp.set("page", String(page));
   sp.set("size", String(size));
   sp.set("sortBy", sortBy);
-  sp.set("direction", direction);
+  sp.set("sort", sort);
+  if (status) sp.set("status", status);
+  if (dateFrom?.trim()) sp.set("dateFrom", dateFrom.trim());
+  if (dateTo?.trim()) sp.set("dateTo", dateTo.trim());
   return sp.toString();
 }
 
-/** GET /v1/service-sessions/all — paginated service session summaries. */
-export async function listServiceSessionsPaged(
-  query: ServiceSessionsQuery = {},
-): Promise<ServiceSessionsPagedResult> {
+/** GET /v1/dealer/handover/all — paginated handover sessions by direction. */
+export async function listDealerHandoverSessionsPaged(
+  query: DealerHandoverSessionsQuery,
+): Promise<DealerHandoverSessionsPagedResult> {
   const qs = buildQueryString(query);
   const page = query.page ?? 0;
   const size = query.size ?? 20;
   const locale = query.locale ?? "en";
 
   try {
-    const { data } = await api.get<unknown>(`/v1/service-sessions/all?${qs}`);
+    const { data } = await api.get<unknown>(`/v1/dealer/handover/all?${qs}`);
     const root = asRecord(data);
     const items = root && Array.isArray(root.content) ? root.content : [];
 
-    const rows: ServiceSessionRow[] = [];
+    const rows: HandoverSessionRow[] = [];
     for (const item of items) {
-      const normalized = normalizeServiceSessionDto(item);
-      if (normalized) rows.push(toServiceSessionRow(normalized, locale));
+      const normalized = normalizeHandoverSessionDto(item);
+      if (normalized) rows.push(toHandoverSessionRow(normalized, locale));
     }
 
     if (root && Array.isArray(root.content)) {

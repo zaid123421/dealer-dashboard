@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import {
   ArrowRight,
   Check,
@@ -48,16 +48,11 @@ import type {
 import type { NormalizedShipmentRequestDetail } from "@/modules/shipment-requests/lib/shipment-request-detail-dto";
 import { getDealerShipmentRequestDetail } from "@/modules/shipment-requests/services/dealer-shipment-request-detail.service";
 import {
-  apiErrorMessageFromUnknown,
   handoverDirectionFromShipmentDirection,
-  handoverSessionIdQueryKey,
-  handoverSessionVersionQueryKey,
-  isHandoverCloseConflictError,
-  prepareCloseHandoverSession,
 } from "@/modules/shipment-requests/services/dealer-handover.service";
 import { useOpenHandoverSession } from "@/modules/shipment-requests/hooks/use-open-handover-session";
-import { useCloseHandoverSession } from "@/modules/shipment-requests/hooks/use-close-handover-session";
 import { cn } from "@/lib/utils";
+import { formatLocaleDate } from "@/lib/format-locale";
 import { TABLE_DETAIL_BOX } from "@/lib/table-border";
 import { PRIMARY_BUTTON_CLASS } from "@/lib/primary-button-styles";
 import {
@@ -65,6 +60,8 @@ import {
   RADIUS_CONTROL,
   RADIUS_PANEL,
 } from "@/lib/radius";
+import { useClientNowMs } from "@/shared/hooks/use-client-now-ms";
+import { useViewOnlyMode } from "@/modules/dealer/hooks/use-view-only-mode";
 
 type StatusFilter = "all" | ShipmentUiStatus | "other";
 type DateFilter = "all" | "today" | "week" | "month";
@@ -73,10 +70,14 @@ function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-function matchesDateFilter(date: Date | null, filter: DateFilter): boolean {
+function matchesDateFilter(
+  date: Date | null,
+  filter: DateFilter,
+  nowMs: number | null,
+): boolean {
   if (filter === "all") return true;
-  if (!date) return false;
-  const now = new Date();
+  if (!date || nowMs == null) return false;
+  const now = new Date(nowMs);
   const d0 = startOfDay(date);
   const n0 = startOfDay(now);
   if (filter === "today") return d0.getTime() === n0.getTime();
@@ -276,8 +277,9 @@ export function ShipmentRequestsOrdersStylePage({
   const tp = useTranslations("pickupOrders");
   const ts = useTranslations("staff");
   const locale = useLocale();
-  const queryClient = useQueryClient();
   const isPickup = orderBookType === "pickup";
+  const nowMs = useClientNowMs();
+  const { isViewOnly } = useViewOnlyMode();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -288,12 +290,8 @@ export function ShipmentRequestsOrdersStylePage({
   const [actionOrderId, setActionOrderId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkHandoverOpen, setBulkHandoverOpen] = useState(false);
-  const [closeConfirmOrder, setCloseConfirmOrder] = useState<NormalizedDeliveryOrderRow | null>(
-    null,
-  );
 
   const openHandoverSession = useOpenHandoverSession();
-  const closeHandoverSession = useCloseHandoverSession();
 
   const baseKey = useMemo(
     () =>
@@ -366,7 +364,7 @@ export function ShipmentRequestsOrdersStylePage({
   const filtered = useMemo(() => {
     let rows = deliveryRows;
     rows = rows.filter((r) => matchesStatusFilter(r.uiStatus, statusFilter));
-    rows = rows.filter((r) => matchesDateFilter(r.appointmentDate, dateFilter));
+    rows = rows.filter((r) => matchesDateFilter(r.appointmentDate, dateFilter, nowMs));
     if (debouncedSearch) {
       rows = rows.filter((r) => {
         const hay = [
@@ -378,7 +376,7 @@ export function ShipmentRequestsOrdersStylePage({
       });
     }
     return rows;
-  }, [deliveryRows, statusFilter, dateFilter, debouncedSearch]);
+  }, [deliveryRows, statusFilter, dateFilter, debouncedSearch, nowMs]);
 
   const selectableConfirmedRows = useMemo(
     () => filtered.filter((r) => r.uiStatus === "confirmed"),
@@ -404,14 +402,6 @@ export function ShipmentRequestsOrdersStylePage({
     actionsVariant === "soft"
       ? cn(PRIMARY_BUTTON_CLASS, "font-medium shadow-none")
       : "border-0 bg-[#2563eb] font-semibold text-white hover:bg-[#1d4ed8] dark:bg-blue-500 dark:hover:bg-blue-600",
-  );
-
-  const handoverModalCloseConfirmClass = cn(
-    DIALOG_FOOTER_BUTTON_CLASS,
-    "border-0 font-medium text-white shadow-none",
-    actionsVariant === "soft"
-      ? "bg-violet-600/90 hover:bg-violet-600 dark:bg-violet-500 dark:hover:bg-violet-400"
-      : "bg-[#7c3aed] font-semibold hover:bg-[#6d28d9] dark:bg-violet-500 dark:hover:bg-violet-600",
   );
 
   const footerCounts = useMemo(() => {
@@ -441,11 +431,12 @@ export function ShipmentRequestsOrdersStylePage({
 
   function formatAppointment(d: Date | null): string {
     if (!d) return td("noAppointment");
-    try {
-      return d.toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
-    } catch {
-      return td("noAppointment");
-    }
+    const formatted = formatLocaleDate(d, locale, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    return formatted === "—" ? td("noAppointment") : formatted;
   }
 
   function statusLabel(uiStatus: ShipmentUiStatus): string {
@@ -488,19 +479,15 @@ export function ShipmentRequestsOrdersStylePage({
     }
   }
 
-  function hasWorkflowPrimaryAction(
-    uiStatus: ShipmentUiStatus,
-  ): uiStatus is "confirmed" | "handover" {
-    // Pickup dealers open sessions on confirmed only; closing is not their role.
-    if (isPickup) return uiStatus === "confirmed";
-    return uiStatus === "confirmed" || uiStatus === "handover";
+  function hasWorkflowPrimaryAction(uiStatus: ShipmentUiStatus): uiStatus is "confirmed" {
+    return uiStatus === "confirmed";
   }
 
-  function primaryActionLabel(uiStatus: "confirmed" | "handover"): string {
+  function primaryActionLabel(uiStatus: "confirmed"): string {
     if (uiStatus === "confirmed") {
       return isPickup ? tp("actionCreateShipment") : td("actionConvertHandover");
     }
-    return td("actionCloseHandover");
+    return td("actionSoon");
   }
 
   function toggleSelected(id: number) {
@@ -557,68 +544,9 @@ export function ShipmentRequestsOrdersStylePage({
   }
 
   function onPrimaryAction(order: NormalizedDeliveryOrderRow) {
+    if (isViewOnly) return;
     if (order.uiStatus === "confirmed") {
       void onOpenHandover([order]);
-      return;
-    }
-    if (!isPickup && order.uiStatus === "handover") {
-      setCloseConfirmOrder(order);
-    }
-  }
-
-  async function onCloseHandoverConfirm() {
-    const order = closeConfirmOrder;
-    if (!order || actionOrderId !== null) return;
-
-    setActionOrderId(order.id);
-    const toastId = toast.loading(td("handoverClosing"));
-
-    try {
-      const active = deliveryRows.find((r) => r.id === order.id) ?? order;
-      const cachedSessionId = queryClient.getQueryData<number>(
-        handoverSessionIdQueryKey(active.id),
-      );
-      const cachedHandoverSessionVersion = queryClient.getQueryData<number>(
-        handoverSessionVersionQueryKey(active.id),
-      );
-      const prepared = await prepareCloseHandoverSession({
-        id: active.id,
-        handoverSessionId: active.handoverSessionId ?? cachedSessionId,
-        handoverSessionVersion: active.handoverSessionVersion ?? cachedHandoverSessionVersion,
-      });
-      if (!prepared.ok) {
-        if (prepared.reason === "missing_version") {
-          toast.error(td("handoverCloseMissingVersionTitle"), {
-            id: toastId,
-            description: td("handoverCloseMissingVersionDescription"),
-            duration: 10000,
-          });
-        } else {
-          toast.error(td("handoverCloseMissingSessionTitle"), {
-            id: toastId,
-            description: td("handoverCloseMissingSessionDescription"),
-            duration: 10000,
-          });
-        }
-        return;
-      }
-
-      await closeHandoverSession.mutateAsync(prepared.payload);
-      toast.success(td("handoverCloseSuccess"), { id: toastId });
-      setCloseConfirmOrder(null);
-    } catch (err: unknown) {
-      if (isHandoverCloseConflictError(err)) {
-        const apiMessage = apiErrorMessageFromUnknown(err);
-        toast.error(apiMessage ?? td("handoverCloseError"), {
-          id: toastId,
-          duration: 10000,
-        });
-        return;
-      }
-      const message = apiErrorMessageFromUnknown(err) ?? td("handoverCloseError");
-      toast.error(message, { id: toastId });
-    } finally {
-      setActionOrderId(null);
     }
   }
 
@@ -780,7 +708,7 @@ export function ShipmentRequestsOrdersStylePage({
             <Button
               type="button"
               size="sm"
-              disabled={handoverBusy || selectedOrders.length === 0}
+              disabled={isViewOnly || handoverBusy || selectedOrders.length === 0}
               className={
                 actionsVariant === "soft"
                   ? "rounded-full border border-primary-dark/25 bg-primary-dark/10 px-4 font-medium text-primary-dark shadow-none hover:border-primary-dark/40 hover:bg-primary-dark/15 dark:border-primary/30 dark:bg-primary/10 dark:text-primary dark:hover:bg-primary/15"
@@ -1034,7 +962,10 @@ export function ShipmentRequestsOrdersStylePage({
                       type="button"
                       variant="ghost"
                       size="default"
-                      disabled={handoverBusy && (actionOrderId === order.id || actionOrderId === -1)}
+                      disabled={
+                        isViewOnly ||
+                        (handoverBusy && (actionOrderId === order.id || actionOrderId === -1))
+                      }
                       className={
                         actionsVariant === "soft"
                           ? primaryActionSoftClass(order.uiStatus, orderBookType)
@@ -1149,51 +1080,6 @@ export function ShipmentRequestsOrdersStylePage({
         </ConfirmDialogContent>
       </Dialog>
 
-      <Dialog
-        open={closeConfirmOrder != null}
-        onOpenChange={(open) => {
-          if (!open && !closeHandoverSession.isPending) setCloseConfirmOrder(null);
-        }}
-      >
-        <ConfirmDialogContent>
-          <div className="space-y-2 text-start">
-            <DialogTitle className="text-lg font-semibold leading-tight text-foreground">
-              {td("handoverCloseConfirmTitle")}
-            </DialogTitle>
-            <DialogDescription className="text-body-sm leading-relaxed text-muted-foreground">
-              {td("handoverCloseConfirmDescription", {
-                orderId: closeConfirmOrder?.orderLabel ?? "",
-              })}
-            </DialogDescription>
-          </div>
-          <DialogFooter className="mt-6 flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
-            <Button
-              type="button"
-              variant="outline"
-              className={DIALOG_FOOTER_BUTTON_CLASS}
-              disabled={closeHandoverSession.isPending}
-              onClick={() => setCloseConfirmOrder(null)}
-            >
-              {td("handoverCloseCancel")}
-            </Button>
-            <Button
-              type="button"
-              disabled={closeHandoverSession.isPending}
-              onClick={() => void onCloseHandoverConfirm()}
-              className={handoverModalCloseConfirmClass}
-            >
-              {closeHandoverSession.isPending ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 className="size-4 animate-spin" aria-hidden />
-                  {td("handoverClosing")}
-                </span>
-              ) : (
-                td("actionCloseHandover")
-              )}
-            </Button>
-          </DialogFooter>
-        </ConfirmDialogContent>
-      </Dialog>
     </div>
   );
 }

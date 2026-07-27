@@ -5,7 +5,26 @@ export function toIntlLocale(locale: string): string {
   return locale;
 }
 
+/** Fixed zone so SSR (often UTC) and browser local time don't diverge. */
+export const APP_TIME_ZONE = "Asia/Riyadh";
+
 const EMPTY_VALUE = "—";
+
+const defaultDateOptions: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  timeZone: APP_TIME_ZONE,
+};
+
+const defaultDateTimeOptions: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: APP_TIME_ZONE,
+};
 
 export function formatLocaleDate(
   value: string | Date | null | undefined,
@@ -21,10 +40,9 @@ export function formatLocaleDate(
 
   try {
     return date.toLocaleDateString(toIntlLocale(locale), {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
+      ...defaultDateOptions,
       ...options,
+      timeZone: options?.timeZone ?? APP_TIME_ZONE,
     });
   } catch {
     return EMPTY_VALUE;
@@ -45,12 +63,9 @@ export function formatLocaleDateTime(
 
   try {
     return date.toLocaleString(toIntlLocale(locale), {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      ...defaultDateTimeOptions,
       ...options,
+      timeZone: options?.timeZone ?? APP_TIME_ZONE,
     });
   } catch {
     return EMPTY_VALUE;

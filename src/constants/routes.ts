@@ -20,7 +20,6 @@ export const ROUTES = {
       `/dashboard/customers/${customerId}/add-vehicle`,
     STAFF: "/dashboard/staff",
     EMAIL_INBOX: "/dashboard/email-inbox",
-    REPORTS: "/dashboard/reports",
     PRODUCTS: {
       LIST: "/dashboard/products",
       ADD: "/dashboard/products/add",

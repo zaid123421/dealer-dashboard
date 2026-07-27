@@ -21,22 +21,16 @@ import {
   SearchableCombobox,
   type SearchableComboboxOption,
 } from "@/components/ui/searchable-combobox";
-import { useDealerId } from "@/shared/hooks/use-can-access";
+import { useDealerId, useDealerProfile } from "@/shared/hooks/use-can-access";
+import {
+  normalizeServiceDays,
+  type WeekDay,
+} from "@/modules/dealer/lib/service-days";
 import { useDealerCustomersInfinite } from "@/modules/customers/hooks/use-my-dealer-customers";
 import { useCustomerVehicles } from "@/modules/vehicles/hooks/use-customer-vehicles";
 import { useVehicleTireSets } from "@/modules/tire-sets/hooks/use-vehicle-tire-sets";
 import { CART_MODAL_SUBMIT_RESPONSIVE } from "@/lib/dialog-styles";
 import { createPickupRequest } from "@/modules/shipment-requests/services/dealer-cart.service";
-
-const WEEK_DAYS = [
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-  "SUNDAY",
-] as const;
 
 const PREFERRED_DAY_NONE = "__none__";
 
@@ -55,7 +49,13 @@ export function AddPickupItemModal({
   const tp = useTranslations("pickupCart");
   const tCommon = useTranslations("common");
   const dealerId = useDealerId();
+  const profile = useDealerProfile();
   const queryClient = useQueryClient();
+
+  const serviceDays = useMemo(
+    () => normalizeServiceDays(profile?.activeSubscription?.serviceDays),
+    [profile?.activeSubscription?.serviceDays],
+  );
 
   const [customerId, setCustomerId] = useState("");
   const [vehicleId, setVehicleId] = useState("");
@@ -73,6 +73,12 @@ export function AddPickupItemModal({
       setNotes("");
     }
   }, [open]);
+
+  useEffect(() => {
+    if (preferredDispatchDay && !serviceDays.includes(preferredDispatchDay as WeekDay)) {
+      setPreferredDispatchDay("");
+    }
+  }, [preferredDispatchDay, serviceDays]);
 
   const { data: customersData } = useDealerCustomersInfinite({
     dealerId,
@@ -249,7 +255,7 @@ export function AddPickupItemModal({
                 <SelectItem value={PREFERRED_DAY_NONE}>
                   {tc("preferredDayNone")}
                 </SelectItem>
-                {WEEK_DAYS.map((day) => (
+                {serviceDays.map((day) => (
                   <SelectItem key={day} value={day}>
                     {weekDayLabels[day]}
                   </SelectItem>

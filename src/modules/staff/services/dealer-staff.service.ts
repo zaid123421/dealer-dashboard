@@ -128,6 +128,20 @@ export async function disableDealerStaff(staffId: number): Promise<void> {
   }
 }
 
+/** إعادة تفعيل حساب الموظف المعطّل. */
+export async function reactivateDealerStaff(staffId: number): Promise<void> {
+  try {
+    await api.post(`/dealer-portal/staff/${staffId}/reactivate`);
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      const msg =
+        messageFromResponseData(err.response?.data) ?? err.message ?? "Request failed";
+      throw new Error(msg);
+    }
+    throw err;
+  }
+}
+
 /** حذف حساب الموظف نهائياً. */
 export async function deleteDealerStaff(staffId: number): Promise<void> {
   try {

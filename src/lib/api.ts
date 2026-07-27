@@ -3,6 +3,7 @@ import TokenService from "@/infrastructure/auth/token-service";
 import { ROUTES } from "@/constants/routes";
 import { refreshAccessTokenUseCase } from "@/application/auth/refresh-access-token.use-case";
 import { useAuthStore } from "@/shared/stores/auth-store";
+import { assertCanWriteRequest } from "@/modules/dealer/lib/subscription-view-only";
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 
@@ -76,6 +77,11 @@ api.interceptors.request.use(
     const token = TokenService.getAccessToken();
     if (token) {
       attachBearerToken(config, token);
+    }
+    try {
+      assertCanWriteRequest(config.url, config.method);
+    } catch (err) {
+      return Promise.reject(err);
     }
     return config;
   },

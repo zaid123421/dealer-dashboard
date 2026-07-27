@@ -44,6 +44,14 @@
     overflow-x: hidden;
   }
 
+  /* Make every bare border use the theme border colour by default.
+     This fixes border-b / border-t / border etc. in dark mode. */
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
   html[lang="ar"] body {
     font-family: var(--font-family-arabic);
   }

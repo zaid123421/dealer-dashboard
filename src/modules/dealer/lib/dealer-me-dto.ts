@@ -114,6 +114,8 @@ function normalizeSubscription(raw: unknown): DealerMeSubscription | null {
     amountPaid: num(rec.amountPaid),
     autoRenew: bool(rec.autoRenew),
     billingWeekday: strOrNull(rec.billingWeekday),
+    serviceDays: stringArray(rec.serviceDays),
+    weeklyServiceDaysCap: numOrNull(rec.weeklyServiceDaysCap),
     cancellationDate: strOrNull(rec.cancellationDate),
     cancellationReason: strOrNull(rec.cancellationReason),
     totalUsers: num(rec.totalUsers),
