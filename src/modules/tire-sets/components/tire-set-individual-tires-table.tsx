@@ -8,7 +8,6 @@ import type { TireDetail } from '../types'
 import {
   formatWheelPositionDisplay,
   formatTreadDepthDisplay,
-  formatTireDescription,
 } from '../lib/tire-display'
 
 interface TireSetIndividualTiresTableProps {
@@ -86,16 +85,7 @@ export function TireSetIndividualTiresTable({ tires }: TireSetIndividualTiresTab
           {
             header: t('tireSetDetailColTreadDepth'),
             render: ({ tire }) => (
-              <span className="font-mono text-sm">{formatTreadDepthDisplay(tire.treadCondition)}</span>
-            ),
-            align: 'center',
-          },
-          {
-            header: t('tireSetDetailColCondition'),
-            render: ({ tire }) => (
-              <span className="text-sm text-muted-foreground">
-                {formatTireDescription(tire.description)}
-              </span>
+              <span className="font-mono text-sm">{formatTreadDepthDisplay(tire.treadDepth)}</span>
             ),
             align: 'center',
           },

@@ -12,6 +12,8 @@ export interface TireDetail {
   composition: string | null
   mileage: number | null
   treadCondition: string | null
+  /** عمق المداس بالمليمتر من الـ API (`treadDepth`). */
+  treadDepth: number | null
   /** قيمة خام من الـ API (مثل CREATED، STORED، SHIPPED، GOOD، …) */
   status: string
   brand: string

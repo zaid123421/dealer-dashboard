@@ -64,7 +64,6 @@ const individualTiresSkeletonColumns = [
   { header: "Position", render: () => null },
   { header: "Status", render: () => null, align: "center" as const },
   { header: "Tread Depth", render: () => null, align: "center" as const },
-  { header: "Condition", render: () => null, align: "center" as const },
 ];
 
 export function TireSetIndividualTiresTableSkeleton() {

@@ -63,6 +63,7 @@ interface ApiResponse {
     composition: string | null
     mileage: number | null
     treadCondition: string | null
+    treadDepth: number | null
     status: string
     brand: string
     model: string | null
@@ -112,6 +113,10 @@ function mapApiTireToDetail(tire: ApiResponse['tires'][number]): TireDetail {
     composition: tire.composition,
     mileage: tire.mileage,
     treadCondition: tire.treadCondition,
+    treadDepth:
+      typeof tire.treadDepth === 'number' && Number.isFinite(tire.treadDepth)
+        ? tire.treadDepth
+        : null,
     status:
       typeof tire.status === 'string' && tire.status.trim() !== ''
         ? tire.status.trim()

@@ -31,10 +31,17 @@ export function formatWheelPositionDisplay(position: string | null): string {
   return label ? `${code} — ${label}` : code
 }
 
-/** عرض عمق المداس: إن وُجد رقم صريح يُعرض بالمليمتر، وإلا النص الخام أو شرطة */
-export function formatTreadDepthDisplay(treadCondition: string | null): string {
-  if (treadCondition == null || !String(treadCondition).trim()) return '—'
-  const s = String(treadCondition).trim()
+/** عرض عمق المداس بالمليمتر من `treadDepth` (رقم) أو نص قديم متوافق. */
+export function formatTreadDepthDisplay(
+  treadDepth: number | string | null | undefined,
+): string {
+  if (treadDepth == null) return '—'
+  if (typeof treadDepth === 'number') {
+    if (!Number.isFinite(treadDepth)) return '—'
+    return `${treadDepth} mm`
+  }
+  const s = String(treadDepth).trim()
+  if (!s) return '—'
   const num = /^(\d+(?:\.\d+)?)\s*(?:mm)?$/i.exec(s)
   if (num) return `${num[1]} mm`
   if (/^\d+(\.\d+)?$/.test(s)) return `${s} mm`
