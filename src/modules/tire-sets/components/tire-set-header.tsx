@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from 'next-intl'
 import { formatLocaleDate } from '@/lib/format-locale'
-import { ArrowLeft, CalendarDays, Cloud, Hash, Loader2, Package, Ruler, Snowflake, Sun, Tags, Trash2 } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Hash, Loader2, Package, Ruler, Snowflake, Sun, Tags, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { StatTile } from '@/components/ui/stat-tile'
@@ -65,14 +65,11 @@ export function TireSetHeader({
                   <div className="flex items-center gap-1">
                     {tireSet.seasonType === 'Winter' && <Snowflake className="size-3 sm:size-4 text-blue-500 dark:text-blue-400" />}
                     {tireSet.seasonType === 'Summer' && <Sun className="size-3 sm:size-4 text-orange-500 dark:text-orange-400" />}
-                    {tireSet.seasonType === 'All-Season' && <Cloud className="size-3 sm:size-4 text-gray-500 dark:text-gray-400" />}
                     <span
                       className={
                         tireSet.seasonType === 'Winter'
                           ? 'text-blue-500 dark:text-blue-400'
-                          : tireSet.seasonType === 'Summer'
-                            ? 'text-orange-500 dark:text-orange-400'
-                            : 'text-gray-500 dark:text-gray-400'
+                          : 'text-orange-500 dark:text-orange-400'
                       }
                     >
                       {tireSet.seasonType}

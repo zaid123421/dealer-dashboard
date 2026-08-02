@@ -53,7 +53,11 @@ import {
   dealerHandoverSessionStateQueryKey,
 } from "@/modules/sessions/hooks/use-dealer-handover-session-state";
 import type { HandoverSessionRow } from "@/modules/sessions/lib/handover-session-dto";
-import type { NormalizedHandoverSessionState } from "@/modules/sessions/lib/handover-session-state-dto";
+import {
+  formatScanResultLabel,
+  scanResultBadgeClass,
+  type NormalizedHandoverSessionState,
+} from "@/modules/sessions/lib/handover-session-state-dto";
 import { getDealerHandoverSessionState } from "@/modules/sessions/services/dealer-handover-session-state.service";
 import type { HandoverSessionStatusFilter } from "@/modules/sessions/services/dealer-handover-sessions.service";
 
@@ -66,6 +70,21 @@ const TAB_DIRECTION: Record<SessionsTab, HandoverDirection> = {
   handover: "INBOUND_DELIVERY",
   preShipments: "OUTBOUND_PICKUP",
 };
+
+const SCAN_RESULT_I18N: Record<string, string> = {
+  MATCH: "sessionsScanResultMatch",
+  UNKNOWN_TIRE: "sessionsScanResultUnknownTire",
+  NOT_IN_MANIFEST: "sessionsScanResultNotInManifest",
+  DUPLICATE: "sessionsScanResultDuplicate",
+  DISMISSED: "sessionsScanResultDismissed",
+};
+
+function scanResultLabel(result: string | null, t: (key: string) => string): string {
+  if (!result) return "—";
+  const key = SCAN_RESULT_I18N[result.toUpperCase()];
+  if (key) return t(key);
+  return formatScanResultLabel(result);
+}
 
 function statusBadgeClass(status: string): string {
   switch (status.toUpperCase()) {
@@ -729,7 +748,21 @@ function SessionDetailPanel({
               >
                 <ScanLine className="mt-0.5 size-4 shrink-0 text-primary-dark dark:text-primary" aria-hidden />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-mono text-sm font-medium text-foreground">{scan.label}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="min-w-0 truncate font-mono text-sm font-medium text-foreground">
+                      {scan.label}
+                    </p>
+                    {scan.result ? (
+                      <Badge
+                        className={cn(
+                          "shrink-0 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+                          scanResultBadgeClass(scan.result),
+                        )}
+                      >
+                        {scanResultLabel(scan.result, t)}
+                      </Badge>
+                    ) : null}
+                  </div>
                   {scan.detail ? (
                     <p className="mt-0.5 truncate text-label-sm text-muted-foreground">{scan.detail}</p>
                   ) : null}

@@ -1,6 +1,8 @@
 export type NormalizedHandoverScan = {
   id: string;
   label: string;
+  /** Scan outcome from API (`result`), e.g. MATCH / DISMISSED. */
+  result: string | null;
   detail: string | null;
   scannedAt: string | null;
 };
@@ -35,34 +37,46 @@ function num(v: unknown): number | undefined {
 
 function normalizeScan(raw: unknown, index: number): NormalizedHandoverScan {
   if (typeof raw === "string" && raw.trim()) {
-    return { id: `scan-${index}`, label: raw.trim(), detail: null, scannedAt: null };
+    return {
+      id: `scan-${index}`,
+      label: raw.trim(),
+      result: null,
+      detail: null,
+      scannedAt: null,
+    };
   }
 
   const obj = asRecord(raw);
   if (!obj) {
-    return { id: `scan-${index}`, label: "—", detail: null, scannedAt: null };
+    return {
+      id: `scan-${index}`,
+      label: "—",
+      result: null,
+      detail: null,
+      scannedAt: null,
+    };
   }
 
   const label =
+    str(obj.rawCode) ??
+    (num(obj.rawCode) != null ? String(num(obj.rawCode)) : undefined) ??
     str(obj.barcode) ??
     str(obj.code) ??
-    str(obj.uid) ??
-    str(obj.uniqueId) ??
-    str(obj.label) ??
-    str(obj.tireId) ??
-    (num(obj.tireId) != null ? String(num(obj.tireId)) : undefined) ??
     "—";
 
-  const detailParts = [
-    str(obj.tireSetLabel),
-    str(obj.position),
-    str(obj.customerDisplayName),
-  ].filter(Boolean);
+  const result = str(obj.result)?.toUpperCase() ?? null;
 
   return {
-    id: str(obj.id) ?? `scan-${index}-${label}`,
+    id:
+      str(obj.id) ??
+      (num(obj.id) != null ? String(num(obj.id)) : undefined) ??
+      `scan-${index}-${label}`,
     label,
-    detail: detailParts.length > 0 ? detailParts.join(" · ") : null,
+    result,
+    detail:
+      num(obj.resolvedTireId) != null
+        ? `Tire #${num(obj.resolvedTireId)}`
+        : null,
     scannedAt: str(obj.scannedAt) ?? str(obj.createdAt) ?? null,
   };
 }
@@ -79,12 +93,8 @@ export function normalizeHandoverSessionState(raw: unknown): NormalizedHandoverS
   const sessionId = num(obj.sessionId ?? obj.id);
   if (sessionId == null) return null;
 
-  const newScans: NormalizedHandoverScan[] = [];
-  if (Array.isArray(obj.newScans)) {
-    obj.newScans.forEach((item, index) => {
-      newScans.push(normalizeScan(item, index));
-    });
-  }
+  const scanSource = Array.isArray(obj.newScans) ? obj.newScans : [];
+  const newScans = scanSource.map((item, index) => normalizeScan(item, index));
 
   return {
     sessionId,
@@ -94,4 +104,34 @@ export function normalizeHandoverSessionState(raw: unknown): NormalizedHandoverS
     discrepancies: num(obj.discrepancies) ?? 0,
     newScans,
   };
+}
+
+/** Badge colors for scan `result` values from handover state. */
+export function scanResultBadgeClass(result: string | null | undefined): string {
+  switch ((result ?? "").trim().toUpperCase()) {
+    case "MATCH":
+      return "border-0 bg-emerald-600 text-white shadow-none";
+    case "UNKNOWN_TIRE":
+      return "border-0 bg-amber-500 text-white shadow-none";
+    case "NOT_IN_MANIFEST":
+      return "border-0 bg-destructive text-destructive-foreground shadow-none";
+    case "DUPLICATE":
+      return "border-0 bg-violet-600 text-white shadow-none";
+    case "DISMISSED":
+      return "border-0 bg-slate-500 text-white shadow-none";
+    default:
+      return result
+        ? "border-0 bg-slate-600 text-white shadow-none"
+        : "border-0 bg-muted text-muted-foreground shadow-none";
+  }
+}
+
+/** Fallback label when no i18n key exists for a result code. */
+export function formatScanResultLabel(result: string | null | undefined): string {
+  const key = (result ?? "").trim();
+  if (!key) return "—";
+  return key
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }

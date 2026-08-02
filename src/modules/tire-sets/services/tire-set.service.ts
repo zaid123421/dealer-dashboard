@@ -78,11 +78,10 @@ interface ApiResponse {
   }>
 }
 
-function normalizeSeasonType(raw: string): 'Summer' | 'Winter' | 'All-Season' {
+function normalizeSeasonType(raw: string): 'Summer' | 'Winter' {
   const s = raw.replace(/_/g, ' ').trim().toLowerCase()
   if (s.includes('winter')) return 'Winter'
-  if (s.includes('summer')) return 'Summer'
-  return 'All-Season'
+  return 'Summer'
 }
 
 function mapApiTireSetToDetail(tireSetData: ApiResponse): TireSetDetail {

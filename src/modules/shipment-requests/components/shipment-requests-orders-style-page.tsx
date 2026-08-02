@@ -104,6 +104,8 @@ function statusBadgeClass(uiStatus: ShipmentUiStatus): string {
       return "border-0 bg-[#D35400] text-white shadow-none";
     case "completed":
       return "border-0 bg-[#218838] text-white shadow-none";
+    case "fulfilled":
+      return "border-0 bg-[#0F766E] text-white shadow-none";
     case "cancelled":
       return "border-0 bg-gray-600 text-white shadow-none";
     case "in_cart":
@@ -141,6 +143,11 @@ function actionIconButtonClass(
       return cn(
         base,
         "bg-[#16a34a] hover:!bg-[#15803d] dark:bg-green-400 dark:hover:!bg-green-500",
+      );
+    case "fulfilled":
+      return cn(
+        base,
+        "bg-[#0F766E] hover:!bg-[#0D9488] dark:bg-teal-500 dark:hover:!bg-teal-400",
       );
     case "cancelled":
       return cn(base, "bg-gray-600 hover:!bg-gray-700 dark:bg-gray-600 dark:hover:!bg-gray-700");
@@ -330,12 +337,14 @@ export function ShipmentRequestsOrdersStylePage({
     let confirmed = 0;
     let handover = 0;
     let completed = 0;
+    let fulfilled = 0;
     for (const r of filtered) {
       if (r.uiStatus === "confirmed") confirmed += 1;
       else if (r.uiStatus === "handover") handover += 1;
       else if (r.uiStatus === "completed") completed += 1;
+      else if (r.uiStatus === "fulfilled") fulfilled += 1;
     }
-    return { confirmed, handover, completed, total: filtered.length };
+    return { confirmed, handover, completed, fulfilled, total: filtered.length };
   }, [filtered]);
 
   const meta = data?.meta;
@@ -362,20 +371,7 @@ export function ShipmentRequestsOrdersStylePage({
   }
 
   function statusLabel(order: NormalizedDeliveryOrderRow): string {
-    if (isPickup) {
-      switch (order.uiStatus) {
-        case "confirmed":
-          return tp("statusConfirmed");
-        case "handover":
-          return tp("statusInTransit");
-        case "completed":
-          return tp("statusCompleted");
-        default:
-          break;
-      }
-    }
-
-    // Delivery order book: show API status labels (SUBMITTED, IN_TRANSIT, …).
+    // Order books show API status labels (SUBMITTED, IN_TRANSIT, RECEIVED, FULFILLED, …).
     switch (order.rawStatus.toUpperCase()) {
       case "SUBMITTED":
         return td("statusSubmitted");
@@ -383,6 +379,8 @@ export function ShipmentRequestsOrdersStylePage({
         return td("statusInTransit");
       case "RECEIVED":
         return td("statusReceived");
+      case "FULFILLED":
+        return td("statusFulfilled");
       case "CANCELLED":
         return td("statusBadgeCancelled");
       case "REJECTED":
@@ -394,7 +392,9 @@ export function ShipmentRequestsOrdersStylePage({
     }
   }
 
-  function workflowMiniBadge(key: "confirmed" | "handover" | "completed") {
+  function workflowMiniBadge(
+    key: "confirmed" | "handover" | "completed" | "fulfilled",
+  ) {
     switch (key) {
       case "confirmed":
         return td("workflowConfirmed");
@@ -402,6 +402,8 @@ export function ShipmentRequestsOrdersStylePage({
         return td("workflowHandover");
       case "completed":
         return td("workflowCompleted");
+      case "fulfilled":
+        return td("workflowFulfilled");
     }
   }
 
@@ -499,43 +501,23 @@ export function ShipmentRequestsOrdersStylePage({
           borderColor,
         )}
       >
-        {isPickup ? (
-          <>
-            <Badge className="rounded-full border border-gray-500/50 bg-gray-700 px-4 py-1.5 text-label-sm font-semibold text-white shadow-none dark:bg-gray-600">
-              {tp("workflowPending")}
-            </Badge>
-            <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <Badge className="rounded-full border-0 bg-[#0052CC] px-4 py-1.5 text-label-sm font-semibold text-white shadow-none">
-              {tp("workflowConfirmed")}
-            </Badge>
-            <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <Badge className="rounded-full border-0 bg-[#522CAD] px-4 py-1.5 text-label-sm font-semibold text-white shadow-none">
-              {tp("workflowShipmentCreated")}
-            </Badge>
-            <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <Badge className="rounded-full border-0 bg-[#D35400] px-4 py-1.5 text-label-sm font-semibold text-white shadow-none">
-              {tp("workflowInTransit")}
-            </Badge>
-            <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <Badge className="rounded-full border-0 bg-[#218838] px-4 py-1.5 text-label-sm font-semibold text-white shadow-none">
-              {tp("workflowCompleted")}
-            </Badge>
-          </>
-        ) : (
-          <>
-            <Badge className="rounded-full border-0 bg-[#0052CC] px-4 py-1.5 text-label-sm font-semibold text-white shadow-none">
-              {workflowMiniBadge("confirmed")}
-            </Badge>
-            <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <Badge className="rounded-full border-0 bg-[#D35400] px-4 py-1.5 text-label-sm font-semibold text-white shadow-none">
-              {workflowMiniBadge("handover")}
-            </Badge>
-            <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <Badge className="rounded-full border-0 bg-[#218838] px-4 py-1.5 text-label-sm font-semibold text-white shadow-none">
-              {workflowMiniBadge("completed")}
-            </Badge>
-          </>
-        )}
+        <>
+          <Badge className="rounded-full border-0 bg-[#0052CC] px-4 py-1.5 text-label-sm font-semibold text-white shadow-none">
+            {workflowMiniBadge("confirmed")}
+          </Badge>
+          <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <Badge className="rounded-full border-0 bg-[#D35400] px-4 py-1.5 text-label-sm font-semibold text-white shadow-none">
+            {workflowMiniBadge("handover")}
+          </Badge>
+          <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <Badge className="rounded-full border-0 bg-[#218838] px-4 py-1.5 text-label-sm font-semibold text-white shadow-none">
+            {workflowMiniBadge("completed")}
+          </Badge>
+          <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <Badge className="rounded-full border-0 bg-[#0F766E] px-4 py-1.5 text-label-sm font-semibold text-white shadow-none">
+            {workflowMiniBadge("fulfilled")}
+          </Badge>
+        </>
       </div>
 
       <div className="flex shrink-0 flex-col gap-3 py-2 sm:flex-row sm:flex-wrap sm:items-end">
@@ -561,15 +543,10 @@ export function ShipmentRequestsOrdersStylePage({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{td("statusAll")}</SelectItem>
-              <SelectItem value="confirmed">
-                {isPickup ? tp("statusConfirmed") : td("statusSubmitted")}
-              </SelectItem>
-              <SelectItem value="handover">
-                {isPickup ? tp("statusInTransit") : td("statusInTransit")}
-              </SelectItem>
-              <SelectItem value="completed">
-                {isPickup ? tp("statusCompleted") : td("statusReceived")}
-              </SelectItem>
+              <SelectItem value="confirmed">{td("statusSubmitted")}</SelectItem>
+              <SelectItem value="handover">{td("statusInTransit")}</SelectItem>
+              <SelectItem value="completed">{td("statusReceived")}</SelectItem>
+              <SelectItem value="fulfilled">{td("statusFulfilled")}</SelectItem>
               <SelectItem value="in_cart">{td("statusInCart")}</SelectItem>
               <SelectItem value="other">{td("statusOther")}</SelectItem>
             </SelectContent>
@@ -733,29 +710,16 @@ export function ShipmentRequestsOrdersStylePage({
             </span>
             <div className="flex flex-wrap items-center divide-x divide-border/70">
               <span className="px-3 font-medium text-[#0052CC] dark:text-blue-400">
-                {isPickup
-                  ? tp("footerConfirmed", { count: footerCounts.confirmed })
-                  : td("footerConfirmed", { count: footerCounts.confirmed })}
+                {td("footerConfirmed", { count: footerCounts.confirmed })}
               </span>
-              <span
-                className={cn(
-                  "px-3 font-medium",
-                  "text-[#D35400] dark:text-orange-400",
-                )}
-              >
-                {isPickup
-                  ? tp("footerInTransit", { count: footerCounts.handover })
-                  : td("footerInTransit", { count: footerCounts.handover })}
+              <span className="px-3 font-medium text-[#D35400] dark:text-orange-400">
+                {td("footerInTransit", { count: footerCounts.handover })}
               </span>
-              <span
-                className={cn(
-                  "ps-3 font-medium",
-                  isPickup ? "text-[#218838] dark:text-green-400" : "text-[#16a34a] dark:text-green-400",
-                )}
-              >
-                {isPickup
-                  ? tp("footerCompleted", { count: footerCounts.completed })
-                  : td("footerCompleted", { count: footerCounts.completed })}
+              <span className="px-3 font-medium text-[#218838] dark:text-green-400">
+                {td("footerCompleted", { count: footerCounts.completed })}
+              </span>
+              <span className="ps-3 font-medium text-[#0F766E] dark:text-teal-400">
+                {td("footerFulfilled", { count: footerCounts.fulfilled })}
               </span>
             </div>
           </div>

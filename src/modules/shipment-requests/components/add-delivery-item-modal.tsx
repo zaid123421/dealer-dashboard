@@ -8,8 +8,14 @@ import { CalendarIcon, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
-import { DialogTitle, FormDialogContent, FormDialogHeader } from "@/components/ui/app-dialog";
-import { FieldHint, Label, OptionalMark, RequiredMark } from "@/components/ui/label";
+import {
+  DialogTitle,
+  FormDialogContent,
+  FormDialogFooter,
+  FormDialogHeader,
+} from "@/components/ui/app-dialog";
+import { FormField } from "@/components/ui/form-field";
+import { FieldHint } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -25,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatLocaleDate } from "@/lib/format-locale";
 import { CART_MODAL_SUBMIT_RESPONSIVE } from "@/lib/dialog-styles";
+import { DIALOG_FOOTER_BUTTON_CLASS } from "@/lib/radius";
 import { useDealerId, useDealerProfile } from "@/shared/hooks/use-can-access";
 import { useClientNowMs } from "@/shared/hooks/use-client-now-ms";
 import {
@@ -69,20 +76,31 @@ function MiniStepperHeader({
         <div
           className={cn(
             "flex size-7 shrink-0 items-center justify-center rounded-full text-label-sm font-bold transition-colors sm:size-8 sm:text-label-md",
-            active === 1 ? "bg-amber-500 text-black" : "bg-emerald-500 text-white",
+            active === 1
+              ? "bg-primary-dark text-primary-onContainer"
+              : "bg-emerald-500 text-white",
           )}
           aria-current={active === 1 ? "step" : undefined}
         >
-          1
+          {active === 1 ? "1" : <Check className="size-4" strokeWidth={3} />}
         </div>
-        <span className="text-xs font-semibold text-foreground sm:text-body-sm">{tc("stepDelivery")}</span>
+        <span
+          className={cn(
+            "text-xs font-semibold sm:text-body-sm",
+            active === 1 ? "text-foreground" : "text-emerald-600 dark:text-emerald-400",
+          )}
+        >
+          {tc("stepDelivery")}
+        </span>
       </div>
-      <div className="h-px w-6 shrink-0 bg-transparent sm:w-12" aria-hidden />
+      <div className="h-px w-6 shrink-0 bg-border sm:w-12" aria-hidden />
       <div className="flex items-center gap-1.5 sm:gap-2">
         <div
           className={cn(
             "flex size-7 shrink-0 items-center justify-center rounded-full text-label-sm font-bold transition-colors sm:size-8 sm:text-label-md",
-            active === 2 ? "bg-amber-500 text-black" : "bg-muted text-muted-foreground",
+            active === 2
+              ? "bg-primary-dark text-primary-onContainer"
+              : "bg-muted text-muted-foreground",
           )}
         >
           2
@@ -300,218 +318,201 @@ export function AddDeliveryItemModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <FormDialogContent
-        size={isSuggestionsStep ? "lg" : "md"}
-        className="flex max-h-[min(100dvh-0.75rem,920px)] w-[calc(100%-1rem)] max-w-[calc(100vw-1rem)] flex-col sm:w-full"
-      >
-        {isSuggestionsStep && createdDeliveryId != null ? (
-          <div className="flex min-h-0 flex-1 flex-col">
-            {/* Hidden accessible title for the dialog (the visible heading lives inside the step). */}
-            <DialogTitle className="sr-only">{tStep("title")}</DialogTitle>
-            <PickupSuggestionsStep
-              deliveryId={createdDeliveryId}
-              deliveryVersion={createdDeliveryVersion}
-              onFinish={handleFinishSuggestions}
-            />
-          </div>
-        ) : (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="shrink-0 space-y-3 px-4 pb-4 pt-4 pe-12 sm:px-6 sm:pt-6">
-              <FormDialogHeader className="p-0">
-                <DialogTitle className="text-start text-base leading-snug sm:text-lg">
-                  {tc("addDeliveryItem")}
-                </DialogTitle>
-              </FormDialogHeader>
-
+      {isSuggestionsStep && createdDeliveryId != null ? (
+        <FormDialogContent size="lg">
+          <DialogTitle className="sr-only">{tStep("title")}</DialogTitle>
+          <PickupSuggestionsStep
+            deliveryId={createdDeliveryId}
+            deliveryVersion={createdDeliveryVersion}
+            onFinish={handleFinishSuggestions}
+          />
+        </FormDialogContent>
+      ) : (
+        <FormDialogContent size="md">
+          <FormDialogHeader>
+            <DialogTitle>{tc("addDeliveryItem")}</DialogTitle>
+            <div className="pt-3">
               <MiniStepperHeader active={1} tc={tStep} />
             </div>
+          </FormDialogHeader>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
-            <div className="flex flex-col gap-4">
-              {/* dealerCustomerId */}
-              <div className="space-y-1.5">
-                <Label className="text-label-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  {tc("fieldCustomer")} <RequiredMark />
-                </Label>
-                <SearchableCombobox
-                  value={customerId}
-                  onValueChange={handleCustomerChange}
-                  options={customerOptions}
-                  placeholder={tc("customerPlaceholder")}
-                  searchPlaceholder={tc("customerSearchPlaceholder")}
-                  emptyText={tc("noCustomers")}
-                  disabled={dealerId == null}
-                />
-              </div>
+          <div className="flex flex-col gap-4 px-6 py-4 max-sm:px-4">
+            <FormField id="delivery-customer" label={tc("fieldCustomer")} required>
+              <SearchableCombobox
+                id="delivery-customer"
+                value={customerId}
+                onValueChange={handleCustomerChange}
+                options={customerOptions}
+                placeholder={tc("customerPlaceholder")}
+                searchPlaceholder={tc("customerSearchPlaceholder")}
+                emptyText={tc("noCustomers")}
+                disabled={dealerId == null}
+              />
+            </FormField>
 
-              {/* vehicleId */}
-              <div className="space-y-1.5">
-                <Label className="text-label-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  {tc("fieldVehicle")} <RequiredMark />
-                </Label>
-                <SearchableCombobox
-                  value={vehicleId}
-                  onValueChange={handleVehicleChange}
-                  options={vehicleOptions}
-                  placeholder={tc("vehiclePlaceholder")}
-                  searchPlaceholder={tc("vehicleSearchPlaceholder")}
-                  emptyText={tc("noVehiclesFound")}
-                  disabled={!customerId}
-                />
-              </div>
+            <FormField id="delivery-vehicle" label={tc("fieldVehicle")} required>
+              <SearchableCombobox
+                id="delivery-vehicle"
+                value={vehicleId}
+                onValueChange={handleVehicleChange}
+                options={vehicleOptions}
+                placeholder={tc("vehiclePlaceholder")}
+                searchPlaceholder={tc("vehicleSearchPlaceholder")}
+                emptyText={tc("noVehiclesFound")}
+                disabled={!customerId}
+              />
+            </FormField>
 
-              {/* swapAppointment */}
-              <div className="space-y-1.5">
-                <Label className="text-label-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  {tc("fieldSwapAppointment")} <RequiredMark />
-                </Label>
-                <Input
-                  type="datetime-local"
-                  value={swapAppointmentLocal}
-                  onChange={(e) => setSwapAppointmentLocal(e.target.value)}
-                  className="h-10 min-w-0 w-full max-w-full text-body-md shadow-xs"
-                />
-              </div>
+            <FormField
+              id="delivery-swap-appointment"
+              label={tc("fieldSwapAppointment")}
+              required
+            >
+              <Input
+                id="delivery-swap-appointment"
+                type="datetime-local"
+                value={swapAppointmentLocal}
+                onChange={(e) => setSwapAppointmentLocal(e.target.value)}
+                className="h-10 min-w-0 w-full max-w-full text-body-md shadow-xs"
+              />
+            </FormField>
 
-              {/* preferredDeliveryDay (optional) */}
-              <div className="space-y-1.5">
-                <Label className="text-label-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  {tc("fieldPreferredDeliveryDay")}{" "}
-                  <OptionalMark>({tc("optional")})</OptionalMark>
-                </Label>
-                <Select
-                  value={preferredDaySelectValue}
-                  onValueChange={(v) =>
-                    setPreferredDeliveryDay(v === PREFERRED_DAY_NONE ? "" : v)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={tc("preferredDayNone")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={PREFERRED_DAY_NONE}>
-                      {tc("preferredDayNone")}
+            <FormField
+              id="delivery-preferred-day"
+              label={tc("fieldPreferredDeliveryDay")}
+              optional={`(${tc("optional")})`}
+            >
+              <Select
+                value={preferredDaySelectValue}
+                onValueChange={(v) =>
+                  setPreferredDeliveryDay(v === PREFERRED_DAY_NONE ? "" : v)
+                }
+              >
+                <SelectTrigger id="delivery-preferred-day">
+                  <SelectValue placeholder={tc("preferredDayNone")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={PREFERRED_DAY_NONE}>
+                    {tc("preferredDayNone")}
+                  </SelectItem>
+                  {serviceDays.map((day) => (
+                    <SelectItem key={day} value={day}>
+                      {weekDayLabels[day]}
                     </SelectItem>
-                    {serviceDays.map((day) => (
-                      <SelectItem key={day} value={day}>
-                        {weekDayLabels[day]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
 
-              {/* setIds: one tire set chosen from vehicle (optional) */}
-              <div className="space-y-1.5">
-                <Label className="text-label-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  {tc("fieldTireSet")}{" "}
-                  <OptionalMark>({tc("optional")})</OptionalMark>
-                </Label>
-                {!vehicleId ? (
-                  <FieldHint>{tc("tireSetsHintSelectVehicle")}</FieldHint>
-                ) : tireSets.length === 0 ? (
-                  <FieldHint>{tc("noTireSets")}</FieldHint>
-                ) : (
-                  <SearchableCombobox
-                    value={tireSetId}
-                    onValueChange={setTireSetId}
-                    options={tireSetOptions}
-                    placeholder={tc("tireSetPlaceholder")}
-                    searchPlaceholder={tc("tireSetSearchPlaceholder")}
-                    emptyText={tc("noTireSets")}
-                    disabled={!vehicleId}
-                  />
-                )}
-              </div>
-
-              {/* notes (optional) */}
-              <div className="space-y-1.5">
-                <Label className="text-label-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  {tc("fieldNotesModal")}{" "}
-                  <OptionalMark>({tc("optional")})</OptionalMark>
-                </Label>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder={tc("notesPlaceholder")}
-                  rows={3}
-                  className="resize-none"
+            <FormField
+              id="delivery-tire-set"
+              label={tc("fieldTireSet")}
+              optional={`(${tc("optional")})`}
+            >
+              {!vehicleId ? (
+                <FieldHint>{tc("tireSetsHintSelectVehicle")}</FieldHint>
+              ) : tireSets.length === 0 ? (
+                <FieldHint>{tc("noTireSets")}</FieldHint>
+              ) : (
+                <SearchableCombobox
+                  id="delivery-tire-set"
+                  value={tireSetId}
+                  onValueChange={setTireSetId}
+                  options={tireSetOptions}
+                  placeholder={tc("tireSetPlaceholder")}
+                  searchPlaceholder={tc("tireSetSearchPlaceholder")}
+                  emptyText={tc("noTireSets")}
+                  disabled={!vehicleId}
                 />
-              </div>
+              )}
+            </FormField>
 
-              {/* Window info box */}
-              {windowInfo ? (
-                <div className="rounded-lg border border-amber-400/60 bg-amber-50 px-4 py-3 dark:border-amber-500/40 dark:bg-amber-950/20">
-                  <p className="text-body-sm text-amber-900 dark:text-amber-200">
-                    <CalendarIcon
-                      className="mb-0.5 me-1.5 inline size-3.5"
-                      aria-hidden
-                    />
-                    {tc("appointmentInfo", {
-                      date: windowInfo.apptDisplay,
-                      deadline: windowInfo.deadlineDisplay,
-                    })}
-                  </p>
-                  <p
-                    className={cn(
-                      "mt-1 flex items-center gap-1.5 text-body-sm font-medium",
-                      windowInfo.isOk
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-destructive",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "size-2 shrink-0 rounded-full",
-                        windowInfo.isOk ? "bg-emerald-500" : "bg-destructive",
-                      )}
-                    />
-                    {windowInfo.isOk
-                      ? tc("windowOkInfo", { days: windowInfo.daysUntilDeadline })
-                      : tc("windowExpiredInfo")}
-                  </p>
-                </div>
-              ) : null}
+            <FormField
+              id="delivery-notes"
+              label={tc("fieldNotesModal")}
+              optional={`(${tc("optional")})`}
+            >
+              <Textarea
+                id="delivery-notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder={tc("notesPlaceholder")}
+                rows={3}
+                className="resize-none"
+              />
+            </FormField>
 
-              {/* Hint about the next step (combine pickup) */}
-              <div className="flex items-start gap-3 rounded-lg border border-amber-400/40 bg-amber-50/60 px-4 py-3 dark:border-amber-500/30 dark:bg-amber-950/10">
-                <div
-                  className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500 text-black"
-                  aria-hidden
+            {windowInfo ? (
+              <div className="rounded-lg border border-amber-400/60 bg-amber-50 px-4 py-3 dark:border-amber-500/40 dark:bg-amber-950/20">
+                <p className="text-body-sm text-amber-900 dark:text-amber-200">
+                  <CalendarIcon
+                    className="mb-0.5 me-1.5 inline size-3.5"
+                    aria-hidden
+                  />
+                  {tc("appointmentInfo", {
+                    date: windowInfo.apptDisplay,
+                    deadline: windowInfo.deadlineDisplay,
+                  })}
+                </p>
+                <p
+                  className={cn(
+                    "mt-1 flex items-center gap-1.5 text-body-sm font-medium",
+                    windowInfo.isOk
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-destructive",
+                  )}
                 >
-                  <Check className="size-3.5" strokeWidth={3} />
-                </div>
-                <div className="text-body-sm text-amber-900 dark:text-amber-200">
-                  <p className="font-bold">{tStep("nextStepHintTitle")}</p>
-                  <p className="mt-0.5 leading-relaxed">{tStep("nextStepHintBody")}</p>
-                </div>
+                  <span
+                    className={cn(
+                      "size-2 shrink-0 rounded-full",
+                      windowInfo.isOk ? "bg-emerald-500" : "bg-destructive",
+                    )}
+                  />
+                  {windowInfo.isOk
+                    ? tc("windowOkInfo", { days: windowInfo.daysUntilDeadline })
+                    : tc("windowExpiredInfo")}
+                </p>
               </div>
-            </div>
-            </div>
+            ) : null}
 
-            <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-[var(--border)] bg-surface-container px-4 py-3 sm:flex-row sm:justify-end sm:px-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-                className="w-full sm:w-auto"
+            <div className="flex items-start gap-3 rounded-lg border border-primary-dark/25 bg-primary-dark/10 px-4 py-3 dark:border-primary/30 dark:bg-primary/10">
+              <div
+                className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-dark text-primary-onContainer"
+                aria-hidden
               >
-                {tCommon("cancel")}
-              </Button>
-              <Button
-                type="button"
-                variant="brand"
-                className={CART_MODAL_SUBMIT_RESPONSIVE}
-                onClick={() => void handleSubmit()}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? tc("addingToCart") : tc("addToCart")}
-              </Button>
+                <Check className="size-3.5" strokeWidth={3} />
+              </div>
+              <div className="text-body-sm text-foreground">
+                <p className="font-semibold">{tStep("nextStepHintTitle")}</p>
+                <p className="mt-0.5 leading-relaxed text-muted-foreground">
+                  {tStep("nextStepHintBody")}
+                </p>
+              </div>
             </div>
           </div>
-        )}
-      </FormDialogContent>
+
+          <FormDialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+              className={cn(DIALOG_FOOTER_BUTTON_CLASS, "w-full sm:w-auto")}
+            >
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="brand"
+              className={cn(CART_MODAL_SUBMIT_RESPONSIVE, DIALOG_FOOTER_BUTTON_CLASS)}
+              onClick={() => void handleSubmit()}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? tc("addingToCart") : tc("addToCart")}
+            </Button>
+          </FormDialogFooter>
+        </FormDialogContent>
+      )}
     </Dialog>
   );
 }

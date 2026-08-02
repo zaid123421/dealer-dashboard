@@ -32,7 +32,7 @@ export interface TireSetDetail {
   id: number
   vehicleId: number
   tireCount: number
-  seasonType: 'Summer' | 'Winter' | 'All-Season'
+  seasonType: 'Summer' | 'Winter'
   brand: string
   size: string
   displayLabel: string

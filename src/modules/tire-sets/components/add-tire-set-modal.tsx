@@ -35,7 +35,7 @@ import { invalidateDealerMe } from "@/modules/dealer/lib/invalidate-dealer-me";
 
 type CreateTireSetFormValues = {
   tireCount: number;
-  seasonType: "Winter" | "Summer" | "All-Season";
+  seasonType: "Winter" | "Summer";
   brand: string;
   size: string;
   displayLabel?: string;
@@ -64,7 +64,7 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId, onC
           .number()
           .min(1, tCustomers("tireSetTireCountMinError"))
           .max(8, tCustomers("tireSetTireCountMaxError")),
-        seasonType: z.enum(["Winter", "Summer", "All-Season"]),
+        seasonType: z.enum(["Winter", "Summer"]),
         brand: z.string().min(1, tCustomers("tireSetBrandRequiredError")),
         size: z.string().min(1, tCustomers("tireSetSizeRequiredError")),
         displayLabel: z.string().optional(),
@@ -82,7 +82,7 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId, onC
     resolver: zodResolver(createTireSetSchema),
     defaultValues: {
       tireCount: 4,
-      seasonType: "All-Season",
+      seasonType: "Summer",
       brand: "",
       size: "",
       displayLabel: "",
@@ -214,7 +214,6 @@ export function AddTireSetModal({ open, onOpenChange, customerId, vehicleId, onC
                     <SelectContent>
                       <SelectItem value="Winter">{tCustomers("winter")}</SelectItem>
                       <SelectItem value="Summer">{tCustomers("summer")}</SelectItem>
-                      <SelectItem value="All-Season">{tCustomers("allSeason")}</SelectItem>
                     </SelectContent>
                   </Select>
                 )}

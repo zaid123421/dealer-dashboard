@@ -32,10 +32,8 @@ function getSeasonBadgeClass(season: string) {
       return "bg-blue-100 text-blue-900 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30";
     case "Summer":
       return "bg-yellow-50 text-yellow-900 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-300 dark:border-yellow-500/30";
-    case "All-Season":
-      return "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-500/15 dark:text-gray-300 dark:border-gray-500/30";
     default:
-      return "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-500/15 dark:text-gray-300 dark:border-gray-500/30";
+      return "bg-yellow-50 text-yellow-900 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-300 dark:border-yellow-500/30";
   }
 }
 
@@ -75,7 +73,9 @@ export default function TireSetsPage() {
   const seasonOptions = useMemo(() => {
     const seasons = new Set<string>();
     for (const row of data) {
-      if (row.seasonType?.trim()) seasons.add(row.seasonType.trim());
+      if (row.seasonType === "Winter" || row.seasonType === "Summer") {
+        seasons.add(row.seasonType);
+      }
     }
     return Array.from(seasons).sort();
   }, [data]);
@@ -152,7 +152,7 @@ export default function TireSetsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t("tireSetsFilterAllSeasons")}</SelectItem>
+              <SelectItem value="all">{t("tireSetsFilterAll")}</SelectItem>
               {seasonOptions.map((s) => (
                 <SelectItem key={s} value={s}>
                   {s}

@@ -13,7 +13,6 @@ import {
   Package,
   Snowflake,
   Sun,
-  Cloud,
   ChevronRight,
   Home,
   Loader2,
@@ -124,10 +123,8 @@ export default function VehicleDetailsPage() {
         return 'text-blue-500 px-3 py-1 min-w-[80px]'
       case 'Summer':
         return 'text-orange-500 px-3 py-1 min-w-[80px]'
-      case 'All-Season':
-        return 'text-gray-500 px-3 py-1 min-w-[80px]'
       default:
-        return 'text-gray-500 px-3 py-1 min-w-[80px]'
+        return 'text-orange-500 px-3 py-1 min-w-[80px]'
     }
   }
 
@@ -258,7 +255,6 @@ export default function VehicleDetailsPage() {
                   <Badge className={getSeasonBadgeColor(tireSet.seasonType)}>
                     {tireSet.seasonType === 'Winter' && <Snowflake className="inline size-3 me-1" />}
                     {tireSet.seasonType === 'Summer' && <Sun className="inline size-3 me-1" />}
-                    {tireSet.seasonType === 'All-Season' && <Cloud className="inline size-3 me-1" />}
                     {tireSet.seasonType}
                   </Badge>
                 ),

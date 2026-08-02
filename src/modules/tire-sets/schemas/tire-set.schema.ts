@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 // Enum values for tire set and tire data
-const SEASON_TYPES = ['SUMMER', 'WINTER', 'ALL_SEASON'] as const
+const SEASON_TYPES = ['SUMMER', 'WINTER'] as const
 const TIRE_STATUSES = ['GOOD', 'FAIR', 'POOR', 'CRITICAL'] as const
 const WHEEL_POSITIONS = ['FL', 'FR', 'RL', 'RR', ''] as const
 

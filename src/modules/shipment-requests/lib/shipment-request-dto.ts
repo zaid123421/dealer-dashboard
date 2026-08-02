@@ -2,6 +2,7 @@ export type ShipmentUiStatus =
   | "confirmed"
   | "handover"
   | "completed"
+  | "fulfilled"
   | "cancelled"
   | "in_progress"
   | "in_cart";
@@ -11,6 +12,7 @@ export const DEALER_ORDER_BOOK_STATUSES = [
   "SUBMITTED",
   "IN_TRANSIT",
   "RECEIVED",
+  "FULFILLED",
   "CANCELLED",
   "REJECTED",
 ] as const;
@@ -124,6 +126,7 @@ function parseAppointment(raw: Record<string, unknown>): Date | null {
 export function mapRawStatusToUi(status: string): ShipmentUiStatus {
   const s = status.toUpperCase();
   if (s === "IN_CART") return "in_cart";
+  if (s === "FULFILLED") return "fulfilled";
   if (s === "RECEIVED") return "completed";
   if (s === "IN_TRANSIT") return "handover";
   if (s === "SUBMITTED") return "confirmed";
