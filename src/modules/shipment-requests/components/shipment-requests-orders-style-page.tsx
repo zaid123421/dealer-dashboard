@@ -8,7 +8,6 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
-  MoreVertical,
   Search,
 } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/error-alert";
@@ -16,12 +15,6 @@ import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Dialog } from "@/components/ui/dialog";
 import {
   ConfirmDialogContent,
@@ -103,26 +96,14 @@ function matchesStatusFilter(uiStatus: ShipmentUiStatus, filter: StatusFilter): 
   return uiStatus === filter;
 }
 
-function statusBadgeClass(uiStatus: ShipmentUiStatus, orderBookType: "pickup" | "delivery"): string {
-  if (orderBookType === "pickup") {
-    switch (uiStatus) {
-      case "confirmed":
-        return "border-0 bg-[#0052CC] text-white shadow-none";
-      case "handover":
-        return "border-0 bg-[#D35400] text-white shadow-none";
-      case "completed":
-        return "border-0 bg-[#218838] text-white shadow-none";
-      default:
-        break;
-    }
-  }
+function statusBadgeClass(uiStatus: ShipmentUiStatus): string {
   switch (uiStatus) {
     case "confirmed":
-      return "border-0 bg-info-main text-white shadow-none";
+      return "border-0 bg-[#0052CC] text-white shadow-none";
     case "handover":
-      return "border-0 bg-tertiary-dark text-tertiary-onContainer shadow-none";
+      return "border-0 bg-[#D35400] text-white shadow-none";
     case "completed":
-      return "border-0 bg-success-dark text-success-onContainer shadow-none";
+      return "border-0 bg-[#218838] text-white shadow-none";
     case "cancelled":
       return "border-0 bg-gray-600 text-white shadow-none";
     case "in_cart":
@@ -132,108 +113,45 @@ function statusBadgeClass(uiStatus: ShipmentUiStatus, orderBookType: "pickup" | 
   }
 }
 
-function primaryActionButtonClass(
-  uiStatus: ShipmentUiStatus,
-  orderBookType: "pickup" | "delivery" = "delivery",
-): string {
-  const base =
-    "h-9 shrink-0 border-0 font-medium text-white shadow-none transition-colors duration-[var(--duration-normal)] hover:text-white [&_svg]:text-white";
-  switch (uiStatus) {
-    case "confirmed":
-      if (orderBookType === "pickup") {
-        return cn(
-          base,
-          "bg-primary-dark text-primary-onContainer hover:bg-primary-dark/90 hover:text-primary-onContainer [&_svg]:text-primary-onContainer",
-        );
-      }
-      return cn(
-        base,
-        "bg-[#2563eb] hover:bg-[#1d4ed8] dark:bg-blue-400 dark:hover:bg-blue-500",
-      );
-    case "handover":
-      return cn(
-        base,
-        "bg-[#7c3aed] hover:bg-[#6d28d9] dark:bg-violet-400 dark:hover:bg-violet-500",
-      );
-    case "completed":
-      return cn(
-        base,
-        "bg-[#16a34a] hover:bg-[#15803d] dark:bg-green-400 dark:hover:bg-green-500",
-      );
-    case "cancelled":
-      return cn(base, "bg-gray-600 hover:bg-gray-700 dark:bg-gray-600 dark:hover:bg-gray-700");
-    case "in_cart":
-      return cn(
-        base,
-        "bg-[#2563eb] hover:bg-[#1d4ed8] dark:bg-blue-400 dark:hover:bg-blue-500",
-      );
-    default:
-      return cn(base, "bg-slate-600 hover:bg-slate-700 dark:bg-slate-500 dark:hover:bg-slate-600");
-  }
-}
-
 function actionIconButtonClass(
   uiStatus: ShipmentUiStatus,
   orderBookType: "pickup" | "delivery" = "delivery",
 ): string {
+  // Important hover overrides beat ghost variant's hover:bg-accent.
   const base =
-    `h-9 w-9 shrink-0 ${RADIUS_CONTROL} border-0 text-white shadow-none transition-colors duration-[var(--duration-normal)] hover:text-white [&_svg]:text-white`;
+    `h-9 w-9 shrink-0 ${RADIUS_CONTROL} border-0 text-white shadow-none transition-colors duration-[var(--duration-normal)] hover:!text-white [&_svg]:text-white`;
   switch (uiStatus) {
     case "confirmed":
-      if (orderBookType === "pickup") {
+      return cn(
+        base,
+        "bg-primary-dark text-primary-onContainer hover:!bg-primary-dark/90 hover:!text-primary-onContainer [&_svg]:text-primary-onContainer",
+      );
+    case "handover":
+      if (orderBookType === "delivery") {
         return cn(
           base,
-          "bg-primary-dark text-primary-onContainer hover:bg-primary-dark/90 hover:text-primary-onContainer [&_svg]:text-primary-onContainer",
+          "bg-primary-dark text-primary-onContainer hover:!bg-primary-dark/90 hover:!text-primary-onContainer [&_svg]:text-primary-onContainer",
         );
       }
       return cn(
         base,
-        "bg-[#2563eb] hover:bg-[#1d4ed8] dark:bg-blue-400 dark:hover:bg-blue-500",
-      );
-    case "handover":
-      return cn(
-        base,
-        "bg-[#7c3aed] hover:bg-[#6d28d9] dark:bg-violet-400 dark:hover:bg-violet-500",
+        "bg-[#7c3aed] hover:!bg-[#6d28d9] dark:bg-violet-400 dark:hover:!bg-violet-500",
       );
     case "completed":
       return cn(
         base,
-        "bg-[#16a34a] hover:bg-[#15803d] dark:bg-green-400 dark:hover:bg-green-500",
+        "bg-[#16a34a] hover:!bg-[#15803d] dark:bg-green-400 dark:hover:!bg-green-500",
       );
     case "cancelled":
-      return cn(base, "bg-gray-600 hover:bg-gray-700 dark:bg-gray-600 dark:hover:bg-gray-700");
+      return cn(base, "bg-gray-600 hover:!bg-gray-700 dark:bg-gray-600 dark:hover:!bg-gray-700");
     case "in_cart":
       return cn(
         base,
-        "bg-[#2563eb] hover:bg-[#1d4ed8] dark:bg-blue-400 dark:hover:bg-blue-500",
+        "bg-[#2563eb] hover:!bg-[#1d4ed8] dark:bg-blue-400 dark:hover:!bg-blue-500",
       );
     default:
-      return cn(base, "bg-slate-600 hover:bg-slate-700 dark:bg-slate-500 dark:hover:bg-slate-600");
+      return cn(base, "bg-slate-600 hover:!bg-slate-700 dark:bg-slate-500 dark:hover:!bg-slate-600");
   }
-}
-
-function primaryActionSoftClass(
-  uiStatus: "confirmed" | "handover",
-  orderBookType: "pickup" | "delivery" = "delivery",
-): string {
-  const base =
-    "h-8 shrink-0 rounded-full px-3.5 text-label-sm font-medium shadow-none transition-all duration-200";
-  if (uiStatus === "handover") {
-    return cn(
-      base,
-      "border border-violet-500/25 bg-violet-500/10 text-violet-700 hover:border-violet-500/40 hover:bg-violet-500/15 dark:border-violet-400/30 dark:bg-violet-400/10 dark:text-violet-300 dark:hover:bg-violet-400/15",
-    );
-  }
-  if (orderBookType === "pickup") {
-    return cn(
-      base,
-      "border-0 bg-primary-dark text-primary-onContainer hover:bg-primary-dark/90",
-    );
-  }
-  return cn(
-    base,
-    "border border-primary-dark/25 bg-primary-dark/10 text-primary-dark hover:border-primary-dark/40 hover:bg-primary-dark/15 dark:border-primary/30 dark:bg-primary/10 dark:text-primary dark:hover:bg-primary/15",
-  );
 }
 
 const bulkCheckboxClass =
@@ -379,8 +297,13 @@ export function ShipmentRequestsOrdersStylePage({
   }, [deliveryRows, statusFilter, dateFilter, debouncedSearch, nowMs]);
 
   const selectableConfirmedRows = useMemo(
-    () => filtered.filter((r) => r.uiStatus === "confirmed"),
-    [filtered],
+    () =>
+      filtered.filter((r) =>
+        isPickup
+          ? r.uiStatus === "confirmed"
+          : r.rawStatus.toUpperCase() === "IN_TRANSIT" && r.handoverSessionId == null,
+      ),
+    [filtered, isPickup],
   );
 
   const selectedOrders = useMemo(
@@ -399,9 +322,8 @@ export function ShipmentRequestsOrdersStylePage({
 
   const handoverModalOpenConfirmClass = cn(
     DIALOG_FOOTER_BUTTON_CLASS,
-    actionsVariant === "soft"
-      ? cn(PRIMARY_BUTTON_CLASS, "font-medium shadow-none")
-      : "border-0 bg-[#2563eb] font-semibold text-white hover:bg-[#1d4ed8] dark:bg-blue-500 dark:hover:bg-blue-600",
+    PRIMARY_BUTTON_CLASS,
+    "font-medium shadow-none",
   );
 
   const footerCounts = useMemo(() => {
@@ -439,9 +361,9 @@ export function ShipmentRequestsOrdersStylePage({
     return formatted === "—" ? td("noAppointment") : formatted;
   }
 
-  function statusLabel(uiStatus: ShipmentUiStatus): string {
+  function statusLabel(order: NormalizedDeliveryOrderRow): string {
     if (isPickup) {
-      switch (uiStatus) {
+      switch (order.uiStatus) {
         case "confirmed":
           return tp("statusConfirmed");
         case "handover":
@@ -452,19 +374,23 @@ export function ShipmentRequestsOrdersStylePage({
           break;
       }
     }
-    switch (uiStatus) {
-      case "confirmed":
-        return td("statusConfirmed");
-      case "handover":
-        return td("statusHandover");
-      case "completed":
-        return td("statusCompleted");
-      case "cancelled":
+
+    // Delivery order book: show API status labels (SUBMITTED, IN_TRANSIT, …).
+    switch (order.rawStatus.toUpperCase()) {
+      case "SUBMITTED":
+        return td("statusSubmitted");
+      case "IN_TRANSIT":
+        return td("statusInTransit");
+      case "RECEIVED":
+        return td("statusReceived");
+      case "CANCELLED":
         return td("statusBadgeCancelled");
-      case "in_cart":
+      case "REJECTED":
+        return td("statusRejected");
+      case "IN_CART":
         return td("statusInCart");
       default:
-        return td("statusBadgeInProgress");
+        return order.rawStatus || td("statusBadgeInProgress");
     }
   }
 
@@ -479,15 +405,16 @@ export function ShipmentRequestsOrdersStylePage({
     }
   }
 
-  function hasWorkflowPrimaryAction(uiStatus: ShipmentUiStatus): uiStatus is "confirmed" {
-    return uiStatus === "confirmed";
+  /** Pickup: open on SUBMITTED. Delivery: open only on IN_TRANSIT with no active session. */
+  function canOpenHandoverSession(order: NormalizedDeliveryOrderRow): boolean {
+    if (isPickup) return order.uiStatus === "confirmed";
+    return (
+      order.rawStatus.toUpperCase() === "IN_TRANSIT" && order.handoverSessionId == null
+    );
   }
 
-  function primaryActionLabel(uiStatus: "confirmed"): string {
-    if (uiStatus === "confirmed") {
-      return isPickup ? tp("actionCreateShipment") : td("actionConvertHandover");
-    }
-    return td("actionSoon");
+  function primaryActionLabel(): string {
+    return isPickup ? tp("actionCreateShipment") : td("actionCreateShipment");
   }
 
   function toggleSelected(id: number) {
@@ -545,17 +472,8 @@ export function ShipmentRequestsOrdersStylePage({
 
   function onPrimaryAction(order: NormalizedDeliveryOrderRow) {
     if (isViewOnly) return;
-    if (order.uiStatus === "confirmed") {
+    if (canOpenHandoverSession(order)) {
       void onOpenHandover([order]);
-    }
-  }
-
-  async function copyOrderId(label: string) {
-    try {
-      await navigator.clipboard.writeText(label);
-      toast.success(td("copied"));
-    } catch {
-      toast.error(td("actionSoon"));
     }
   }
 
@@ -605,21 +523,15 @@ export function ShipmentRequestsOrdersStylePage({
           </>
         ) : (
           <>
-            <Badge
-              className="border-0 px-4 py-1.5 text-label-sm font-semibold shadow-none bg-[#1e40af] dark:bg-blue-600 text-white rounded-lg"
-            >
+            <Badge className="rounded-full border-0 bg-[#0052CC] px-4 py-1.5 text-label-sm font-semibold text-white shadow-none">
               {workflowMiniBadge("confirmed")}
             </Badge>
             <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <Badge
-              className="border-0 px-4 py-1.5 text-label-sm font-semibold shadow-none bg-[#6d28d9] dark:bg-violet-600 text-white rounded-lg"
-            >
+            <Badge className="rounded-full border-0 bg-[#D35400] px-4 py-1.5 text-label-sm font-semibold text-white shadow-none">
               {workflowMiniBadge("handover")}
             </Badge>
             <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <Badge
-              className="border-0 px-4 py-1.5 text-label-sm font-semibold shadow-none bg-[#15803d] dark:bg-green-600 text-white rounded-lg"
-            >
+            <Badge className="rounded-full border-0 bg-[#218838] px-4 py-1.5 text-label-sm font-semibold text-white shadow-none">
               {workflowMiniBadge("completed")}
             </Badge>
           </>
@@ -650,13 +562,13 @@ export function ShipmentRequestsOrdersStylePage({
             <SelectContent>
               <SelectItem value="all">{td("statusAll")}</SelectItem>
               <SelectItem value="confirmed">
-                {isPickup ? tp("statusConfirmed") : td("statusConfirmed")}
+                {isPickup ? tp("statusConfirmed") : td("statusSubmitted")}
               </SelectItem>
               <SelectItem value="handover">
-                {isPickup ? tp("statusInTransit") : td("statusHandover")}
+                {isPickup ? tp("statusInTransit") : td("statusInTransit")}
               </SelectItem>
               <SelectItem value="completed">
-                {isPickup ? tp("statusCompleted") : td("statusCompleted")}
+                {isPickup ? tp("statusCompleted") : td("statusReceived")}
               </SelectItem>
               <SelectItem value="in_cart">{td("statusInCart")}</SelectItem>
               <SelectItem value="other">{td("statusOther")}</SelectItem>
@@ -828,12 +740,12 @@ export function ShipmentRequestsOrdersStylePage({
               <span
                 className={cn(
                   "px-3 font-medium",
-                  isPickup ? "text-[#D35400] dark:text-orange-400" : "text-[#7c3aed] dark:text-violet-400",
+                  "text-[#D35400] dark:text-orange-400",
                 )}
               >
                 {isPickup
                   ? tp("footerInTransit", { count: footerCounts.handover })
-                  : td("footerHandover", { count: footerCounts.handover })}
+                  : td("footerInTransit", { count: footerCounts.handover })}
               </span>
               <span
                 className={cn(
@@ -870,7 +782,7 @@ export function ShipmentRequestsOrdersStylePage({
                   className: "w-10 px-2",
                   align: "center" as const,
                   render: (order: NormalizedDeliveryOrderRow) => {
-                    const selectable = order.uiStatus === "confirmed";
+                    const selectable = canOpenHandoverSession(order);
                     return (
                       <input
                         type="checkbox"
@@ -927,89 +839,43 @@ export function ShipmentRequestsOrdersStylePage({
             render: (order: NormalizedDeliveryOrderRow) => (
               <Badge
                 className={cn(
-                  "px-3 py-1 font-medium",
-                  isPickup && "rounded-full",
-                  statusBadgeClass(order.uiStatus, orderBookType),
+                  "px-3 py-1 font-medium rounded-full",
+                  statusBadgeClass(order.uiStatus),
                 )}
               >
-                {statusLabel(order.uiStatus)}
+                {statusLabel(order)}
               </Badge>
             ),
           },
           {
             header: td("colActions"),
             align: "center",
-            className:
-              actionsVariant === "soft"
-                ? enableBulkHandover
-                  ? "min-w-[160px] whitespace-nowrap"
-                  : "min-w-[72px] whitespace-nowrap"
-                : "min-w-[200px] whitespace-nowrap",
+            className: "min-w-[160px] whitespace-nowrap",
             render: (order: NormalizedDeliveryOrderRow) => {
               const expanded = expandedIds.has(order.id);
-              const expandSoftClass = cn(
-                "h-8 w-8 shrink-0 rounded-full border shadow-none transition-all duration-200",
-                "border-primary-dark/25 bg-primary-dark/10 text-primary-dark",
-                "hover:border-primary-dark/40 hover:bg-primary-dark/15",
-                "dark:border-primary/30 dark:bg-primary/10 dark:text-primary dark:hover:bg-primary/15",
-                expanded &&
-                  "border-primary-dark/40 bg-primary-dark/15 dark:border-primary/40 dark:bg-primary/15",
-              );
+              const showOpen = canOpenHandoverSession(order);
               return (
                 <div className="flex flex-wrap items-center justify-center gap-2">
-                  {hasWorkflowPrimaryAction(order.uiStatus) ? (
+                  {showOpen ? (
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="brand"
                       size="default"
                       disabled={
                         isViewOnly ||
                         (handoverBusy && (actionOrderId === order.id || actionOrderId === -1))
                       }
-                      className={
-                        actionsVariant === "soft"
-                          ? primaryActionSoftClass(order.uiStatus, orderBookType)
-                          : cn("px-3", primaryActionButtonClass(order.uiStatus, orderBookType))
-                      }
+                      className="h-9 px-3 font-medium"
                       onClick={() => onPrimaryAction(order)}
                     >
-                      {primaryActionLabel(order.uiStatus)}
+                      {primaryActionLabel()}
                     </Button>
-                  ) : null}
-                  {actionsVariant !== "soft" && !isPickup ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className={actionIconButtonClass(order.uiStatus, orderBookType)}
-                          aria-label={td("moreOptions")}
-                        >
-                          <MoreVertical className="size-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => void copyOrderId(order.orderLabel)}>
-                          {td("copyOrderId")}
-                        </DropdownMenuItem>
-                        {hasWorkflowPrimaryAction(order.uiStatus) ? (
-                          <DropdownMenuItem onClick={() => onPrimaryAction(order)}>
-                            {primaryActionLabel(order.uiStatus)}
-                          </DropdownMenuItem>
-                        ) : null}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   ) : null}
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className={
-                      actionsVariant === "soft"
-                        ? expandSoftClass
-                        : actionIconButtonClass(order.uiStatus)
-                    }
+                    className={actionIconButtonClass(order.uiStatus, orderBookType)}
                     aria-expanded={expanded}
                     aria-label={expanded ? td("collapseRow") : td("expandRow")}
                     onClick={() => toggleExpanded(order.id)}
@@ -1062,7 +928,7 @@ export function ShipmentRequestsOrdersStylePage({
             </Button>
             <Button
               type="button"
-              variant={actionsVariant === "soft" ? "brand" : "default"}
+              variant="brand"
               disabled={openHandoverSession.isPending || selectedOrders.length === 0}
               onClick={() => void onOpenHandover(selectedOrders)}
               className={handoverModalOpenConfirmClass}

@@ -23,8 +23,6 @@ export default function OrdersPage() {
       intro={t("ordersIntro")}
       baseQuery={baseQuery}
       loadShipmentDetailsOnExpand
-      enableBulkHandover
-      actionsVariant="soft"
     />
   );
 }
