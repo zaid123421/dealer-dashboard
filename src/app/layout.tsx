@@ -10,6 +10,11 @@ import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "TreadX - Dealer Dashboard",
+  icons: {
+    icon: [{ url: "/images/logo.png", type: "image/png" }],
+    apple: [{ url: "/images/logo.png", type: "image/png" }],
+    shortcut: "/images/logo.png",
+  },
 };
 
 export default async function RootLayout({
