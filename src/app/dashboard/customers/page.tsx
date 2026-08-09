@@ -502,6 +502,14 @@ function CustomersPageContent() {
                     <p className="mt-1 truncate text-label-sm text-muted-foreground">
                       {customer.phoneNumber}
                     </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <Badge className="border-0 bg-muted px-2 py-0.5 text-label-sm font-semibold text-muted-foreground shadow-none">
+                        {t("cardTotalTireSets", { count: customer.totalTireSets ?? 0 })}
+                      </Badge>
+                      <Badge className="border-0 bg-blue-100 px-2 py-0.5 text-label-sm font-semibold text-blue-700 shadow-none dark:bg-blue-950/40 dark:text-blue-300">
+                        {t("cardTotalTires", { count: customer.totalTires ?? 0 })}
+                      </Badge>
+                    </div>
                   </div>
                 </button>
               ))

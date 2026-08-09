@@ -10,9 +10,13 @@ export function dealerHandoverSessionsQueryKey(query: DealerHandoverSessionsQuer
   return [...dealerHandoverAllQueryKeyRoot, query] as const;
 }
 
-export function useDealerHandoverSessions(query: DealerHandoverSessionsQuery) {
+export function useDealerHandoverSessions(
+  query: DealerHandoverSessionsQuery,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: dealerHandoverSessionsQueryKey(query),
     queryFn: () => listDealerHandoverSessionsPaged(query),
+    enabled: options?.enabled ?? true,
   });
 }

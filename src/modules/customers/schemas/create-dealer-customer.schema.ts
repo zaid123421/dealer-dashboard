@@ -179,22 +179,26 @@ export const dealerCustomerAddressResponseSchema = z.preprocess(
   }),
 );
 
-export const dealerCustomerResponseSchema = z.object({
-  id: z.number(),
-  firstName: z.string(),
-  lastName: z.string(),
-  email: z.string(),
-  address: dealerCustomerAddressResponseSchema.nullable(),
-  phoneNumber: z.string(),
-  dealerId: z.number(),
-  dealerName: z.string(),
-  dealerCustomerUniqueId: z.string(),
-  archived: z.boolean(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  createdBy: z.string(),
-  updatedBy: z.string().nullable(),
-});
+export const dealerCustomerResponseSchema = z
+  .object({
+    id: z.number(),
+    firstName: z.string(),
+    lastName: z.string(),
+    email: z.string(),
+    address: dealerCustomerAddressResponseSchema.nullable(),
+    phoneNumber: z.string(),
+    dealerId: z.number(),
+    dealerName: z.string(),
+    dealerCustomerUniqueId: z.string(),
+    archived: z.boolean(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    createdBy: z.string(),
+    updatedBy: z.string().nullable(),
+    totalTireSets: z.coerce.number().nullish(),
+    totalTires: z.coerce.number().nullish(),
+  })
+  .passthrough();
 
 export type CreateDealerCustomerRequest = z.infer<typeof createDealerCustomerRequestSchema>;
 export type DealerCustomer = z.infer<typeof dealerCustomerResponseSchema>;

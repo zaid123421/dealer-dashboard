@@ -1,11 +1,25 @@
 export type NormalizedHandoverScan = {
+  /** React list key (string form of API id, or synthetic fallback). */
   id: string;
+  /** Numeric API scan id for dismiss; null when not available. */
+  scanId: number | null;
   label: string;
   /** Scan outcome from API (`result`), e.g. MATCH / DISMISSED. */
   result: string | null;
   detail: string | null;
   scannedAt: string | null;
 };
+
+const DISMISSIBLE_SCAN_RESULTS = new Set([
+  "UNKNOWN_TIRE",
+  "NOT_IN_MANIFEST",
+  "DUPLICATE",
+]);
+
+export function isDismissibleScanResult(result: string | null | undefined): boolean {
+  if (!result) return false;
+  return DISMISSIBLE_SCAN_RESULTS.has(result.trim().toUpperCase());
+}
 
 export type NormalizedHandoverSessionState = {
   sessionId: number;
@@ -39,6 +53,7 @@ function normalizeScan(raw: unknown, index: number): NormalizedHandoverScan {
   if (typeof raw === "string" && raw.trim()) {
     return {
       id: `scan-${index}`,
+      scanId: null,
       label: raw.trim(),
       result: null,
       detail: null,
@@ -50,6 +65,7 @@ function normalizeScan(raw: unknown, index: number): NormalizedHandoverScan {
   if (!obj) {
     return {
       id: `scan-${index}`,
+      scanId: null,
       label: "—",
       result: null,
       detail: null,
@@ -65,12 +81,11 @@ function normalizeScan(raw: unknown, index: number): NormalizedHandoverScan {
     "—";
 
   const result = str(obj.result)?.toUpperCase() ?? null;
+  const scanId = num(obj.id) ?? null;
 
   return {
-    id:
-      str(obj.id) ??
-      (num(obj.id) != null ? String(num(obj.id)) : undefined) ??
-      `scan-${index}-${label}`,
+    id: scanId != null ? String(scanId) : `scan-${index}-${label}`,
+    scanId,
     label,
     result,
     detail:

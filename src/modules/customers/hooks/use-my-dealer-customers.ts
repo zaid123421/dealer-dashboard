@@ -20,7 +20,7 @@ export function dealerCustomersSearchInfiniteQueryKey(
   searchTerm: string,
   filters: MyDealerCustomersFilters,
 ) {
-  return [...dealerCustomersQueryKey, "dealer-search", dealerId, searchTerm, filters] as const;
+  return [...dealerCustomersQueryKey, "dealer-search", "v2-totals", dealerId, searchTerm, filters] as const;
 }
 
 export function useDealerCustomersInfinite(options: DealerCustomersInfiniteOptions) {

@@ -1,17 +1,5 @@
-import { getTranslations } from "next-intl/server";
-import { ReportsPage } from "@/modules/reports/components/reports-page";
+import { OverviewPage } from "@/modules/overview/components/overview-page";
 
-export default async function DashboardPage() {
-  const t = await getTranslations("dashboard");
-  return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 break-words">
-      <div>
-        <h1 className="text-headline-sm font-bold text-foreground">
-          {t("title")}
-        </h1>
-        <p className="mt-1 text-body-md text-subtle">{t("intro")}</p>
-      </div>
-      <ReportsPage />
-    </div>
-  );
+export default function DashboardPage() {
+  return <OverviewPage />;
 }

@@ -43,7 +43,40 @@ export async function searchDealerCustomersService(
       },
     );
     const raw = unwrapPayload(data);
-    return dealerCustomerPageSchema.parse(raw);
+    const parsed = dealerCustomerPageSchema.parse(raw);
+
+    // Keep totals from API even if a nested preprocess/transform drops them.
+    const rawContent = Array.isArray(raw.content) ? raw.content : [];
+    if (rawContent.length > 0 && parsed.content.length === rawContent.length) {
+      parsed.content = parsed.content.map((customer, index) => {
+        const src = rawContent[index];
+        if (!src || typeof src !== "object" || Array.isArray(src)) return customer;
+        const rec = src as Record<string, unknown>;
+        const totalTireSets =
+          typeof rec.totalTireSets === "number"
+            ? rec.totalTireSets
+            : typeof rec.totalTireSets === "string" && rec.totalTireSets.trim()
+              ? Number(rec.totalTireSets)
+              : customer.totalTireSets;
+        const totalTires =
+          typeof rec.totalTires === "number"
+            ? rec.totalTires
+            : typeof rec.totalTires === "string" && rec.totalTires.trim()
+              ? Number(rec.totalTires)
+              : customer.totalTires;
+        return {
+          ...customer,
+          totalTireSets: Number.isFinite(totalTireSets as number)
+            ? (totalTireSets as number)
+            : customer.totalTireSets,
+          totalTires: Number.isFinite(totalTires as number)
+            ? (totalTires as number)
+            : customer.totalTires,
+        };
+      });
+    }
+
+    return parsed;
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
       const msg =

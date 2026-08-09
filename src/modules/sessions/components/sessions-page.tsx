@@ -13,11 +13,13 @@ import {
   Loader2,
   PackageCheck,
   ScanLine,
+  Wrench,
 } from "lucide-react";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import {
   Select,
@@ -52,21 +54,38 @@ import { useDealerHandoverSessions } from "@/modules/sessions/hooks/use-dealer-h
 import {
   dealerHandoverSessionStateQueryKey,
 } from "@/modules/sessions/hooks/use-dealer-handover-session-state";
+import { useDismissHandoverScan } from "@/modules/sessions/hooks/use-dismiss-handover-scan";
+import { useDealerServiceSessions } from "@/modules/sessions/hooks/use-dealer-service-sessions";
 import type { HandoverSessionRow } from "@/modules/sessions/lib/handover-session-dto";
 import {
   formatScanResultLabel,
+  isDismissibleScanResult,
   scanResultBadgeClass,
+  type NormalizedHandoverScan,
   type NormalizedHandoverSessionState,
 } from "@/modules/sessions/lib/handover-session-state-dto";
 import { getDealerHandoverSessionState } from "@/modules/sessions/services/dealer-handover-session-state.service";
 import type { HandoverSessionStatusFilter } from "@/modules/sessions/services/dealer-handover-sessions.service";
+import type {
+  ServiceSessionStatusFilter,
+  ServiceSessionTypeFilter,
+} from "@/modules/sessions/services/dealer-service-sessions.service";
+import { ServiceSessionsTable } from "@/modules/sessions/components/service-sessions-table";
 
 const PAGE_SIZE = 20;
+const DISMISS_NOTE_MAX_LENGTH = 500;
 
-type SessionsTab = "handover" | "preShipments";
-type StatusFilter = "ALL" | HandoverSessionStatusFilter;
+type SessionsTab = "handover" | "preShipments" | "serviceSessions";
+type HandoverStatusFilter = "ALL" | HandoverSessionStatusFilter;
+type ServiceStatusFilter = "ALL" | ServiceSessionStatusFilter;
+type ServiceTypeFilter = "ALL" | ServiceSessionTypeFilter;
 
-const TAB_DIRECTION: Record<SessionsTab, HandoverDirection> = {
+type DismissScanTarget = {
+  sessionId: number;
+  scan: NormalizedHandoverScan;
+};
+
+const TAB_DIRECTION: Record<"handover" | "preShipments", HandoverDirection> = {
   handover: "INBOUND_DELIVERY",
   preShipments: "OUTBOUND_PICKUP",
 };
@@ -126,40 +145,74 @@ export function SessionsPage() {
 
   const [tab, setTab] = useState<SessionsTab>("handover");
   const [page, setPage] = useState(0);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [handoverStatusFilter, setHandoverStatusFilter] = useState<HandoverStatusFilter>("ALL");
+  const [serviceStatusFilter, setServiceStatusFilter] = useState<ServiceStatusFilter>("ALL");
+  const [serviceTypeFilter, setServiceTypeFilter] = useState<ServiceTypeFilter>("ALL");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [closeConfirmSession, setCloseConfirmSession] = useState<HandoverSessionRow | null>(null);
   const [closingSessionId, setClosingSessionId] = useState<number | null>(null);
+  const [dismissTarget, setDismissTarget] = useState<DismissScanTarget | null>(null);
+  const [dismissNote, setDismissNote] = useState("");
 
   const closeHandoverSession = useCloseHandoverSession();
+  const dismissHandoverScan = useDismissHandoverScan();
   const { isViewOnly } = useViewOnlyMode();
 
-  const direction = TAB_DIRECTION[tab];
+  const isServiceTab = tab === "serviceSessions";
+  const direction = isServiceTab ? null : TAB_DIRECTION[tab];
 
-  const listQuery = useMemo(
+  const handoverListQuery = useMemo(
     () => ({
-      direction,
+      direction: (direction ?? "INBOUND_DELIVERY") as HandoverDirection,
       page,
       size: PAGE_SIZE,
       sortBy: "openedAt" as const,
       sort: "desc" as const,
-      status: statusFilter === "ALL" ? undefined : statusFilter,
+      status: handoverStatusFilter === "ALL" ? undefined : handoverStatusFilter,
       dateFrom: dateFrom.trim() || undefined,
       dateTo: dateTo.trim() || undefined,
       locale,
     }),
-    [direction, page, statusFilter, dateFrom, dateTo, locale],
+    [direction, page, handoverStatusFilter, dateFrom, dateTo, locale],
   );
 
-  const { data, isLoading, isError, error, refetch, isFetching } =
-    useDealerHandoverSessions(listQuery);
+  const serviceListQuery = useMemo(
+    () => ({
+      page,
+      size: PAGE_SIZE,
+      sortBy: "startedAt" as const,
+      direction: "desc" as const,
+      status: serviceStatusFilter === "ALL" ? undefined : serviceStatusFilter,
+      sessionType: serviceTypeFilter === "ALL" ? undefined : serviceTypeFilter,
+      locale,
+    }),
+    [page, serviceStatusFilter, serviceTypeFilter, locale],
+  );
 
-  const rows = useMemo(() => data?.rows ?? [], [data?.rows]);
+  const handoverQuery = useDealerHandoverSessions(handoverListQuery, {
+    enabled: !isServiceTab,
+  });
+  const serviceQuery = useDealerServiceSessions(serviceListQuery, {
+    enabled: isServiceTab,
+  });
+
+  const activeQuery = isServiceTab ? serviceQuery : handoverQuery;
+  const { data, isLoading, isError, error, refetch, isFetching } = activeQuery;
+
+  const handoverRows = useMemo(
+    () => handoverQuery.data?.rows ?? [],
+    [handoverQuery.data?.rows],
+  );
+  const serviceRows = useMemo(
+    () => serviceQuery.data?.rows ?? [],
+    [serviceQuery.data?.rows],
+  );
   const meta = data?.meta;
   const loading = isLoading || (isFetching && !data);
   const totalPages = meta?.totalPages ?? 0;
+  const showingCount = meta?.totalElements ?? (isServiceTab ? serviceRows.length : handoverRows.length);
 
   const expandedIdsSorted = useMemo(
     () => [...expandedIds].sort((a, b) => a - b),
@@ -170,7 +223,7 @@ export function SessionsPage() {
     queries: expandedIdsSorted.map((sessionId) => ({
       queryKey: dealerHandoverSessionStateQueryKey(sessionId),
       queryFn: () => getDealerHandoverSessionState(sessionId),
-      enabled: expandedIds.has(sessionId),
+      enabled: !isServiceTab && expandedIds.has(sessionId),
       staleTime: 15_000,
       refetchInterval: (query: { state: { data?: NormalizedHandoverSessionState } }) =>
         query.state.data?.status === "OPEN" ? 8_000 : false,
@@ -192,8 +245,18 @@ export function SessionsPage() {
     setExpandedIds(new Set());
   }
 
-  function onStatusChange(value: string) {
-    setStatusFilter(value as StatusFilter);
+  function onHandoverStatusChange(value: string) {
+    setHandoverStatusFilter(value as HandoverStatusFilter);
+    setPage(0);
+  }
+
+  function onServiceStatusChange(value: string) {
+    setServiceStatusFilter(value as ServiceStatusFilter);
+    setPage(0);
+  }
+
+  function onServiceTypeChange(value: string) {
+    setServiceTypeFilter(value as ServiceTypeFilter);
     setPage(0);
   }
 
@@ -221,6 +284,33 @@ export function SessionsPage() {
     setCloseConfirmSession(row);
   }
 
+  function onDismissScanRequest(sessionId: number, scan: NormalizedHandoverScan) {
+    if (isViewOnly) return;
+    if (scan.scanId == null || !isDismissibleScanResult(scan.result)) return;
+    setDismissNote("");
+    setDismissTarget({ sessionId, scan });
+  }
+
+  async function onDismissScanConfirm() {
+    const target = dismissTarget;
+    if (!target || target.scan.scanId == null || dismissHandoverScan.isPending) return;
+
+    const toastId = toast.loading(t("sessionsDismissScanDismissing"));
+    try {
+      await dismissHandoverScan.mutateAsync({
+        sessionId: target.sessionId,
+        scanId: target.scan.scanId,
+        note: dismissNote.trim() || undefined,
+      });
+      toast.success(t("sessionsDismissScanSuccess"), { id: toastId });
+      setDismissTarget(null);
+      setDismissNote("");
+    } catch (err: unknown) {
+      const message = apiErrorMessageFromUnknown(err) ?? t("sessionsDismissScanError");
+      toast.error(message, { id: toastId });
+    }
+  }
+
   async function onCloseSessionConfirm() {
     const session = closeConfirmSession;
     if (!session || closingSessionId !== null) return;
@@ -229,7 +319,7 @@ export function SessionsPage() {
     const toastId = toast.loading(t("handoverClosing"));
 
     try {
-      const active = rows.find((r) => r.id === session.id) ?? session;
+      const active = handoverRows.find((r) => r.id === session.id) ?? session;
       if (active.version == null) {
         toast.error(t("handoverCloseMissingVersionTitle"), {
           id: toastId,
@@ -310,57 +400,119 @@ export function SessionsPage() {
               <ArrowUpFromLine className="size-4 shrink-0 opacity-80" aria-hidden />
               <span className="truncate font-semibold">{t("sessionsTabPreShipments")}</span>
             </TabsTrigger>
+            <TabsTrigger
+              value="serviceSessions"
+              className={cn(
+                "relative z-10 h-11 flex-1 gap-2 rounded-none border-0 border-b-2 border-transparent px-4 py-0",
+                "bg-transparent shadow-none",
+                "text-muted-foreground hover:text-foreground",
+                "data-[state=active]:border-b-primary-dark data-[state=active]:bg-transparent",
+                "data-[state=active]:text-primary-dark data-[state=active]:shadow-none",
+                "dark:data-[state=active]:border-b-primary dark:data-[state=active]:text-primary",
+                "sm:flex-none sm:min-w-[10.5rem]",
+              )}
+            >
+              <Wrench className="size-4 shrink-0 opacity-80" aria-hidden />
+              <span className="truncate font-semibold">{t("sessionsTabServiceSessions")}</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            <span className="text-label-sm font-medium text-muted-foreground sm:me-1">
-              {t("sessionsFilterStatusLabel")}
-            </span>
-            <Select value={statusFilter} onValueChange={onStatusChange}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">{t("sessionsFilterAllStatus")}</SelectItem>
-                <SelectItem value="OPEN">{t("sessionsStatusOpen")}</SelectItem>
-                <SelectItem value="CLOSED">{t("sessionsStatusClosed")}</SelectItem>
-                <SelectItem value="CANCELLED">{t("sessionsStatusCancelled")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {isServiceTab ? (
+          <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <span className="text-label-sm font-medium text-muted-foreground sm:me-1">
+                {t("sessionsFilterStatusLabel")}
+              </span>
+              <Select value={serviceStatusFilter} onValueChange={onServiceStatusChange}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">{t("sessionsFilterAllStatus")}</SelectItem>
+                  <SelectItem value="IN_PROGRESS">{t("serviceSessionsStatusInProgress")}</SelectItem>
+                  <SelectItem value="COMPLETED">{t("serviceSessionsStatusCompleted")}</SelectItem>
+                  <SelectItem value="CANCELLED">{t("sessionsStatusCancelled")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            <span className="text-label-sm font-medium text-muted-foreground sm:me-1">
-              {t("sessionsFilterDateFrom")}
-            </span>
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => onDateFromChange(e.target.value)}
-              className="w-full sm:w-[160px]"
-              aria-label={t("sessionsFilterDateFrom")}
-            />
-          </div>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <span className="text-label-sm font-medium text-muted-foreground sm:me-1">
+                {t("serviceSessionsFilterTypeLabel")}
+              </span>
+              <Select value={serviceTypeFilter} onValueChange={onServiceTypeChange}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">{t("serviceSessionsFilterAllTypes")}</SelectItem>
+                  <SelectItem value="INITIAL_INSPECTION">
+                    {t("serviceSessionsTypeInitialInspection")}
+                  </SelectItem>
+                  <SelectItem value="ROTATION">{t("serviceSessionsTypeRotation")}</SelectItem>
+                  <SelectItem value="REPLACEMENT">{t("serviceSessionsTypeReplacement")}</SelectItem>
+                  <SelectItem value="SET_REPLACEMENT">
+                    {t("serviceSessionsTypeSetReplacement")}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            <span className="text-label-sm font-medium text-muted-foreground sm:me-1">
-              {t("sessionsFilterDateTo")}
-            </span>
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => onDateToChange(e.target.value)}
-              className="w-full sm:w-[160px]"
-              aria-label={t("sessionsFilterDateTo")}
-            />
+            <p className="w-full text-end text-body-md text-muted-foreground sm:ms-auto sm:w-auto">
+              {t("sessionsShowingCount", { count: showingCount })}
+            </p>
           </div>
+        ) : (
+          <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <span className="text-label-sm font-medium text-muted-foreground sm:me-1">
+                {t("sessionsFilterStatusLabel")}
+              </span>
+              <Select value={handoverStatusFilter} onValueChange={onHandoverStatusChange}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">{t("sessionsFilterAllStatus")}</SelectItem>
+                  <SelectItem value="OPEN">{t("sessionsStatusOpen")}</SelectItem>
+                  <SelectItem value="CLOSED">{t("sessionsStatusClosed")}</SelectItem>
+                  <SelectItem value="CANCELLED">{t("sessionsStatusCancelled")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <p className="w-full text-end text-body-md text-muted-foreground sm:ms-auto sm:w-auto">
-            {t("sessionsShowingCount", { count: meta?.totalElements ?? rows.length })}
-          </p>
-        </div>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <span className="text-label-sm font-medium text-muted-foreground sm:me-1">
+                {t("sessionsFilterDateFrom")}
+              </span>
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => onDateFromChange(e.target.value)}
+                className="w-full sm:w-[160px]"
+                aria-label={t("sessionsFilterDateFrom")}
+              />
+            </div>
+
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <span className="text-label-sm font-medium text-muted-foreground sm:me-1">
+                {t("sessionsFilterDateTo")}
+              </span>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => onDateToChange(e.target.value)}
+                className="w-full sm:w-[160px]"
+                aria-label={t("sessionsFilterDateTo")}
+              />
+            </div>
+
+            <p className="w-full text-end text-body-md text-muted-foreground sm:ms-auto sm:w-auto">
+              {t("sessionsShowingCount", { count: showingCount })}
+            </p>
+          </div>
+        )}
 
         {isError ? (
           <ErrorAlert
@@ -371,20 +523,32 @@ export function SessionsPage() {
           />
         ) : null}
 
-        <HandoverSessionsTable
-          rows={rows}
-          loading={loading}
-          expandedIds={expandedIds}
-          stateQueryById={stateQueryById}
-          onToggleExpanded={toggleExpanded}
-          onCloseSession={onCloseSessionRequest}
-          closeBusy={closeHandoverSession.isPending}
-          closingSessionId={closingSessionId}
-          isViewOnly={isViewOnly}
-          emptyText={t("sessionsEmpty")}
-          locale={locale}
-          t={t}
-        />
+        {isServiceTab ? (
+          <ServiceSessionsTable
+            rows={serviceRows}
+            loading={loading}
+            emptyText={t("serviceSessionsEmpty")}
+            t={t}
+          />
+        ) : (
+          <HandoverSessionsTable
+            rows={handoverRows}
+            loading={loading}
+            expandedIds={expandedIds}
+            stateQueryById={stateQueryById}
+            onToggleExpanded={toggleExpanded}
+            onCloseSession={onCloseSessionRequest}
+            onDismissScan={onDismissScanRequest}
+            closeBusy={closeHandoverSession.isPending}
+            closingSessionId={closingSessionId}
+            dismissBusy={dismissHandoverScan.isPending}
+            dismissingScanId={dismissTarget?.scan.scanId ?? null}
+            isViewOnly={isViewOnly}
+            emptyText={t("sessionsEmpty")}
+            locale={locale}
+            t={t}
+          />
+        )}
       </Tabs>
 
       <Dialog
@@ -436,6 +600,84 @@ export function SessionsPage() {
         </ConfirmDialogContent>
       </Dialog>
 
+      <Dialog
+        open={dismissTarget != null}
+        onOpenChange={(open) => {
+          if (!open && !dismissHandoverScan.isPending) {
+            setDismissTarget(null);
+            setDismissNote("");
+          }
+        }}
+      >
+        <ConfirmDialogContent>
+          <div className="space-y-4 text-start">
+            <div className="space-y-2">
+              <DialogTitle className="text-lg font-semibold leading-tight text-foreground">
+                {t("sessionsDismissScanTitle")}
+              </DialogTitle>
+              <DialogDescription className="text-body-sm leading-relaxed text-muted-foreground">
+                {t("sessionsDismissScanDescription", {
+                  code: dismissTarget?.scan.label ?? "",
+                })}
+              </DialogDescription>
+            </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="dismiss-scan-note"
+                className="text-label-sm font-medium text-foreground"
+              >
+                {t("sessionsDismissScanNoteLabel")}
+              </label>
+              <Textarea
+                id="dismiss-scan-note"
+                value={dismissNote}
+                onChange={(e) => setDismissNote(e.target.value.slice(0, DISMISS_NOTE_MAX_LENGTH))}
+                placeholder={t("sessionsDismissScanNotePlaceholder")}
+                maxLength={DISMISS_NOTE_MAX_LENGTH}
+                rows={3}
+                disabled={dismissHandoverScan.isPending}
+                className="resize-none"
+              />
+              <p className="text-end text-label-sm text-muted-foreground">
+                {dismissNote.length}/{DISMISS_NOTE_MAX_LENGTH}
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="mt-6 flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              className={DIALOG_FOOTER_BUTTON_CLASS}
+              disabled={dismissHandoverScan.isPending}
+              onClick={() => {
+                setDismissTarget(null);
+                setDismissNote("");
+              }}
+            >
+              {t("sessionsDismissScanCancel")}
+            </Button>
+            <Button
+              type="button"
+              disabled={dismissHandoverScan.isPending}
+              onClick={() => void onDismissScanConfirm()}
+              className={cn(
+                DIALOG_FOOTER_BUTTON_CLASS,
+                "border-0 bg-[#7c3aed] font-semibold text-white hover:bg-[#6d28d9] dark:bg-violet-500 dark:hover:bg-violet-600",
+              )}
+            >
+              {dismissHandoverScan.isPending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {t("sessionsDismissScanDismissing")}
+                </span>
+              ) : (
+                t("sessionsDismissScanConfirm")
+              )}
+            </Button>
+          </DialogFooter>
+        </ConfirmDialogContent>
+      </Dialog>
+
       {meta != null && totalPages > 0 ? (
         <PaginationControls
           canPrevious={page > 0 && !loading}
@@ -461,8 +703,11 @@ function HandoverSessionsTable({
   stateQueryById,
   onToggleExpanded,
   onCloseSession,
+  onDismissScan,
   closeBusy,
   closingSessionId,
+  dismissBusy,
+  dismissingScanId,
   isViewOnly,
   emptyText,
   locale,
@@ -474,8 +719,11 @@ function HandoverSessionsTable({
   stateQueryById: Map<number, StateQuery>;
   onToggleExpanded: (id: number) => void;
   onCloseSession: (row: HandoverSessionRow) => void;
+  onDismissScan: (sessionId: number, scan: NormalizedHandoverScan) => void;
   closeBusy: boolean;
   closingSessionId: number | null;
+  dismissBusy: boolean;
+  dismissingScanId: number | null;
   isViewOnly: boolean;
   emptyText: string;
   locale: string;
@@ -501,6 +749,10 @@ function HandoverSessionsTable({
                 stateQuery?.error instanceof Error ? stateQuery.error.message : undefined
               }
               onRetry={() => void stateQuery?.refetch()}
+              onDismissScan={onDismissScan}
+              dismissBusy={dismissBusy}
+              dismissingScanId={dismissingScanId}
+              isViewOnly={isViewOnly}
               locale={locale}
               t={t}
             />
@@ -659,6 +911,10 @@ function SessionDetailPanel({
   isError,
   errorMessage,
   onRetry,
+  onDismissScan,
+  dismissBusy,
+  dismissingScanId,
+  isViewOnly,
   locale,
   t,
 }: {
@@ -668,6 +924,10 @@ function SessionDetailPanel({
   isError: boolean;
   errorMessage?: string;
   onRetry: () => void;
+  onDismissScan: (sessionId: number, scan: NormalizedHandoverScan) => void;
+  dismissBusy: boolean;
+  dismissingScanId: number | null;
+  isViewOnly: boolean;
   locale: string;
   t: (key: string, values?: Record<string, string | number | Date>) => string;
 }) {
@@ -676,6 +936,7 @@ function SessionDetailPanel({
   const discrepancies = state?.discrepancies ?? row.discrepancies;
   const status = state?.status ?? row.status;
   const newScans = state?.newScans ?? [];
+  const sessionId = state?.sessionId ?? row.id;
 
   return (
     <div className={cn("mx-2 mb-2 space-y-5 p-4", TABLE_DETAIL_BOX)}>
@@ -741,39 +1002,65 @@ function SessionDetailPanel({
           <p className="text-body-sm text-muted-foreground">{t("sessionsNoNewScans")}</p>
         ) : (
           <ul className="space-y-2">
-            {newScans.map((scan) => (
-              <li
-                key={scan.id}
-                className="flex items-start gap-3 rounded-md border border-border/60 bg-muted/20 px-3 py-2.5"
-              >
-                <ScanLine className="mt-0.5 size-4 shrink-0 text-primary-dark dark:text-primary" aria-hidden />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="min-w-0 truncate font-mono text-sm font-medium text-foreground">
-                      {scan.label}
-                    </p>
-                    {scan.result ? (
-                      <Badge
-                        className={cn(
-                          "shrink-0 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
-                          scanResultBadgeClass(scan.result),
-                        )}
-                      >
-                        {scanResultLabel(scan.result, t)}
-                      </Badge>
+            {newScans.map((scan) => {
+              const canDismiss =
+                scan.scanId != null && isDismissibleScanResult(scan.result);
+              const isDismissing =
+                dismissBusy && dismissingScanId != null && dismissingScanId === scan.scanId;
+
+              return (
+                <li
+                  key={scan.id}
+                  className="flex items-start gap-3 rounded-md border border-border/60 bg-muted/20 px-3 py-2.5"
+                >
+                  <ScanLine className="mt-0.5 size-4 shrink-0 text-primary-dark dark:text-primary" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="min-w-0 truncate font-mono text-sm font-medium text-foreground">
+                        {scan.label}
+                      </p>
+                      {scan.result ? (
+                        <Badge
+                          className={cn(
+                            "shrink-0 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+                            scanResultBadgeClass(scan.result),
+                          )}
+                        >
+                          {scanResultLabel(scan.result, t)}
+                        </Badge>
+                      ) : null}
+                    </div>
+                    {scan.detail ? (
+                      <p className="mt-0.5 truncate text-label-sm text-muted-foreground">{scan.detail}</p>
+                    ) : null}
+                    {scan.scannedAt ? (
+                      <p className="mt-0.5 text-label-sm text-muted-foreground">
+                        {formatLocaleDateTime(scan.scannedAt, locale)}
+                      </p>
                     ) : null}
                   </div>
-                  {scan.detail ? (
-                    <p className="mt-0.5 truncate text-label-sm text-muted-foreground">{scan.detail}</p>
+                  {canDismiss ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={isViewOnly || dismissingScanId != null || isDismissing}
+                      className="h-8 shrink-0 px-3 font-medium text-violet-700 hover:bg-violet-50 hover:text-violet-800 dark:text-violet-300 dark:hover:bg-violet-950/40"
+                      onClick={() => onDismissScan(sessionId, scan)}
+                    >
+                      {isDismissing ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                          {t("sessionsDismissScanDismissing")}
+                        </span>
+                      ) : (
+                        t("sessionsDismissScanAction")
+                      )}
+                    </Button>
                   ) : null}
-                  {scan.scannedAt ? (
-                    <p className="mt-0.5 text-label-sm text-muted-foreground">
-                      {formatLocaleDateTime(scan.scannedAt, locale)}
-                    </p>
-                  ) : null}
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
