@@ -96,6 +96,20 @@ function matchesStatusFilter(uiStatus: ShipmentUiStatus, filter: StatusFilter): 
   return uiStatus === filter;
 }
 
+/** Hide Create Shipment when order or linked handover session is OPEN/CLOSED. */
+function canOpenHandoverSessionForOrder(
+  order: NormalizedDeliveryOrderRow,
+  isPickup: boolean,
+): boolean {
+  const orderStatus = order.rawStatus.toUpperCase();
+  const sessionStatus = order.handoverSessionStatus?.toUpperCase();
+  if (orderStatus === "OPEN" || orderStatus === "CLOSED") return false;
+  if (sessionStatus === "OPEN" || sessionStatus === "CLOSED") return false;
+
+  if (isPickup) return order.uiStatus === "confirmed" && order.handoverSessionId == null;
+  return orderStatus === "IN_TRANSIT" && order.handoverSessionId == null;
+}
+
 function statusBadgeClass(uiStatus: ShipmentUiStatus): string {
   switch (uiStatus) {
     case "confirmed":
@@ -115,50 +129,13 @@ function statusBadgeClass(uiStatus: ShipmentUiStatus): string {
   }
 }
 
-function actionIconButtonClass(
-  uiStatus: ShipmentUiStatus,
-  orderBookType: "pickup" | "delivery" = "delivery",
-): string {
+function actionIconButtonClass(): string {
   // Important hover overrides beat ghost variant's hover:bg-accent.
-  const base =
-    `h-9 w-9 shrink-0 ${RADIUS_CONTROL} border-0 text-white shadow-none transition-colors duration-[var(--duration-normal)] hover:!text-white [&_svg]:text-white`;
-  switch (uiStatus) {
-    case "confirmed":
-      return cn(
-        base,
-        "bg-primary-dark text-primary-onContainer hover:!bg-primary-dark/90 hover:!text-primary-onContainer [&_svg]:text-primary-onContainer",
-      );
-    case "handover":
-      if (orderBookType === "delivery") {
-        return cn(
-          base,
-          "bg-primary-dark text-primary-onContainer hover:!bg-primary-dark/90 hover:!text-primary-onContainer [&_svg]:text-primary-onContainer",
-        );
-      }
-      return cn(
-        base,
-        "bg-[#7c3aed] hover:!bg-[#6d28d9] dark:bg-violet-400 dark:hover:!bg-violet-500",
-      );
-    case "completed":
-      return cn(
-        base,
-        "bg-[#16a34a] hover:!bg-[#15803d] dark:bg-green-400 dark:hover:!bg-green-500",
-      );
-    case "fulfilled":
-      return cn(
-        base,
-        "bg-[#0F766E] hover:!bg-[#0D9488] dark:bg-teal-500 dark:hover:!bg-teal-400",
-      );
-    case "cancelled":
-      return cn(base, "bg-gray-600 hover:!bg-gray-700 dark:bg-gray-600 dark:hover:!bg-gray-700");
-    case "in_cart":
-      return cn(
-        base,
-        "bg-[#2563eb] hover:!bg-[#1d4ed8] dark:bg-blue-400 dark:hover:!bg-blue-500",
-      );
-    default:
-      return cn(base, "bg-slate-600 hover:!bg-slate-700 dark:bg-slate-500 dark:hover:!bg-slate-600");
-  }
+  return cn(
+    `h-9 w-9 shrink-0 ${RADIUS_CONTROL} border-0 shadow-none transition-colors duration-[var(--duration-normal)]`,
+    "bg-primary-dark text-primary-onContainer hover:!bg-primary-dark/90 hover:!text-primary-onContainer",
+    "[&_svg]:text-primary-onContainer",
+  );
 }
 
 const bulkCheckboxClass =
@@ -304,12 +281,7 @@ export function ShipmentRequestsOrdersStylePage({
   }, [deliveryRows, statusFilter, dateFilter, debouncedSearch, nowMs]);
 
   const selectableConfirmedRows = useMemo(
-    () =>
-      filtered.filter((r) =>
-        isPickup
-          ? r.uiStatus === "confirmed"
-          : r.rawStatus.toUpperCase() === "IN_TRANSIT" && r.handoverSessionId == null,
-      ),
+    () => filtered.filter((r) => canOpenHandoverSessionForOrder(r, isPickup)),
     [filtered, isPickup],
   );
 
@@ -409,10 +381,7 @@ export function ShipmentRequestsOrdersStylePage({
 
   /** Pickup: open on SUBMITTED. Delivery: open only on IN_TRANSIT with no active session. */
   function canOpenHandoverSession(order: NormalizedDeliveryOrderRow): boolean {
-    if (isPickup) return order.uiStatus === "confirmed";
-    return (
-      order.rawStatus.toUpperCase() === "IN_TRANSIT" && order.handoverSessionId == null
-    );
+    return canOpenHandoverSessionForOrder(order, isPickup);
   }
 
   function primaryActionLabel(): string {
@@ -839,7 +808,7 @@ export function ShipmentRequestsOrdersStylePage({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className={actionIconButtonClass(order.uiStatus, orderBookType)}
+                    className={actionIconButtonClass()}
                     aria-expanded={expanded}
                     aria-label={expanded ? td("collapseRow") : td("expandRow")}
                     onClick={() => toggleExpanded(order.id)}

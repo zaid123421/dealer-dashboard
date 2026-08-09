@@ -24,10 +24,11 @@ export type NormalizedTireSetRow = {
   lineStatus: string;
 };
 
-/** handoverSessionId / handoverSessionVersion from list/detail (IN_TRANSIT orders). */
+/** handoverSessionId / version / status from list/detail (IN_TRANSIT orders). */
 export function parseHandoverSessionFields(raw: Record<string, unknown>): {
   handoverSessionId?: number;
   handoverSessionVersion?: number;
+  handoverSessionStatus?: string;
 } {
   const nested = asRecord(raw.handoverSession);
   const handoverSessionId = (() => {
@@ -46,7 +47,15 @@ export function parseHandoverSessionFields(raw: Record<string, unknown>): {
     if (direct !== undefined) return direct;
     return nested ? num(nested.version ?? nested.handoverSessionVersion) : undefined;
   })();
-  return { handoverSessionId, handoverSessionVersion };
+  const handoverSessionStatus = (() => {
+    const direct =
+      pickString(raw, ["handoverSessionStatus", "handOverSessionStatus", "sessionStatus"]) ??
+      (nested
+        ? pickString(nested, ["status", "handoverSessionStatus", "sessionStatus"])
+        : undefined);
+    return direct?.toUpperCase();
+  })();
+  return { handoverSessionId, handoverSessionVersion, handoverSessionStatus };
 }
 
 export type NormalizedDeliveryOrderRow = {
@@ -57,6 +66,8 @@ export type NormalizedDeliveryOrderRow = {
   handoverSessionId?: number;
   /** Optimistic lock for POST /v1/dealer/handover/{sessionId}/close (`version` in body). */
   handoverSessionVersion?: number;
+  /** OPEN | CLOSED | CANCELLED when API returns a linked handover session. */
+  handoverSessionStatus?: string;
   orderLabel: string;
   direction: string;
   rawStatus: string;
@@ -227,7 +238,8 @@ export function normalizeShipmentRequestDto(rawUnknown: unknown): NormalizedDeli
   }
 
   const version = num(raw.version ?? raw.shipmentRequestVersion);
-  const { handoverSessionId, handoverSessionVersion } = parseHandoverSessionFields(raw);
+  const { handoverSessionId, handoverSessionVersion, handoverSessionStatus } =
+    parseHandoverSessionFields(raw);
 
   const primaryCustomerName =
     pickString(raw, ["customerDisplayName", "customerName", "primaryCustomerName"]) ??
@@ -256,6 +268,7 @@ export function normalizeShipmentRequestDto(rawUnknown: unknown): NormalizedDeli
     version,
     handoverSessionId,
     handoverSessionVersion,
+    handoverSessionStatus,
     orderLabel,
     direction,
     rawStatus,
