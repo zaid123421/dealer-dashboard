@@ -13,7 +13,6 @@ export type NormalizedHandoverScan = {
 const DISMISSIBLE_SCAN_RESULTS = new Set([
   "UNKNOWN_TIRE",
   "NOT_IN_MANIFEST",
-  "DUPLICATE",
 ]);
 
 export function isDismissibleScanResult(result: string | null | undefined): boolean {

@@ -6,12 +6,25 @@ import {
   type EmailSuggestion,
 } from "@/modules/inbound-emails/lib/inbound-email-dto";
 
+export type InboundEmailStatusFilter =
+  | "PROCESSED"
+  | "NO_CUSTOMER"
+  | "NO_VEHICLE"
+  | "NO_TIRE_SET"
+  | "NO_APPOINTMENT"
+  | "DUPLICATE"
+  | "PARSE_ERROR";
+
+export type InboundEmailViewFilter = "ACTIONABLE" | "HISTORY" | "ALL";
+
 export type DealerInboundEmailsQuery = {
   page?: number;
   size?: number;
   sortBy?: string;
   direction?: "asc" | "desc";
   locale?: string;
+  status?: InboundEmailStatusFilter;
+  view?: InboundEmailViewFilter;
 };
 
 export type DealerInboundEmailsPagedMeta = {
@@ -52,12 +65,21 @@ function messageFromResponseData(data: unknown): string | undefined {
 }
 
 function buildQueryString(query: DealerInboundEmailsQuery): string {
-  const { page = 0, size = 20, sortBy = "receivedAt", direction = "desc" } = query;
+  const {
+    page = 0,
+    size = 20,
+    sortBy = "receivedAt",
+    direction = "desc",
+    status,
+    view,
+  } = query;
   const sp = new URLSearchParams();
   sp.set("page", String(page));
   sp.set("size", String(size));
   sp.set("sortBy", sortBy);
   sp.set("direction", direction);
+  if (status) sp.set("status", status);
+  if (view) sp.set("view", view);
   return sp.toString();
 }
 

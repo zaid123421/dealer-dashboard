@@ -10,6 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StatTile, StatTileBox } from "@/components/ui/stat-tile";
 import { Dialog } from "@/components/ui/dialog";
 import {
@@ -36,7 +43,11 @@ import {
   isInboundStatusFailed,
 } from "@/modules/inbound-emails/lib/inbound-email-dto";
 import { removeInboundEmailFromListCache } from "@/modules/inbound-emails/lib/inbound-emails-cache";
-import type { DealerInboundEmailsQuery } from "@/modules/inbound-emails/services/dealer-inbound-emails.service";
+import type {
+  DealerInboundEmailsQuery,
+  InboundEmailStatusFilter,
+  InboundEmailViewFilter,
+} from "@/modules/inbound-emails/services/dealer-inbound-emails.service";
 import { useRejectShipmentRequest } from "@/modules/shipment-requests/hooks/use-reject-shipment-request";
 import { useMoveShipmentRequestToCart } from "@/modules/shipment-requests/hooks/use-move-shipment-request-to-cart";
 
@@ -116,10 +127,44 @@ function statusBadgeClass(tone: InboundStatusTone): string {
   }
 }
 
+type StatusFilterValue = "ALL" | InboundEmailStatusFilter;
+
+const STATUS_FILTER_OPTIONS: StatusFilterValue[] = [
+  "ALL",
+  "PROCESSED",
+  "NO_CUSTOMER",
+  "NO_VEHICLE",
+  "NO_TIRE_SET",
+  "NO_APPOINTMENT",
+  "DUPLICATE",
+  "PARSE_ERROR",
+];
+
+const VIEW_FILTER_OPTIONS: InboundEmailViewFilter[] = ["ACTIONABLE", "HISTORY", "ALL"];
+
+const STATUS_FILTER_I18N: Record<StatusFilterValue, string> = {
+  ALL: "emailInboxFilterStatusAll",
+  PROCESSED: "emailInboxStatusProcessed",
+  NO_CUSTOMER: "emailInboxStatusNoCustomer",
+  NO_VEHICLE: "emailInboxStatusNoVehicle",
+  NO_TIRE_SET: "emailInboxStatusNoTireSet",
+  NO_APPOINTMENT: "emailInboxStatusNoAppointment",
+  DUPLICATE: "emailInboxStatusDuplicate",
+  PARSE_ERROR: "emailInboxStatusParseError",
+};
+
+const VIEW_FILTER_I18N: Record<InboundEmailViewFilter, string> = {
+  ACTIONABLE: "emailInboxViewActionable",
+  HISTORY: "emailInboxViewHistory",
+  ALL: "emailInboxViewAll",
+};
+
 export default function EmailInboxPage() {
   const t = useTranslations("dashboard");
   const locale = useLocale();
   const queryClient = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>("ALL");
+  const [viewFilter, setViewFilter] = useState<InboundEmailViewFilter>("ACTIONABLE");
   const inboundEmailsQuery = useMemo<DealerInboundEmailsQuery>(
     () => ({
       page: 0,
@@ -127,8 +172,10 @@ export default function EmailInboxPage() {
       sortBy: "receivedAt",
       direction: "desc",
       locale,
+      status: statusFilter === "ALL" ? undefined : statusFilter,
+      view: viewFilter,
     }),
-    [locale],
+    [locale, statusFilter, viewFilter],
   );
   const { data, isLoading, isError } = useDealerInboundEmails(inboundEmailsQuery);
 
@@ -232,7 +279,6 @@ export default function EmailInboxPage() {
   }
 
   const pendingCount = visibleSuggestions.filter((s) => !isInboundStatusFailed(s.status)).length;
-  const lastSyncedTime = visibleSuggestions[0]?.receivedAt ?? "—";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 md:gap-6">
@@ -261,12 +307,47 @@ export default function EmailInboxPage() {
         <div className="flex min-h-[200px] flex-col gap-2 overflow-hidden rounded-lg bg-muted/40 p-2 dark:bg-surface-container sm:min-h-0 lg:max-h-[min(680px,calc(100dvh-13rem))]">
           <div className="shrink-0 space-y-3 px-2 pt-1">
             <h2 className="text-title-md font-semibold text-foreground">{t("emailInboxParsedEmails")}</h2>
-            <div className="text-body-md text-muted-foreground">
-              {isLoading ? (
-                <Skeleton className="mt-1 h-4 w-[55%]" />
-              ) : (
-                t("emailInboxLastSynced", { time: lastSyncedTime })
-              )}
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <span className="text-label-sm font-medium text-muted-foreground">
+                  {t("emailInboxFilterView")}
+                </span>
+                <Select
+                  value={viewFilter}
+                  onValueChange={(value) => setViewFilter(value as InboundEmailViewFilter)}
+                >
+                  <SelectTrigger className="w-full" aria-label={t("emailInboxFilterView")}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VIEW_FILTER_OPTIONS.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {t(VIEW_FILTER_I18N[value])}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <span className="text-label-sm font-medium text-muted-foreground">
+                  {t("emailInboxFilterStatus")}
+                </span>
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value) => setStatusFilter(value as StatusFilterValue)}
+                >
+                  <SelectTrigger className="w-full" aria-label={t("emailInboxFilterStatus")}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_FILTER_OPTIONS.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {t(STATUS_FILTER_I18N[value])}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="relative">
               <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
