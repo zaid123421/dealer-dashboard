@@ -22,6 +22,8 @@ export type DealerInboundEmailsQuery = {
   size?: number;
   sortBy?: string;
   direction?: "asc" | "desc";
+  /** ACTIONABLE (default inbox) | HISTORY | ALL */
+  view?: "ACTIONABLE" | "HISTORY" | "ALL";
   locale?: string;
   status?: InboundEmailStatusFilter;
   view?: InboundEmailViewFilter;
@@ -70,16 +72,24 @@ function buildQueryString(query: DealerInboundEmailsQuery): string {
     size = 20,
     sortBy = "receivedAt",
     direction = "desc",
+<<<<<<< HEAD
     status,
     view,
+=======
+    view = "ACTIONABLE",
+>>>>>>> 08929bc28d2a41d5eb561360e099de4283088d0c
   } = query;
   const sp = new URLSearchParams();
   sp.set("page", String(page));
   sp.set("size", String(size));
   sp.set("sortBy", sortBy);
   sp.set("direction", direction);
+<<<<<<< HEAD
   if (status) sp.set("status", status);
   if (view) sp.set("view", view);
+=======
+  sp.set("view", view);
+>>>>>>> 08929bc28d2a41d5eb561360e099de4283088d0c
   return sp.toString();
 }
 

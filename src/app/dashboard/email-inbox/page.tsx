@@ -171,6 +171,7 @@ export default function EmailInboxPage() {
       size: 20,
       sortBy: "receivedAt",
       direction: "desc",
+      view: "ACTIONABLE",
       locale,
       status: statusFilter === "ALL" ? undefined : statusFilter,
       view: viewFilter,
