@@ -126,6 +126,7 @@ export default function EmailInboxPage() {
       size: 20,
       sortBy: "receivedAt",
       direction: "desc",
+      view: "ACTIONABLE",
       locale,
     }),
     [locale],

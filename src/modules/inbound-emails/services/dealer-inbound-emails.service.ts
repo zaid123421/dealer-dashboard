@@ -11,6 +11,8 @@ export type DealerInboundEmailsQuery = {
   size?: number;
   sortBy?: string;
   direction?: "asc" | "desc";
+  /** ACTIONABLE (default inbox) | HISTORY | ALL */
+  view?: "ACTIONABLE" | "HISTORY" | "ALL";
   locale?: string;
 };
 
@@ -52,12 +54,19 @@ function messageFromResponseData(data: unknown): string | undefined {
 }
 
 function buildQueryString(query: DealerInboundEmailsQuery): string {
-  const { page = 0, size = 20, sortBy = "receivedAt", direction = "desc" } = query;
+  const {
+    page = 0,
+    size = 20,
+    sortBy = "receivedAt",
+    direction = "desc",
+    view = "ACTIONABLE",
+  } = query;
   const sp = new URLSearchParams();
   sp.set("page", String(page));
   sp.set("size", String(size));
   sp.set("sortBy", sortBy);
   sp.set("direction", direction);
+  sp.set("view", view);
   return sp.toString();
 }
 
